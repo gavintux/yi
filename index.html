@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>易經六十四卦解說平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Serif TC', serif;
+        }
+        .hexagram-line {
+            height: 10px;
+            margin: 6px 0;
+            border-radius: 3px;
+        }
+        .yang {
+            background-color: currentColor;
+        }
+        .yin {
+            position: relative;
+        }
+        .yin::before, .yin::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 45%;
+            background-color: currentColor;
+            border-radius: 3px;
+        }
+        .yin::before {
+            left: 0;
+        }
+        .yin::after {
+            right: 0;
+        }
+        /* 美化捲軸 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; /* dark:bg-gray-800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* dark:bg-gray-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* dark:bg-gray-500 */
+        }
+        .tab-active {
+            border-color: #f59e0b; /* amber-500 */
+            color: #d97706; /* amber-600 */
+        }
+        .dark .tab-active {
+             color: #fbbf24; /* dark:amber-400 */
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-amber-600 dark:text-amber-400">易經六十四卦解說平台</h1>
+            <p class="mt-2 text-lg text-gray-600 dark:text-gray-400">卜卦問事，解讀智慧</p>
+        </header>
+
+        <main class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6 md:p-8">
+            <!-- 分頁選單 -->
+            <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+                <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                    <button id="tab-hexagrams" type="button" class="tab-button tab-active whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-lg">
+                        卦辭及爻辭
+                    </button>
+                    <button id="tab-divination" type="button" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-lg border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600">
+                        卜卦方法
+                    </button>
+                </nav>
+            </div>
+
+            <!-- 分頁內容 -->
+            <div>
+                <!-- 各卦卦及爻辭與 LLM 解卦 -->
+                <div id="content-hexagrams">
+                    <!-- 選擇卦象 -->
+                    <div class="mb-8">
+                        <label for="hexagram-select" class="block mb-2 text-lg font-semibold text-gray-700 dark:text-gray-300">請選擇您卜得的卦象：</label>
+                        <select id="hexagram-select" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition">
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    <!-- 卦象詳情 -->
+                    <div id="hexagram-details" class="space-y-8">
+                        <!-- Content will be populated by JavaScript -->
+                    </div>
+
+                    <!-- Gemini API 解卦區塊 (新增) -->
+                    <div class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <h3 class="text-2xl font-bold mb-4 text-amber-700 dark:text-amber-500">
+                            🤖 AI 易理解卦 (Gemini 驅動)
+                        </h3>
+                        <p class="mb-4 text-gray-600 dark:text-gray-400">
+                            請輸入您的具體問題，讓 AI 結合卦辭為您提供白話解析與建議：
+                        </p>
+
+                        <textarea id="user-question" rows="3" placeholder="例如：我最近的事業發展如何？或：我與某人的關係前景如何？"
+                            class="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-amber-500 focus:border-amber-500 transition text-gray-800 dark:text-gray-200 resize-none"></textarea>
+                        
+                        <button id="interpret-button"
+                            class="w-full md:w-auto px-6 py-3 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 transition duration-150 shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                            開始解卦
+                        </button>
+
+                        <div id="interpretation-output" class="mt-6 p-4 bg-amber-50 dark:bg-amber-900/30 border-l-4 border-amber-500 rounded-lg min-h-20 hidden">
+                            <p class="font-semibold text-amber-800 dark:text-amber-200 mb-2">易學指引：</p>
+                            <div id="interpretation-text" class="text-lg leading-relaxed text-gray-700 dark:text-gray-300 whitespace-pre-wrap"></div>
+                        </div>
+                        
+                        <div id="interpretation-loading" class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 rounded-lg hidden">
+                            <p class="font-semibold text-blue-800 dark:text-blue-200 flex items-center">
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                正在為您解讀卦象... 請稍候。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卜卦方法 -->
+                <div id="content-divination" class="hidden prose prose-lg dark:prose-invert max-w-none prose-h3:text-amber-700 dark:prose-h3:text-amber-500 prose-li:my-1">
+                    <h2 class="text-2xl font-bold">卜卦方法簡介</h2>
+                    <p>卜卦是與易經智慧連結的方式之一。常見的方法有簡便的「錢幣卜卦法」與傳統的「籌策卜卦法」，皆是透過專心致志的過程求得卦象。</p>
+                    
+                    <!-- 錢幣卜卦法 (內容不變) -->
+                    <h3 class="mt-6">錢幣卜卦法</h3>
+                    <h4>準備</h4>
+                    <ul class="list-disc list-outside">
+                        <li>準備三枚相同的錢幣。</li>
+                        <li>將錢幣的正面（如人頭）定為「陽」，數值為 3。</li>
+                        <li>將錢幣的背面（如字樣）定為「陰」，數值為 2。</li>
+                        <li>準備紙筆，用以記錄每次擲幣的結果。</li>
+                    </ul>
+
+                    <h4>步驟</h4>
+                    <ol class="list-decimal list-outside">
+                        <li><strong>靜心提問：</strong>閉上眼睛，平穩呼吸，心中專注默念您想詢問的問題。問題越清晰具體越好。</li>
+                        <li><strong>擲幣成爻：</strong>將三枚錢幣捧在手心，搖晃數次後自然拋出。</li>
+                        <li><strong>記錄爻象：</strong>計算三枚錢幣的數值總和，此為第一爻（初爻），由下往上記錄：
+                            <ul class="mt-2 list-disc list-inside">
+                                <li>總和 <strong>6</strong> (2+2+2): 為 <strong>老陰</strong> (--)，是變爻，記錄為 <code>-- X --</code></li>
+                                <li>總和 <strong>7</strong> (2+2+3): 為 <strong>少陽</strong> (—)，是不變爻，記錄為 <code>-----</code></li>
+                                <li>總和 <strong>8</strong> (2+3+3): 為 <strong>少陰</strong> (--)，是不變爻，記錄為 <code>-- --</code></li>
+                                <li>總和 <strong>9</strong> (3+3+3): 為 <strong>老陽</strong> (—)，是變爻，記錄為 <code>---O---</code></li>
+                            </ul>
+                        </li>
+                        <li><strong>重覆六次：</strong>重複步驟 2 與 3 共六次，從下至上依次得到初爻、二爻、三爻、四爻、五爻、上爻，組成一個完整的「本卦」。</li>
+                        <li><strong>求得變卦：</strong>如果卦中有變爻（老陰或老陽），將所有變爻變為其相反的爻象（老陰變陽，老陽變陰），即可得到「之卦」（或稱變卦）。解卦時需同時參考本卦與之卦。</li>
+                    </ol>
+
+                    <h4>解卦</h4>
+                    <p>得到卦象後，您就可以在本平台的「卦辭及爻辭」分頁中，查詢對應的卦辭與爻辭，從中尋求啟示。</p>
+                    
+                    <hr class="my-8 border-gray-300 dark:border-gray-600">
+                    
+                    <!-- 籌策卜卦法 (內容不變) -->
+                    <h3 class="mt-8">籌策卜卦法（大衍之術）</h3>
+                    <p>此為較傳統複雜的卜卦方法，使用五十根籌策（古稱蓍草）來推衍卦象，過程雖繁複，但更能使卜卦者沉澱心靈，專注於所問之事。</p>
+                    
+                    <h4>準備</h4>
+                    <ul class="list-disc list-outside">
+                        <li>準備五十根籌策。</li>
+                        <li>取其中一根置於一旁，象徵「太極」，過程中不使用。剩下四十九根進行推演。</li>
+                    </ul>
+
+                    <h4>求一爻（此過程需重複六次以成一卦）</h4>
+                    <p>每一次的推演稱為一「變」，求得一個爻需要經過三變。</p>
+                    <ol class="list-decimal list-outside">
+                        <li>
+                            <strong>第一變：</strong>
+                            <ul class="mt-2 list-disc list-inside">
+                                <li>將四十九根籌策隨意分成兩堆（左、右）。</li>
+                                <li>從右堆取一根，夾在左手小指與無名指間（此為「掛一」）。</li>
+                                <li>將左堆籌策以四根一數，將最後剩下的餘數（必為1, 2, 3或4）夾在無名指與中指間。</li>
+                                <li>將右堆籌策以四根一數，將最後剩下的餘數（必為1, 2, 3或4）夾在中指與食指間。</li>
+                                <li>此時夾在左手的籌策總數必為 5 或 9。將此數置於一旁。剩餘的籌策（44或40根）收攏。</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>第二變：</strong>
+                            <ul class="mt-2 list-disc list-inside">
+                                <li>將剩餘的籌策（44或40根）重複第一變的步驟：分二、掛一、揲四、歸奇。</li>
+                                <li>此次夾在左手的籌策總數必為 4 或 8。將此數與前一變的結果放在一起。剩餘的籌策（40, 36或32根）收攏。</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>第三變：</strong>
+                            <ul class="mt-2 list-disc list-inside">
+                                <li>將剩餘的籌策（40, 36或32根）再次重複第一變的步驟。</li>
+                                <li>此次夾在左手的籌策總數也必為 4 或 8。</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>定爻象：</strong>三變完成後，檢視桌上剩餘未被取走的籌策數量，將其除以四，即可得一爻：
+                            <ul class="mt-2 list-disc list-inside">
+                                <li>餘 <strong>36</strong> 根 -> 36/4 = 9，為 <strong>老陽</strong> (—)，是變爻。</li>
+                                <li>餘 <strong>32</strong> 根 -> 32/4 = 8，為 <strong>少陰</strong> (--)，是不變爻。</li>
+                                <li>餘 <strong>28</strong> 根 -> 28/4 = 7，為 <strong>少陽</strong> (—)，是不變爻。</li>
+                                <li>餘 <strong>24</strong> 根 -> 24/4 = 6，為 <strong>老陰</strong> (--)，是變爻。</li>
+                            </ul>
+                        </li>
+                    </ol>
+                    <p>將求得的此爻記錄為初爻（最底下的爻）。然後，將四十九根籌策全部收攏，重複以上一至四的完整步驟，共計六次，即可由下至上求得完整的六爻卦象。</p>
+
+                    <hr class="my-8 border-gray-300 dark:border-gray-600">
+
+                    <!-- 一字卜卦法 (新增內容) -->
+                    <h3 class="mt-8">一字卜卦法 (梅花易數簡易版)</h3>
+                    <p>此法利用卜者心念所及之中文<strong>正體字（筆畫數）</strong>與當下<strong>時辰</strong>，快速生成主卦與變爻，以達占卜之目的。這是常見的梅花易數之簡易取卦方式。</p>
+                    
+                    <h4>準備與定義</h4>
+                    <ul class="list-disc list-outside">
+                        <li><strong>數字與卦象對應：</strong>將 1 至 8 分別對應為：<strong>乾(1)、兌(2)、離(3)、震(4)、巽(5)、坎(6)、艮(7)、坤(8)</strong>。</li>
+                        <li><strong>時辰計算：</strong>將時辰轉換為 1 至 12 的數字（子時為 1，丑時為 2，...，亥時為 12）。</li>
+                        <li><strong>主字筆畫：</strong>計算您心中默念或寫下的主問中文字的筆畫數 $S$。</li>
+                    </ul>
+
+                    <h4>步驟</h4>
+                    <ol class="list-decimal list-outside">
+                        <li>
+                            <strong>求下卦（內卦）：</strong>
+                            <p>筆畫數 $S$ 除以 8 的餘數 $=\text{下卦數字} \ (S')$</p>
+                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">若餘數為 0，則數字取 8（即坤卦）。</p>
+                        </li>
+                        <li>
+                            <strong>求上卦（外卦）：</strong>
+                            <p>時辰數 $H$ 除以 8 的餘數 $=\text{上卦數字} \ (H')$</p>
+                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">若餘數為 0，則數字取 8（即坤卦）。</p>
+                        </li>
+                        <li>
+                            <strong>組成主卦（本卦）：</strong>以上卦數字在上，下卦數字在下，對應生成六爻主卦。
+                        </li>
+                        <li>
+                            <strong>求變爻：</strong>
+                            <p>（筆畫數 $S + \text{時辰數} H）$ 除以 6 的餘數 $=\text{變爻數字} \ (C')$</p>
+                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">若餘數為 0，則數字取 6（為上爻）。此數字 $C'$ 即為變動之爻，從初爻（最下方）開始數。變爻為老陽 (9) 或老陰 (6)。</p>
+                        </li>
+                        <li>
+                            <strong>生成變卦（比卦）：</strong>將主卦中的變爻 ($C'$) 由陰變陽或由陽變陰，形成一個新的「變卦」。
+                        </li>
+                    </ol>
+                    <p class="mt-4"><strong>解卦：</strong>主要參考主卦卦辭，並特別關注變爻的爻辭。變卦則用來參照事件的最終發展或變化方向。</p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
+            <p>&copy; 2025 智慧洞察. 僅供參考與學習.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- 易經64卦資料 ---
+        const iChingData = {
+            "1": { name: "乾為天", lines: ['yang', 'yang', 'yang', 'yang', 'yang', 'yang'], judgement: "元，亨，利，貞。", commentary: "天行健，君子以自強不息。", lines_text: ["初九：潛龍勿用。", "九二：見龍在田，利見大人。", "九三：君子終日乾乾，夕惕若，厲無咎。", "九四：或躍在淵，無咎。", "九五：飛龍在天，利見大人。", "上九：亢龍有悔。"] },
+            "2": { name: "坤為地", lines: ['yin', 'yin', 'yin', 'yin', 'yin', 'yin'], judgement: "元，亨，利牝馬之貞。君子有攸往，先迷後得主，利。西南得朋，東北喪朋。安貞，吉。", commentary: "地勢坤，君子以厚德載物。", lines_text: ["初六：履霜，堅冰至。", "六二：直，方，大，不習無不利。", "六三：含章可貞。或從王事，無成有終。", "六四：括囊，無咎無譽。", "六五：黃裳，元吉。", "上六：龍戰于野，其血玄黃。"] },
+            "3": { name: "水雷屯", lines: ['yin', 'yang', 'yin', 'yin', 'yin', 'yang'], judgement: "元，亨，利，貞。勿用有攸往，利建侯。", commentary: "雲雷，屯。君子以經綸。", lines_text: ["初九：磐桓，利居貞，利建侯。", "六二：屯如邅如，乘馬班如。匪寇婚媾，女子貞不字，十年乃字。", "六三：即鹿無虞，惟入于林中。君子幾，不如舍，往吝。", "六四：乘馬班如，求婚媾。往吉，無不利。", "九五：屯其膏，小貞吉，大貞凶。", "上六：乘馬班如，泣血漣如。"] },
+            "4": { name: "山水蒙", lines: ['yang', 'yin', 'yin', 'yin', 'yang', 'yin'], judgement: "亨。匪我求童蒙，童蒙求我。初筮告，再三瀆，瀆則不告。利貞。", commentary: "山下出泉，蒙。君子以果行育德。", lines_text: ["初六：發蒙，利用刑人，用說桎梏，以往吝。", "九二：包蒙吉，納婦吉，子克家。", "六三：勿用取女，見金夫，不有躬，無攸利。", "六四：困蒙，吝。", "六五：童蒙，吉。", "上九：擊蒙，不利為寇，利禦寇。"] },
+            "5": { name: "水天需", lines: ['yang', 'yang', 'yang', 'yin', 'yang', 'yin'], judgement: "有孚，光亨，貞吉。利涉大川。", commentary: "雲上於天，需。君子以飲食宴樂。", lines_text: ["初九：需于郊，利用恆，無咎。", "九二：需于沙，小有言，終吉。", "九三：需于泥，致寇至。", "六四：需于血，出自穴。", "九五：需于酒食，貞吉。", "上六：入于穴，有不速之客三人來，敬之終吉。"] },
+            "6": { name: "天水訟", lines: ['yin', 'yang', 'yin', 'yang', 'yang', 'yang'], judgement: "有孚，窒惕，中吉。終凶。利見大人，不利涉大川。", commentary: "天與水違行，訟。君子以作事謀始。", lines_text: ["初六：不永所事，小有言，終吉。", "九二：不克訟，歸而逋，其邑人三百戶，無眚。", "六三：食舊德，貞厲，終吉。或從王事，無成。", "九四：不克訟，復即命，渝安貞，吉。", "九五：訟，元吉。", "上九：或錫之鞶帶，終朝三褫之。"] },
+            "7": { name: "地水師", lines: ['yin', 'yang', 'yin', 'yin', 'yin', 'yin'], judgement: "貞，丈人吉，無咎。", commentary: "地中有水，師。君子以容民畜眾。", lines_text: ["初六：師出以律，否臧凶。", "九二：在師中，吉，無咎，王三錫命。", "六三：師或輿尸，凶。", "六四：師左次，無咎。", "六五：田有禽，利執言，無咎。長子帥師，弟子輿尸，貞凶。", "上六：大君有命，開國承家，小人勿用。"] },
+            "8": { name: "水地比", lines: ['yin', 'yin', 'yin', 'yin', 'yang', 'yin'], judgement: "吉。原筮，元永貞，無咎。不寧方來，後夫凶。", commentary: "地上有水，比。先王以建萬國，親諸侯。", lines_text: ["初六：有孚比之，無咎。有孚盈缶，終來有他，吉。", "六二：比之自內，貞吉.", "六三：比之匪人。", "六四：外比之，貞吉。", "九五：顯比，王用三驅，失前禽，邑人不誡，吉。", "上六：比之無首，凶。"] },
+            "9": { name: "風天小畜", lines: ['yang', 'yang', 'yang', 'yin', 'yang', 'yang'], judgement: "亨。密雲不雨，自我西郊。", commentary: "風行天上，小畜。君子以懿文德。", lines_text: ["初九：復自道，何其咎，吉。", "九二：牽復，吉。", "九三：輿說輻，夫妻反目。", "六四：有孚，血去惕出，無咎。", "九五：有孚攣如，富以其鄰。", "上九：既雨既處，尚德載，婦貞厲。月幾望，君子征凶。"] },
+            "10": { name: "天澤履", lines: ['yin', 'yang', 'yang', 'yang', 'yang', 'yang'], judgement: "履虎尾，不咥人，亨。", commentary: "上天下澤，履。君子以辨上下，定民志。", lines_text: ["初九：素履，往無咎。", "九二：履道坦坦，幽人貞吉。", "六三：眇能視，跛能履，履虎尾，咥人，凶。武人為于大君。", "九四：履虎尾，愬愬，終吉。", "九五：夬履，貞厲。", "上九：視履考祥，其旋元吉。"] },
+            "11": { name: "地天泰", lines: ['yang', 'yang', 'yang', 'yin', 'yin', 'yin'], judgement: "小往大來，吉，亨。", commentary: "天地交，泰。后以財成天地之道，輔相天地之宜，以左右民。", lines_text: ["初九：拔茅茹，以其彙，征吉。", "九二：包荒，用馮河，不遐遺，朋亡，得尚于中行。", "九三：無平不陂，無往不復，艱貞無咎。勿恤其孚，于食有福。", "六四：翩翩不富，以其鄰，不戒以孚。", "六五：帝乙歸妹，以祉元吉。", "上六：城復于隍，勿用師。自邑告命，貞吝。"] },
+            "12": { name: "天地否", lines: ['yin', 'yin', 'yin', 'yang', 'yang', 'yang'], judgement: "否之匪人，不利君子貞，大往小來。", commentary: "天地不交，否。君子以儉德辟難，不可榮以祿。", lines_text: ["初六：拔茅茹，以其彙，貞吉，亨。", "六二：包承，小人吉，大人否亨。", "六三：包羞。", "九四：有命無咎，疇離祉。", "九五：休否，大人吉。其亡其亡，系于苞桑。", "上九：傾否，先否後喜。"] },
+            "13": { name: "天火同人", lines: ['yin', 'yang', 'yin', 'yang', 'yang', 'yang'], judgement: "同人于野，亨。利涉大川，利君子貞。", commentary: "天與火，同人。君子以類族辨物。", lines_text: ["初九：同人于門，無咎。", "六二：同人于宗，吝。", "九三：伏戎于莽，升其高陵，三歲不興。", "九四：乘其墉，弗克攻，吉。", "九五：同人，先號啕而後笑。大師克相遇。", "上九：同人于郊，無悔。"] },
+            "14": { name: "火天大有", lines: ['yang', 'yang', 'yang', 'yin', 'yang', 'yang'], judgement: "元亨。", commentary: "火在天上，大有。君子以遏惡揚善，順天休命。", lines_text: ["初九：無交害，匪咎，艱則無咎。", "九二：大車以載，有攸往，無咎。", "九三：公用亨于天子，小人弗克。", "九四：匪其彭，無咎。", "六五：厥孚交如，威如，吉。", "上九：自天祐之，吉無不利。"] },
+            "15": { name: "地山謙", lines: ['yang', 'yin', 'yin', 'yin', 'yin', 'yin'], judgement: "亨，君子有終。", commentary: "地中有山，謙。君子以裒多益寡，稱物平施。", lines_text: ["初六：謙謙君子，用涉大川，吉。", "六二：鳴謙，貞吉。", "九三：勞謙君子，有終，吉。", "六四：無不利，撝謙。", "六五：不富以其鄰，利用侵伐，無不利。", "上六：鳴謙，利用行師，征邑國。"] },
+            "16": { name: "雷地豫", lines: ['yin', 'yin', 'yin', 'yin', 'yin', 'yang'], judgement: "利建侯行師。", commentary: "雷出地奮，豫。先王以作樂崇德，殷薦之上帝，以配祖考。", lines_text: ["初六：鳴豫，凶。", "六二：介于石，不終日，貞吉。", "六三：盱豫，悔。遲有悔。", "九四：由豫，大有得。勿疑，朋盍簪。", "六五：貞疾，恆不死。", "上六：冥豫，成有渝，無咎。"] },
+            "17": { name: "澤雷隨", lines: ['yang', 'yin', 'yin', 'yang', 'yang', 'yin'], judgement: "元亨利貞，無咎。", commentary: "澤中有雷，隨。君子以嚮晦入宴息。", lines_text: ["初九：官有渝，貞吉。出門交有功。", "六二：係小子，失丈夫。", "六三：係丈夫，失小子。隨有求得，利居貞。", "九四：隨有獲，貞凶。有孚在道，以明，何咎。", "九五：孚于嘉，吉。", "上六：拘係之，乃從維之。王用亨于西山。"] },
+            "18": { name: "山風蠱", lines: ['yin', 'yang', 'yang', 'yin', 'yin', 'yang'], judgement: "元亨，利涉大川。先甲三日，後甲三日。", commentary: "山下有風，蠱。君子以振民育德。", lines_text: ["初六：幹父之蠱，有子，考無咎，厲終吉。", "九二：幹母之蠱，不可貞。", "九三：幹父之蠱，小有悔，無大咎。", "六四：裕父之蠱，往見吝。", "六五：幹父之蠱，用譽。", "上九：不事王侯，高尚其事。"] },
+            "19": { name: "地澤臨", lines: ['yang', 'yang', 'yin', 'yin', 'yin', 'yin'], judgement: "元亨利貞。至于八月有凶。", commentary: "澤上有地，臨。君子以教思無窮，容保民無疆。", lines_text: ["初九：咸臨，貞吉。", "九二：咸臨，吉無不利。", "六三：甘臨，無攸利。既憂之，無咎。", "六四：至臨，無咎。", "六五：知臨，大君之宜，吉。", "上六：敦臨，吉無咎。"] },
+            "20": { name: "風地觀", lines: ['yin', 'yin', 'yin', 'yin', 'yang', 'yang'], judgement: "盥而不薦，有孚顒若。", commentary: "風行地上，觀。先王以省方觀民設教。", lines_text: ["初六：童觀，小人無咎，君子吝。", "六二：闚觀，利女貞。", "六三：觀我生，進退。", "六四：觀國之光，利用賓于王。", "九五：觀我生，君子無咎。", "上九：觀其生，君子無咎。"] },
+            "21": { name: "火雷噬嗑", lines: ['yang', 'yin', 'yin', 'yin', 'yang', 'yang'], judgement: "亨。利用獄。", commentary: "雷電，噬嗑。先王以明罰敕法。", lines_text: ["初九：履校滅趾，無咎。", "六二：噬膚滅鼻，無咎。", "六三：噬臘肉，遇毒。小吝，無咎。", "九四：噬乾胏，得金矢，利艱貞，吉。", "六五：噬乾肉，得黃金，貞厲，無咎。", "上九：何校滅耳，凶。"] },
+            "22": { name: "山火賁", lines: ['yang', 'yang', 'yin', 'yin', 'yang', 'yin'], judgement: "亨。小利有攸往。", commentary: "山下有火，賁。君子以明庶政，無敢折獄。", lines_text: ["初九：賁其趾，舍車而徒。", "六二：賁其須。", "九三：賁如濡如，永貞吉。", "六四：賁如皤如，白馬翰如，匪寇婚媾。", "六五：賁于丘園，束帛戔戔，吝，終吉。", "上九：白賁，無咎。"] },
+            "23": { name: "山地剝", lines: ['yin', 'yin', 'yin', 'yin', 'yin', 'yang'], judgement: "不利有攸往。", commentary: "山附于地，剝。上以厚下安宅。", lines_text: ["初六：剝床以足，蔑貞凶。", "六二：剝床以辨，蔑貞凶。", "六三：剝之，無咎。", "六四：剝床以膚，凶。", "六五：貫魚，以宮人寵，無不利。", "上九：碩果不食，君子得輿，小人剝廬。"] },
+            "24": { name: "地雷復", lines: ['yang', 'yin', 'yin', 'yin', 'yin', 'yin'], judgement: "亨。出入無疾，朋來無咎。反復其道，七日來復，利有攸往。", commentary: "雷在地中，復。先王以至日閉關，商旅不行，后不省方。", lines_text: ["初九：不遠復，無祗悔，元吉。", "六二：休復，吉。", "六三：頻復，厲無咎。", "六四：中行獨復。", "六五：敦復，無悔。", "上六：迷復，凶，有災眚。用行師，終有大敗，以其國君凶，至于十年不克征。"] },
+            "25": { name: "天雷無妄", lines: ['yang', 'yin', 'yin', 'yang', 'yang', 'yang'], judgement: "元亨利貞。其匪正有眚，不利有攸往。", commentary: "天下雷行，物與無妄。先王以茂對時育萬物。", lines_text: ["初九：無妄，往吉。", "六二：不耕穫，不菑畬，則利有攸往。", "六三：無妄之災，或繫之牛，行人之得，邑人之災。", "九四：可貞，無咎。", "九五：無妄之疾，勿藥有喜。", "上九：無妄，行有眚，無攸利。"] },
+            "26": { name: "山天大畜", lines: ['yang', 'yang', 'yang', 'yin', 'yin', 'yang'], judgement: "利貞。不家食吉，利涉大川。", commentary: "天在山中，大畜。君子以多識前言往行，以畜其德。", lines_text: ["初九：有厲，利已。", "九二：輿說輻。", "九三：良馬逐，利艱貞。日閑輿衛，利有攸往。", "六四：童牛之牿，元吉。", "六五：豶豕之牙，吉。", "上九：何天之衢，亨。"] },
+            "27": { name: "山雷頤", lines: ['yang', 'yin', 'yin', 'yin', 'yin', 'yang'], judgement: "貞吉。觀頤，自求口實。", commentary: "山下有雷，頤。君子以慎言語，節飲食。", lines_text: ["初九：舍爾靈龜，觀我朵頤，凶。", "六二：顛頤，拂經，于丘頤，征凶。", "六三：拂頤，貞凶，十年勿用，無攸利。", "六四：顛頤，吉。虎視眈眈，其欲逐逐，無咎。", "六五：拂經，居貞吉，不可涉大川。", "上九：由頤，厲吉，利涉大川。"] },
+            "28": { name: "澤風大過", lines: ['yin', 'yang', 'yang', 'yang', 'yang', 'yin'], judgement: "棟橈，利有攸往，亨。", commentary: "澤滅木，大過。君子以獨立不懼，遯世無悶。", lines_text: ["初六：藉用白茅，無咎。", "九二：枯楊生稊，老夫得其女妻，無不利。", "九三：棟橈，凶。", "九四：棟隆，吉。有他吝。", "九五：枯楊生華，老婦得其士夫，無咎無譽。", "上六：過涉滅頂，凶，無咎。"] },
+            "29": { name: "坎為水", lines: ['yin', 'yang', 'yin', 'yin', 'yang', 'yin'], judgement: "習坎，有孚，維心亨，行有尚。", commentary: "水洊至，習坎。君子以常德行，習教事。", lines_text: ["初六：習坎，入于坎窞，凶。", "九二：坎有險，求小得。", "六三：來之坎坎，險且枕，入于坎窞，勿用。", "六四：樽酒簋貳，用缶，納約自牖，終無咎。", "九五：坎不盈，祇既平，無咎。", "上六：係用徽纆，置于叢棘，三歲不得，凶。"] },
+            "30": { name: "離為火", lines: ['yang', 'yin', 'yang', 'yang', 'yin', 'yang'], judgement: "利貞，亨。畜牝牛，吉。", commentary: "明兩作，離。大人以繼明照于四方。", lines_text: ["初九：履錯然，敬之無咎。", "六二：黃離，元吉。", "九三：日昃之離，不鼓缶而歌，則大耋之嗟，凶。", "九四：突如其來如，焚如，死如，棄如。", "六五：出涕沱若，戚嗟若，吉。", "上九：王用出征，有嘉折首，獲匪其醜，無咎。"] },
+            "31": { name: "澤山咸", lines: ['yang', 'yin', 'yin', 'yang', 'yang', 'yin'], judgement: "亨，利貞。取女吉。", commentary: "山上有澤，咸。君子以虛受人。", lines_text: ["初六：咸其拇。", "六二：咸其腓，凶，居吉。", "九三：咸其股，執其隨，往吝。", "九四：貞吉悔亡，憧憧往來，朋從爾思。", "九五：咸其脢，無悔。", "上六：咸其輔頰舌。"] },
+            "32": { name: "雷風恆", lines: ['yin', 'yang', 'yang', 'yin', 'yin', 'yang'], judgement: "亨，無咎，利貞，利有攸往。", commentary: "雷風，恆。君子以立不易方。", lines_text: ["初六：浚恆，貞凶，無攸利。", "九二：悔亡。", "九三：不恆其德，或承之羞，貞吝。", "九四：田無禽。", "六五：恆其德，貞，婦人吉，夫子凶。", "上六：振恆，凶。"] },
+            "33": { name: "天山遯", lines: ['yang', 'yang', 'yin', 'yin', 'yang', 'yang'], judgement: "亨，小利貞。", commentary: "天下有山，遯。君子以遠小人，不惡而嚴。", lines_text: ["初六：遯尾，厲，勿用有攸往。", "六二：執之用黃牛之革，莫之勝說。", "九三：係遯，有疾厲，畜臣妾吉。", "九四：好遯，君子吉，小人否。", "九五：嘉遯，貞吉。", "上九：肥遯，無不利。"] },
+            "34": { name: "雷天大壯", lines: ['yang', 'yang', 'yang', 'yang', 'yin', 'yin'], judgement: "利貞。", commentary: "雷在天上，大壯。君子以非禮勿履。", lines_text: ["初九：壯于趾，征凶，有孚。", "九二：貞吉。", "九三：小人用壯，君子用罔，貞厲。羝羊觸藩，羸其角。", "九四：貞吉悔亡，藩決不羸，壯于大輿之輹。", "六五：喪羊于易，無悔。", "上六：羝羊觸藩，不能退，不能遂，無攸利，艱則吉。"] },
+            "35": { name: "火地晉", lines: ['yin', 'yin', 'yin', 'yang', 'yin', 'yang'], judgement: "康侯用錫馬蕃庶，晝日三接。", commentary: "明出地上，晉。君子以自昭明德。", lines_text: ["初六：晉如摧如，貞吉。罔孚，裕無咎。", "六二：晉如愁如，貞吉。受茲介福，于其王母。", "六三：眾允，悔亡。", "九四：晉如鼫鼠，貞厲。", "六五：悔亡，失得勿恤，往吉無不利。", "上九：晉其角，維用伐邑，厲吉無咎，貞吝。"] },
+            "36": { name: "地火明夷", lines: ['yang', 'yin', 'yang', 'yin', 'yin', 'yin'], judgement: "利艱貞。", commentary: "明入地中，明夷。君子以蒞眾，用晦而明。", lines_text: ["初九：明夷于飛，垂其翼。君子于行，三日不食。有攸往，主人有言。", "六二：明夷，夷于左股，用拯馬壯，吉。", "九三：明夷于南狩，得其大首，不可疾貞。", "六四：入于左腹，獲明夷之心，于出門庭。", "六五：箕子之明夷，利貞。", "上六：不明晦，初登于天，後入于地。"] },
+            "37": { name: "風火家人", lines: ['yang', 'yin', 'yang', 'yin', 'yang', 'yang'], judgement: "利女貞。", commentary: "風自火出，家人。君子以言有物而行有恆。", lines_text: ["初九：閑有家，悔亡。", "六二：無攸遂，在中饋，貞吉。", "九三：家人嗃嗃，悔厲吉。婦子嘻嘻，終吝。", "六四：富家，大吉。", "九五：王假有家，勿恤吉。", "上九：有孚威如，終吉。"] },
+            "38": { name: "火澤睽", lines: ['yin', 'yang', 'yang', 'yang', 'yin', 'yang'], judgement: "小事吉。", commentary: "上火下澤，睽。君子以同而異。", lines_text: ["初九：悔亡。喪馬勿逐，自復。見惡人，無咎。", "九二：遇主于巷，無咎。", "六三：見輿曳，其牛掣，其人天且劓，無初有終。", "九四：睽孤，遇元夫，交孚，厲無咎。", "六五：悔亡，厥宗噬膚，往何咎。", "上九：睽孤，見豕負塗，載鬼一車，先張之弧，後說之弧。匪寇婚媾，往遇雨則吉。"] },
+            "39": { name: "水山蹇", lines: ['yang', 'yin', 'yin', 'yin', 'yang', 'yin'], judgement: "利西南，不利東北。利見大人，貞吉。", commentary: "山上有水，蹇。君子以反身修德。", lines_text: ["初六：往蹇來譽。", "六二：王臣蹇蹇，匪躬之故。", "九三：往蹇來反。", "六四：往蹇來連。", "九五：大蹇朋來。", "上六：往蹇來碩，吉，利見大人。"] },
+            "40": { name: "雷水解", lines: ['yin', 'yang', 'yin', 'yang', 'yin', 'yin'], judgement: "利西南。無所往，其來復吉。有攸往，夙吉。", commentary: "雷雨作，解。君子以赦過宥罪。", lines_text: ["初六：無咎。", "九二：田獲三狐，得黃矢，貞吉。", "六三：負且乘，致寇至，貞吝。", "九四：解而拇，朋至斯孚。", "六五：君子維有解，吉。有孚于小人。", "上六：公用射隼于高墉之上，獲之，無不利。"] },
+            "41": { name: "山澤損", lines: ['yin', 'yang', 'yang', 'yin', 'yin', 'yang'], judgement: "有孚，元吉，無咎，可貞，利有攸往。曷之用，二簋可用享。", commentary: "山下有澤，損。君子以懲忿窒欲。", lines_text: ["初九：已事遄往，無咎，酌損之。", "九二：利貞，征凶，弗損益之。", "六三：三人行，則損一人；一人行，則得其友。", "六四：損其疾，使遄有喜，無咎。", "六五：或益之十朋之龜，弗克違，元吉。", "上九：弗損益之，無咎，貞吉，利有攸往，得臣無家。"] },
+            "42": { name: "風雷益", lines: ['yang', 'yin', 'yin', 'yang', 'yang', 'yang'], judgement: "利有攸往，利涉大川。", commentary: "風雷，益。君子以見善則遷，有過則改。", lines_text: ["初九：利用為大作，元吉，無咎。", "六二：或益之十朋之龜，弗克違，永貞吉。王用享于帝，吉。", "六三：益之用凶事，無咎。有孚中行，告公用圭。", "六四：中行，告公從。利用為依遷國。", "九五：有孚惠心，勿問元吉。有孚惠我德。", "上九：莫益之，或擊之，立心勿恆，凶。"] },
+            "43": { name: "澤天夬", lines: ['yang', 'yang', 'yang', 'yang', 'yang', 'yin'], judgement: "揚于王庭，孚號，有厲。告自邑，不利即戎，利有攸往。", commentary: "澤上于天，夬。君子以施祿及下，居德則忌。", lines_text: ["初九：壯于前趾，往不勝為咎。", "九二：惕號，莫夜有戎，勿恤。", "九三：壯于頄，有凶。君子夬夬，獨行遇雨，若濡有慍，無咎。", "九四：臀無膚，其行次且。牽羊悔亡，聞言不信。", "九五：莧陸夬夬，中行無咎。", "上六：無號，終有凶。"] },
+            "44": { name: "天風姤", lines: ['yin', 'yang', 'yang', 'yang', 'yang', 'yang'], judgement: "女壯，勿用取女。", commentary: "天下有風，姤。后以施命誥四方。", lines_text: ["初六：繫于金柅，貞吉。有攸往，見凶，羸豕孚蹢躅。", "九二：包有魚，無咎，不利賓。", "九三：臀無膚，其行次且，厲，無大咎。", "九四：包無魚，起凶。", "九五：以杞包瓜，含章，有隕自天。", "上九：姤其角，吝，無咎。"] },
+            "45": { name: "澤地萃", lines: ['yin', 'yin', 'yin', 'yang', 'yang', 'yin'], judgement: "亨。王假有廟，利見大人，亨，利貞。用大牲吉，利有攸往。", commentary: "澤上于地，萃。君子以除戎器，戒不虞。", lines_text: ["初六：有孚不終，乃亂乃萃，若號，一握為笑，勿恤，往無咎。", "六二：引吉，無咎，孚乃利用禴。", "六三：萃如嗟如，無攸利，往無咎，小吝。", "九四：大吉，無咎。", "九五：萃有位，無咎。匪孚，元永貞，悔亡。", "上六：齎咨涕洟，無咎。"] },
+            "46": { name: "地風升", lines: ['yin', 'yang', 'yang', 'yin', 'yin', 'yin'], judgement: "元亨，用見大人，勿恤，南征吉。", commentary: "地中生木，升。君子以順德，積小以高大。", lines_text: ["初六：允升，大吉。", "九二：孚乃利用禴，無咎。", "九三：升虛邑。", "六四：王用亨于岐山，吉，無咎。", "六五：貞吉，升階。", "上六：冥升，利于不息之貞。"] },
+            "47": { name: "澤水困", lines: ['yin', 'yang', 'yin', 'yang', 'yang', 'yin'], judgement: "亨，貞，大人吉，無咎。有言不信。", commentary: "澤無水，困。君子以致命遂志。", lines_text: ["初六：臀困于株木，入于幽谷，三歲不覿。", "九二：困于酒食，朱紱方來，利用亨祀。征凶，無咎。", "六三：困于石，據于蒺藜，入于其宮，不見其妻，凶。", "九四：來徐徐，困于金車，吝，有終。", "九五：劓刖，困于赤紱，乃徐有說，利用祭祀。", "上六：困于葛藟，于藟藟，曰動悔。有悔，征吉。"] },
+            "48": { name: "水風井", lines: ['yin', 'yang', 'yang', 'yin', 'yang', 'yin'], judgement: "改邑不改井，無喪無得，往來井井。汔至，亦未繘井，羸其瓶，凶。", commentary: "木上有水，井。君子以勞民勸相。", lines_text: ["初六：井泥不食，舊井無禽。", "九二：井谷射鮒，甕敝漏。", "九三：井渫不食，為我心惻，可用汲，王明，並受其福。", "六四：井甃，無咎。", "九五：井冽，寒泉食。", "上六：井收勿幕，有孚元吉。"] },
+            "49": { name: "澤火革", lines: ['yang', 'yin', 'yang', 'yang', 'yang', 'yin'], judgement: "巳日乃孚，元亨利貞，悔亡。", commentary: "澤中有火，革。君子以治歷明時。", lines_text: ["初九：鞏用黃牛之革。", "六二：巳日乃革之，征吉，無咎。", "九三：征凶，貞厲，革言三就有孚。", "九四：悔亡，有孚改命，吉。", "九五：大人虎變，未占有孚。", "上六：君子豹變，小人革面，征凶，居貞吉。"] },
+            "50": { name: "火風鼎", lines: ['yin', 'yang', 'yang', 'yang', 'yin', 'yang'], judgement: "元吉，亨。", commentary: "木上有火，鼎。君子以正位凝命。", lines_text: ["初六：鼎顛趾，利出否，得妾以其子，無咎。", "九二：鼎有實，我仇有疾，不我能即，吉。", "九三：鼎耳革，其行塞，雉膏不食，方雨虧悔，終吉。", "九四：鼎折足，覆公餗，其形渥，凶。", "六五：鼎黃耳金鉉，利貞。", "上九：鼎玉鉉，大吉，無不利。"] },
+            "51": { name: "震為雷", lines: ['yang', 'yin', 'yin', 'yang', 'yin', 'yin'], judgement: "亨。震來虩虩，笑言啞啞。震驚百里，不喪匕鬯。", commentary: "洊雷，震。君子以恐懼修省。", lines_text: ["初九：震來虩虩，後笑言啞啞，吉。", "六二：震來厲，億喪貝，躋于九陵，勿逐，七日得。", "六三：震蘇蘇，震行無眚。", "九四：震遂泥。", "六五：震往來厲，億無喪，有事。", "上六：震索索，視矍矍，征凶。震不于其躬，于其鄰，無咎。婚媾有言。"] },
+            "52": { name: "艮為山", lines: ['yang', 'yin', 'yin', 'yang', 'yin', 'yin'], judgement: "艮其背，不獲其身，行其庭，不見其人，無咎。", commentary: "兼山，艮。君子以思不出其位。", lines_text: ["初六：艮其趾，無咎，利永貞。", "六二：艮其腓，不拯其隨，其心不快。", "九三：艮其限，列其夤，厲薰心。", "六四：艮其身，無咎。", "六五：艮其輔，言有序，悔亡。", "上九：敦艮，吉。"] },
+            "53": { name: "風山漸", lines: ['yang', 'yin', 'yin', 'yang', 'yang', 'yang'], judgement: "女歸吉，利貞。", commentary: "山上有木，漸。君子以居賢德善俗。", lines_text: ["初六：鴻漸于干，小子厲，有言，無咎。", "六二：鴻漸于磐，飲食衎衎，吉。", "九三：鴻漸于陸，夫征不復，婦孕不育，凶。利禦寇。", "六四：鴻漸于木，或得其桷，無咎。", "九五：鴻漸于陵，婦三歲不孕，終莫之勝，吉。", "上九：鴻漸于逵，其羽可用為儀，吉。"] },
+            "54": { name: "雷澤歸妹", lines: ['yin', 'yang', 'yang', 'yang', 'yin', 'yin'], judgement: "征凶，無攸利。", commentary: "澤上有雷，歸妹。君子以永終知敝。", lines_text: ["初九：歸妹以娣，跛能履，征吉。", "九二：眇能視，利幽人之貞。", "六三：歸妹以須，反歸以娣。", "九四：歸妹愆期，遲歸有時。", "六五：帝乙歸妹，其君之袂，不如其娣之袂良。月幾望，吉。", "上六：女承筐無實，士刲羊無血，無攸利。"] },
+            "55": { name: "雷火豐", lines: ['yang', 'yin', 'yang', 'yang', 'yin', 'yin'], judgement: "亨，王假之，勿憂，宜日中。", commentary: "雷電皆至，豐。君子以折獄致刑。", lines_text: ["初九：遇其配主，雖旬無咎，往有尚。", "六二：豐其蔀，日中見斗，往得疑疾，有孚發若，吉。", "九三：豐其沛，日中見沬，折其右肱，無咎。", "九四：豐其蔀，日中見斗，遇其夷主，吉。", "六五：來章，有慶譽，吉。", "上六：豐其屋，蔀其家，闚其戶，闃其無人，三歲不覿，凶。"] },
+            "56": { name: "火山旅", lines: ['yin', 'yang', 'yin', 'yang', 'yin', 'yang'], judgement: "小亨，旅貞吉。", commentary: "山上有火，旅。君子以明慎用刑，而不留獄。", lines_text: ["初六：旅瑣瑣，斯其所取災。", "六二：旅即次，懷其資，得童僕貞。", "九三：旅焚其次，喪其童僕，貞厲。", "九四：旅于處，得其資斧，我心不快。", "六五：射雉一矢亡，終以譽命。", "上九：鳥焚其巢，旅人先笑後號啕。喪牛于易，凶。"] },
+            "57": { name: "巽為風", lines: ['yin', 'yang', 'yang', 'yin', 'yang', 'yang'], judgement: "小亨，利有攸往，利見大人。", commentary: "隨風，巽。君子以申命行事。", lines_text: ["初六：進退，利武人之貞。", "九二：巽在床下，用史巫紛若，吉，無咎。", "九三：頻巽，吝。", "六四：悔亡，田獲三品。", "九五：貞吉悔亡，無不利。無初有終，先庚三日，後庚三日，吉。", "上九：巽在床下，喪其資斧，貞凶。"] },
+            "58": { name: "兌為澤", lines: ['yin', 'yang', 'yang', 'yin', 'yang', 'yang'], judgement: "亨，利貞。", commentary: "麗澤，兌。君子以朋友講習。", lines_text: ["初九：和兌，吉。", "九二：孚兌，吉，悔亡。", "六三：來兌，凶。", "九四：商兌未寧，介疾有喜。", "九五：孚于剝，有厲。", "上六：引兌。"] },
+            "59": { name: "風水渙", lines: ['yin', 'yang', 'yin', 'yang', 'yang', 'yin'], judgement: "亨。王假有廟，利涉大川，利貞。", commentary: "風行水上，渙。先王以享于帝立廟。", lines_text: ["初六：用拯馬壯，吉。", "九二：渙奔其案，悔亡。", "六三：渙其躬，無悔。", "六四：渙其群，元吉。渙有丘，匪夷所思。", "九五：渙汗其大號，渙王居，無咎。", "上九：渙其血，去逖出，無咎。"] },
+            "60": { name: "水澤節", lines: ['yin', 'yang', 'yang', 'yin', 'yang', 'yin'], judgement: "亨。苦節不可貞。", commentary: "澤上有水，節。君子以制數度，議德行。", lines_text: ["初九：不出戶庭，無咎。", "九二：不出門庭，凶。", "六三：不節若，則嗟若，無咎。", "六四：安節，亨。", "九五：甘節，吉，往有尚。", "上六：苦節，貞凶，悔亡。"] },
+            "61": { name: "風澤中孚", lines: ['yin', 'yang', 'yang', 'yang', 'yang', 'yin'], judgement: "豚魚吉，利涉大川，利貞。", commentary: "澤上有風，中孚。君子以議獄緩死。", lines_text: ["初九：虞吉，有他不燕。", "九二：鳴鶴在陰，其子和之。我有好爵，吾與爾靡之。", "六三：得敵，或鼓或罷，或泣或歌。", "六四：月幾望，馬匹亡，無咎。", "九五：有孚攣如，無咎。", "上九：翰音登于天，貞凶。"] },
+            "62": { name: "雷山小過", lines: ['yang', 'yin', 'yin', 'yin', 'yin', 'yang'], judgement: "亨，利貞。可小事，不可大事。飛鳥遺之音，不宜上，宜下，大吉。", commentary: "山上有雷，小過。君子以行過乎恭，喪過乎哀，用過乎儉。", lines_text: ["初六：飛鳥以凶。", "六二：過其祖，遇其妣；不及其君，遇其臣，無咎。", "九三：弗過防之，從或戕之，凶。", "九四：無咎，弗過遇之。往厲必戒，勿用永貞。", "六五：密雲不雨，自我西郊，公弋取彼在穴。", "上六：弗遇過之，飛鳥離之，凶，是謂災眚。"] },
+            "63": { name: "水火既濟", lines: ['yang', 'yin', 'yang', 'yin', 'yang', 'yin'], judgement: "亨，小利貞，初吉終亂。", commentary: "水在火上，既濟。君子以思患而豫防之。", lines_text: ["初九：曳其輪，濡其尾，無咎。", "六二：婦喪其茀，勿逐，七日得。", "九三：高宗伐鬼方，三年克之，小人勿用。", "六四：繻有衣袽，終日戒。", "九五：東鄰殺牛，不如西鄰之禴祭，實受其福。", "上六：濡其首，厲。"] },
+            "64": { name: "火水未濟", lines: ['yin', 'yang', 'yin', 'yang', 'yin', 'yang'], judgement: "亨，小狐汔濟，濡其尾，無攸利。", commentary: "火在水上，未濟。君子以慎辨物居方。", lines_text: ["初六：濡其尾，吝。", "九二：曳其輪，貞吉。", "六三：未濟，征凶，利涉大川。", "四九：貞吉，悔亡，震用伐鬼方，三年有賞于大國。", "六五：貞吉，無悔，君子之光，有孚，吉。", "上九：有孚于飲酒，無咎，濡其首，有孚失是。"] }
+        };
+
+        const selectElement = document.getElementById('hexagram-select');
+        const detailsElement = document.getElementById('hexagram-details');
+        const userQuestionInput = document.getElementById('user-question');
+        const interpretButton = document.getElementById('interpret-button');
+        const interpretationOutput = document.getElementById('interpretation-output');
+        const interpretationText = document.getElementById('interpretation-text');
+        const interpretationLoading = document.getElementById('interpretation-loading');
+        
+        // LLM configuration
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+        // --- 函式：渲染卦象圖形 ---
+        function renderHexagramImage(lines) {
+            return `
+                <div class="w-16 mx-auto text-amber-600 dark:text-amber-400">
+                    ${lines.slice().reverse().map(line => `
+                        <div class="hexagram-line ${line}"></div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // --- 函式：顯示卦象詳情 ---
+        function displayHexagram(id) {
+            const data = iChingData[id];
+            if (!data) return;
+
+            detailsElement.innerHTML = `
+                <div class="text-center">
+                    ${renderHexagramImage(data.lines)}
+                    <h2 class="text-2xl font-bold mt-4">${id}. ${data.name}</h2>
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h3 class="text-xl font-semibold mb-3 text-amber-700 dark:text-amber-500">【卦辭】</h3>
+                    <p class="text-lg leading-relaxed">${data.judgement}</p>
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h3 class="text-xl font-semibold mb-3 text-amber-700 dark:text-amber-500">【象辭】</h3>
+                    <p class="text-lg leading-relaxed">${data.commentary}</p>
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h3 class="text-xl font-semibold mb-3 text-amber-700 dark:text-amber-500">【爻辭】</h3>
+                    <ul class="space-y-3 list-inside">
+                        ${data.lines_text.map(line => `<li class="text-lg leading-relaxed">${line}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            // Reset interpretation output on new hexagram selection
+            interpretationOutput.classList.add('hidden');
+            interpretationText.textContent = '';
+        }
+
+        // --- 函式：填滿下拉選單 ---
+        function populateSelect() {
+            Object.keys(iChingData).forEach(id => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = `${id}. ${iChingData[id].name}`;
+                selectElement.appendChild(option);
+            });
+        }
+
+        // --- LLM 解卦函式 ---
+        async function getGeminiInterpretation(hexagramId, userQuestion) {
+            const data = iChingData[hexagramId];
+            if (!data) {
+                console.error("Hexagram data not found.");
+                return "無法找到對應的卦象資料。";
+            }
+            if (!userQuestion.trim()) {
+                // Return a gentle message if no question is asked
+                return "請輸入您的具體問題，以便提供更個人化的解讀。";
+            }
+
+            const hexagramDetails = `
+                卦名: ${data.name} (第 ${hexagramId} 卦)
+                卦辭: ${data.judgement}
+                象辭: ${data.commentary}
+                爻辭: ${data.lines_text.join('; ')}
+            `;
+
+            const systemPrompt = "您是一位深諳易理、富有同情心的易經專家與顧問。您的回應必須使用繁體中文。請根據用戶提供的卦象資料（卦名、卦辭、象辭、爻辭）和其特定的問題，提供一段單一且結構清晰的白話解讀。著重於提供與用戶查詢相關的指導與啟示。";
+            
+            const userQuery = `
+                請針對以下卦象，結合我的具體問題進行分析：
+
+                --- 卦象資料 ---
+                ${hexagramDetails}
+                --- 我的問題 ---
+                ${userQuestion}
+            `;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+
+            interpretationOutput.classList.add('hidden');
+            interpretationLoading.classList.remove('hidden');
+            interpretButton.disabled = true;
+
+            let responseText = "對不起，解卦服務暫時無法回應。請稍後再試。";
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (text) {
+                    responseText = text;
+                } else {
+                    console.error("Gemini response structure invalid or empty text:", result);
+                }
+
+            } catch (error) {
+                console.error("Error fetching Gemini interpretation:", error);
+            } finally {
+                interpretationLoading.classList.add('hidden');
+                interpretationOutput.classList.remove('hidden');
+                interpretButton.disabled = false;
+                interpretationText.textContent = responseText;
+            }
+        }
+
+        // --- 事件監聽 (卦象選擇) ---
+        selectElement.addEventListener('change', (e) => {
+            displayHexagram(e.target.value);
+        });
+        
+        // --- 事件監聽 (AI 解卦按鈕) ---
+        interpretButton.addEventListener('click', () => {
+            const selectedHexagramId = selectElement.value;
+            const question = userQuestionInput.value;
+            getGeminiInterpretation(selectedHexagramId, question);
+        });
+
+
+        // --- 分頁功能 ---
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const contentPanes = {
+            'tab-hexagrams': document.getElementById('content-hexagrams'),
+            'tab-divination': document.getElementById('content-divination'),
+        };
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active styles from all buttons
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300', 'dark:text-gray-400', 'dark:hover:text-gray-300', 'dark:hover:border-gray-600');
+                });
+
+                // Add active styles to the clicked button
+                button.classList.add('tab-active');
+                button.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300', 'dark:text-gray-400', 'dark:hover:text-gray-300', 'dark:hover:border-gray-600');
+
+
+                // Hide all content panes
+                Object.values(contentPanes).forEach(pane => pane.classList.add('hidden'));
+
+                // Show the correct content pane
+                contentPanes[button.id].classList.remove('hidden');
+            });
+        });
+
+
+        // --- 初始載入 ---
+        window.addEventListener('DOMContentLoaded', () => {
+            populateSelect();
+            displayHexagram('1'); // 預設顯示第一個卦象
+        });
+    </script>
+</body>
+</html>
