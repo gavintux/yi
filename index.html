@@ -65,7 +65,7 @@
     <div class="container mx-auto p-4 md:p-8 max-w-4xl">
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-amber-600 dark:text-amber-400">易經六十四卦解說平台</h1>
-            <p class="mt-2 text-lg text-gray-600 dark:text-gray-400">卦辭、彖曰、象曰，完整解讀</p>
+            <p class="mt-2 text-lg text-gray-600 dark:text-gray-400">卜卦問事，解讀智慧</p>
         </header>
 
         <main class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6 md:p-8">
@@ -73,7 +73,7 @@
             <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
                 <nav class="-mb-px flex space-x-6" aria-label="Tabs">
                     <button id="tab-hexagrams" type="button" class="tab-button tab-active whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-lg">
-                        卦象與詳解
+                        卦辭及爻辭
                     </button>
                     <button id="tab-divination" type="button" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-lg border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600">
                         卜卦方法
@@ -97,7 +97,7 @@
                         <!-- Content will be populated by JavaScript -->
                     </div>
 
-                    <!-- Gemini API 解卦區塊 (新增) -->
+                    <!-- Gemini API 解卦區塊 -->
                     <div class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
                         <h3 class="text-2xl font-bold mb-4 text-amber-700 dark:text-amber-500">
                             🤖 AI 易理解卦 (Gemini 驅動)
@@ -163,7 +163,7 @@
                     </ol>
 
                     <h4>解卦</h4>
-                    <p>得到卦象後，您就可以在本平台的「卦象與詳解」分頁中，查詢對應的卦辭與爻辭，從中尋求啟示。</p>
+                    <p>得到卦象後，您就可以在本平台的「卦辭及爻辭」分頁中，查詢對應的卦辭與爻辭，從中尋求啟示。</p>
                     
                     <hr class="my-8 border-gray-300 dark:border-gray-600">
                     
@@ -198,7 +198,7 @@
                             </ul>
                         </li>
                         <li>
-                            <strong>第三變：：</strong>
+                            <strong>第三變：</strong>
                             <ul class="mt-2 list-disc list-inside">
                                 <li>將剩餘的籌策（40, 36或32根）再次重複第一變的步驟。</li>
                                 <li>此次夾在左手的籌策總數也必為 4 或 8。</li>
@@ -218,7 +218,7 @@
 
                     <hr class="my-8 border-gray-300 dark:border-gray-600">
 
-                    <!-- 一字卜卦法 (新增內容) -->
+                    <!-- 一字卜卦法 -->
                     <h3 class="mt-8">一字卜卦法 (梅花易數簡易版)</h3>
                     <p>此法利用卜者心念所及之中文<strong>正體字（筆畫數）</strong>與當下<strong>時辰</strong>，快速生成主卦與變爻，以達占卜之目的。這是常見的梅花易數之簡易取卦方式。</p>
                     
@@ -232,20 +232,20 @@
                     <h4>步驟</h4>
                     <ol class="list-decimal list-outside">
                         <li>
-                            <strong>求上卦（外卦）：</strong>
-                            <p>筆畫數 $S$ 除以 8 的餘數 $=\text{下卦數字} \ (S')$</p>
+                            <strong>求上卦（ 卦）：</strong>
+                            <p>筆畫數 $S$ 除以 8 的餘數 $S$=\text{下卦數字} \ (S')$</p>
                             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">若餘數為 0，則數字取 8（即坤卦）。</p>
                         </li>
                         <li>
                             <strong>求下卦（內卦）：</strong>
-                            <p>時辰數 $H$ 除以 8 的餘數 $=\text{上卦數字} \ (H')$</p>
+                            <p>時辰數 $H$ 除以 8 的餘數 $H$=\text{上卦數字} \ (H')$</p>
                             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">若餘數為 0，則數字取 8（即坤卦）。</p>
                         </li>
                         <li>
                             <strong>組成主卦（本卦）：</strong>以上卦數字在上，下卦數字在下，對應生成六爻主卦。
                         </li>
                         <li>
-                            <strong>求變爻：：</strong>
+                            <strong>求變爻：</strong>
                             <p>（筆畫數 $S + \text{時辰數} H）$ 除以 6 的餘數 $=\text{變爻數字} \ (C')$</p>
                             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">若餘數為 0，則數字取 6（為上爻）。此數字 $C'$ 即為變動之爻，從初爻（最下方）開始數。變爻為老陽 (9) 或老陰 (6)。</p>
                         </li>
@@ -264,7 +264,7 @@
     </div>
 
     <script>
-        // --- 易經64卦資料 (已增加彖曰及象曰，並重新校對) ---
+        // --- 易經64卦資料 (已校對) ---
         const iChingData = {
             "1": { name: "乾為天", lines: ['yang', 'yang', 'yang', 'yang', 'yang', 'yang'], judgement: "元，亨，利，貞。", commentary: "天行健，君子以自強不息。", lines_text: ["初九：潛龍勿用。", "九二：見龍在田，利見大人。", "九三：君子終日乾乾，夕惕若，厲無咎。", "九四：或躍在淵，無咎。", "九五：飛龍在天，利見大人。", "上九：亢龍有悔。"] },
             "2": { name: "坤為地", lines: ['yin', 'yin', 'yin', 'yin', 'yin', 'yin'], judgement: "元，亨，利牝馬之貞。君子有攸往，先迷後得主，利。西南得朋，東北喪朋。安貞，吉。", commentary: "地勢坤，君子以厚德載物。", lines_text: ["初六：履霜，堅冰至。", "六二：直，方，大，不習無不利。", "六三：含章可貞。或從王事，無成有終。", "六四：括囊，無咎無譽。", "六五：黃裳，元吉。", "上六：龍戰于野，其血玄黃。"] },
@@ -355,7 +355,7 @@
             `;
         }
 
-        // --- 函式：顯示卦象詳情 (已更新以包含彖曰及象曰) ---
+        // --- 函式：顯示卦象詳情 ---
         function displayHexagram(id) {
             const data = iChingData[id];
             if (!data) return;
@@ -368,17 +368,12 @@
 
                 <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
                     <h3 class="text-xl font-semibold mb-3 text-amber-700 dark:text-amber-500">【卦辭】</h3>
-                    <p class="text-lg leading-relaxed">${data.gua_ci}</p>
-                </div>
-                
-                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                    <h3 class="text-xl font-semibold mb-3 text-amber-700 dark:text-amber-500">【彖曰】</h3>
-                    <p class="text-lg leading-relaxed">${data.tuan_yue}</p>
+                    <p class="text-lg leading-relaxed">${data.judgement}</p>
                 </div>
 
                 <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                    <h3 class="text-xl font-semibold mb-3 text-amber-700 dark:text-amber-500">【象曰】</h3>
-                    <p class="text-lg leading-relaxed">${data.xiang_yue}</p>
+                    <h3 class="text-xl font-semibold mb-3 text-amber-700 dark:text-amber-500">【象辭】</h3>
+                    <p class="text-lg leading-relaxed">${data.commentary}</p>
                 </div>
 
                 <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
@@ -391,6 +386,16 @@
             // Reset interpretation output on new hexagram selection
             interpretationOutput.classList.add('hidden');
             interpretationText.textContent = '';
+        }
+
+        // --- 函式：填滿下拉選單 ---
+        function populateSelect() {
+            Object.keys(iChingData).forEach(id => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = `${id}. ${iChingData[id].name}`;
+                selectElement.appendChild(option);
+            });
         }
 
         // --- LLM 解卦函式 ---
@@ -407,13 +412,12 @@
 
             const hexagramDetails = `
                 卦名: ${data.name} (第 ${hexagramId} 卦)
-                卦辭: ${data.gua_ci}
-                彖曰: ${data.tuan_yue}
-                象曰: ${data.xiang_yue}
+                卦辭: ${data.judgement}
+                象辭: ${data.commentary}
                 爻辭: ${data.lines_text.join('; ')}
             `;
 
-            const systemPrompt = "您是一位深諳易理、富有同情心的易經專家與顧問。您的回應必須使用繁體中文。請根據用戶提供的卦象資料（卦名、卦辭、彖曰、象曰、爻辭）和其特定的問題，提供一段單一且結構清晰的白話解讀。著重於提供與用戶查詢相關的指導與啟示。";
+            const systemPrompt = "您是一位深諳易理、富有同情心的易經專家與顧問。您的回應必須使用繁體中文。請根據用戶提供的卦象資料（卦名、卦辭、象辭、爻辭）和其特定的問題，提供一段單一且結構清晰的白話解讀。著重於提供與用戶查詢相關的指導與啟示。";
             
             const userQuery = `
                 請針對以下卦象，結合我的具體問題進行分析：
@@ -438,36 +442,23 @@
             let responseText = "對不起，解卦服務暫時無法回應。請稍後再試。";
 
             try {
-                // Implement basic exponential backoff
-                let maxRetries = 3;
-                let delay = 1000;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
                 
-                for (let i = 0; i < maxRetries; i++) {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+                if (!response.ok) {
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
 
-                    if (response.ok) {
-                        const result = await response.json();
-                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
-                        if (text) {
-                            responseText = text;
-                        } else {
-                            console.error("Gemini response structure invalid or empty text:", result);
-                            responseText = "模型返回的數據結構無效。";
-                        }
-                        break; // Success
-                    } else if (i < maxRetries - 1) {
-                        // Retry with exponential backoff
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2;
-                    } else {
-                        // Last attempt failed
-                        throw new Error(`API call failed with status: ${response.status}`);
-                    }
+                if (text) {
+                    responseText = text;
+                } else {
+                    console.error("Gemini response structure invalid or empty text:", result);
                 }
 
             } catch (error) {
@@ -478,19 +469,6 @@
                 interpretButton.disabled = false;
                 interpretationText.textContent = responseText;
             }
-        }
-
-        // --- 函式：填充下拉選單 ---
-        function populateSelect() {
-            const fragment = document.createDocumentFragment();
-            Object.keys(iChingData).forEach(id => {
-                const data = iChingData[id];
-                const option = document.createElement('option');
-                option.value = id;
-                option.textContent = `${id}. ${data.name}`;
-                fragment.appendChild(option);
-            });
-            selectElement.appendChild(fragment);
         }
 
         // --- 事件監聽 (卦象選擇) ---
