@@ -97,11 +97,21 @@
                         <!-- Content will be populated by JavaScript -->
                     </div>
 
-                    <!-- Gemini API 解卦區塊 -->
+                    <!-- Gemini API 解卦區塊 (已新增密碼驗證) -->
                     <div class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
                         <h3 class="text-2xl font-bold mb-4 text-amber-700 dark:text-amber-500">
                             🤖 AI 易理解卦 (Gemini 驅動)
                         </h3>
+                        
+                        <!-- 密碼輸入欄位 -->
+                        <div class="mb-4">
+                            <label for="password-input" class="block mb-2 text-lg font-semibold text-gray-700 dark:text-gray-300">
+                                請輸入驗證密碼：
+                            </label>
+                            <input type="password" id="password-input" placeholder="密碼問linkc"
+                                class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-amber-500 focus:border-amber-500 transition text-gray-800 dark:text-gray-200">
+                        </div>
+                        
                         <p class="mb-4 text-gray-600 dark:text-gray-400">
                             請輸入您的具體問題，讓 AI 結合卦辭為您提供白話解析與建議：
                         </p>
@@ -109,6 +119,11 @@
                         <textarea id="user-question" rows="3" placeholder="例如：我最近的事業發展如何？或：我與某人的關係前景如何？"
                             class="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-amber-500 focus:border-amber-500 transition text-gray-800 dark:text-gray-200 resize-none"></textarea>
                         
+                        <!-- 密碼錯誤或一般訊息區域 -->
+                        <div id="auth-message" class="mt-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-l-4 border-red-500 rounded-lg hidden" role="alert">
+                            密碼錯誤，請重新輸入。
+                        </div>
+
                         <button id="interpret-button"
                             class="w-full md:w-auto px-6 py-3 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 transition duration-150 shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
                             開始解卦
@@ -136,7 +151,7 @@
                     <h2 class="text-2xl font-bold">卜卦方法簡介</h2>
                     <p>卜卦是與易經智慧連結的方式之一。常見的方法有簡便的「錢幣卜卦法」與傳統的「籌策卜卦法」，皆是透過專心致志的過程求得卦象。</p>
                     
-                    <!-- 錢幣卜卦法 (內容不變) -->
+                    <!-- 錢幣卜卦法 -->
                     <h3 class="mt-6">錢幣卜卦法</h3>
                     <h4>準備</h4>
                     <ul class="list-disc list-outside">
@@ -149,8 +164,8 @@
                     <h4>步驟</h4>
                     <ol class="list-decimal list-outside">
                         <li><strong>靜心提問：</strong>閉上眼睛，平穩呼吸，心中專注默念您想詢問的問題。問題越清晰具體越好。</li>
-                        <li><strong>擲幣成爻：</strong>將三枚錢幣捧在手心，搖晃數次後自然拋出。</li>
-                        <li><strong>記錄爻象：</strong>計算三枚錢幣的數值總和，此為第一爻（初爻），由下往上記錄：
+                        <li><strong>擲幣成爻：：</strong>將三枚錢幣捧在手心，搖晃數次後自然拋出。</li>
+                        <li><strong>記錄爻象：：</strong>計算三枚錢幣的數值總和，此為第一爻（初爻），由下往上記錄：
                             <ul class="mt-2 list-disc list-inside">
                                 <li>總和 <strong>6</strong> (2+2+2): 為 <strong>老陰</strong> (--)，是變爻，記錄為 <code>-- X --</code></li>
                                 <li>總和 <strong>7</strong> (2+2+3): 為 <strong>少陽</strong> (—)，是不變爻，記錄為 <code>-----</code></li>
@@ -158,8 +173,8 @@
                                 <li>總和 <strong>9</strong> (3+3+3): 為 <strong>老陽</strong> (—)，是變爻，記錄為 <code>---O---</code></li>
                             </ul>
                         </li>
-                        <li><strong>重覆六次：</strong>重複步驟 2 與 3 共六次，從下至上依次得到初爻、二爻、三爻、四爻、五爻、上爻，組成一個完整的「本卦」。</li>
-                        <li><strong>求得變卦：</strong>如果卦中有變爻（老陰或老陽），將所有變爻變為其相反的爻象（老陰變陽，老陽變陰），即可得到「之卦」（或稱變卦）。解卦時需同時參考本卦與之卦。</li>
+                        <li><strong>重覆六次：：</strong>重複步驟 2 與 3 共六次，從下至上依次得到初爻、二爻、三爻、四爻、五爻、上爻，組成一個完整的「本卦」。</li>
+                        <li><strong>求得變卦：：</strong>如果卦中有變爻（老陰或老陽），將所有變爻變為其相反的爻象（老陰變陽，老陽變陰），即可得到「之卦」（或稱變卦）。解卦時需同時參考本卦與之卦。</li>
                     </ol>
 
                     <h4>解卦</h4>
@@ -167,7 +182,7 @@
                     
                     <hr class="my-8 border-gray-300 dark:border-gray-600">
                     
-                    <!-- 籌策卜卦法 (內容不變) -->
+                    <!-- 籌策卜卦法 -->
                     <h3 class="mt-8">籌策卜卦法（大衍之術）</h3>
                     <p>此為較傳統複雜的卜卦方法，使用五十根籌策（古稱蓍草）來推衍卦象，過程雖繁複，但更能使卜卦者沉澱心靈，專注於所問之事。</p>
                     
@@ -181,7 +196,7 @@
                     <p>每一次的推演稱為一「變」，求得一個爻需要經過三變。</p>
                     <ol class="list-decimal list-outside">
                         <li>
-                            <strong>第一變：</strong>
+                            <strong>第一變：：</strong>
                             <ul class="mt-2 list-disc list-inside">
                                 <li>將四十九根籌策隨意分成兩堆（左、右）。</li>
                                 <li>從右堆取一根，夾在左手小指與無名指間（此為「掛一」）。</li>
@@ -191,21 +206,21 @@
                             </ul>
                         </li>
                         <li>
-                            <strong>第二變：</strong>
+                            <strong>第二變：：</strong>
                             <ul class="mt-2 list-disc list-inside">
                                 <li>將剩餘的籌策（44或40根）重複第一變的步驟：分二、掛一、揲四、歸奇。</li>
                                 <li>此次夾在左手的籌策總數必為 4 或 8。將此數與前一變的結果放在一起。剩餘的籌策（40, 36或32根）收攏。</li>
                             </ul>
                         </li>
                         <li>
-                            <strong>第三變：</strong>
+                            <strong>第三變：：</strong>
                             <ul class="mt-2 list-disc list-inside">
                                 <li>將剩餘的籌策（40, 36或32根）再次重複第一變的步驟。</li>
                                 <li>此次夾在左手的籌策總數也必為 4 或 8。</li>
                             </ul>
                         </li>
                         <li>
-                            <strong>定爻象：</strong>三變完成後，檢視桌上剩餘未被取走的籌策數量，將其除以四，即可得一爻：
+                            <strong>定爻象：：</strong>三變完成後，檢視桌上剩餘未被取走的籌策數量，將其除以四，即可得一爻：
                             <ul class="mt-2 list-disc list-inside">
                                 <li>餘 <strong>36</strong> 根 -> 36/4 = 9，為 <strong>老陽</strong> (—)，是變爻。</li>
                                 <li>餘 <strong>32</strong> 根 -> 32/4 = 8，為 <strong>少陰</strong> (--)，是不變爻。</li>
@@ -224,36 +239,36 @@
                     
                     <h4>準備與定義</h4>
                     <ul class="list-disc list-outside">
-                        <li><strong>數字與卦象對應：</strong>將 1 至 8 分別對應為：<strong>乾(1)、兌(2)、離(3)、震(4)、巽(5)、坎(6)、艮(7)、坤(8)</strong>。</li>
-                        <li><strong>時辰計算：</strong>將時辰轉換為 1 至 12 的數字（子時為 1，丑時為 2，...，亥時為 12）。</li>
-                        <li><strong>主字筆畫：</strong>計算您心中默念或寫下的主問中文字的筆畫數 $S$。</li>
+                        <li><strong>數字與卦象對應：：</strong>將 1 至 8 分別對應為：<strong>乾(1)、兌(2)、離(3)、震(4)、巽(5)、坎(6)、艮(7)、坤(8)</strong>。</li>
+                        <li><strong>時辰計算：：</strong>將時辰轉換為 1 至 12 的數字（子時為 1，丑時為 2，...，亥時為 12）。</li>
+                        <li><strong>主字筆畫：：</strong>計算您心中默念或寫下的主問中文字的筆畫數 $S$。</li>
                     </ul>
 
                     <h4>步驟</h4>
                     <ol class="list-decimal list-outside">
                         <li>
-                            <strong>求上卦（ 卦）：</strong>
-                            <p>筆畫數 $S$ 除以 8 的餘數 $S$=\text{下卦數字} \ (S')$</p>
+                            <strong>求下卦（內卦）：：</strong>
+                            <p>筆畫數 $S$ 除以 8 的餘數 $=\text{下卦數字} \ (S')$</p>
                             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">若餘數為 0，則數字取 8（即坤卦）。</p>
                         </li>
                         <li>
-                            <strong>求下卦（內卦）：</strong>
-                            <p>時辰數 $H$ 除以 8 的餘數 $H$=\text{上卦數字} \ (H')$</p>
+                            <strong>求上卦（外卦）：：</strong>
+                            <p>時辰數 $H$ 除以 8 的餘數 $=\text{上卦數字} \ (H')$</p>
                             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">若餘數為 0，則數字取 8（即坤卦）。</p>
                         </li>
                         <li>
-                            <strong>組成主卦（本卦）：</strong>以上卦數字在上，下卦數字在下，對應生成六爻主卦。
+                            <strong>組成主卦（本卦）：：</strong>以上卦數字在上，下卦數字在下，對應生成六爻主卦。
                         </li>
                         <li>
-                            <strong>求變爻：</strong>
+                            <strong>求變爻：：</strong>
                             <p>（筆畫數 $S + \text{時辰數} H）$ 除以 6 的餘數 $=\text{變爻數字} \ (C')$</p>
                             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">若餘數為 0，則數字取 6（為上爻）。此數字 $C'$ 即為變動之爻，從初爻（最下方）開始數。變爻為老陽 (9) 或老陰 (6)。</p>
                         </li>
                         <li>
-                            <strong>生成變卦（比卦）：</strong>將主卦中的變爻 ($C'$) 由陰變陽或由陽變陰，形成一個新的「變卦」。
+                            <strong>生成變卦（比卦）：：</strong>將主卦中的變爻 ($C'$) 由陰變陽或由陽變陰，形成一個新的「變卦」。
                         </li>
                     </ol>
-                    <p class="mt-4"><strong>解卦：</strong>主要參考主卦卦辭，並特別關注變爻的爻辭。變卦則用來參照事件的最終發展或變化方向。</p>
+                    <p class="mt-4"><strong>解卦：：</strong>主要參考主卦卦辭，並特別關注變爻的爻辭。變卦則用來參照事件的最終發展或變化方向。</p>
                 </div>
             </div>
         </main>
@@ -264,7 +279,7 @@
     </div>
 
     <script>
-        // --- 易經64卦資料 (已校對) ---
+        // --- 易經64卦資料 (已校對全部卦象線條) ---
         const iChingData = {
             "1": { name: "乾為天", lines: ['yang', 'yang', 'yang', 'yang', 'yang', 'yang'], judgement: "元，亨，利，貞。", commentary: "天行健，君子以自強不息。", lines_text: ["初九：潛龍勿用。", "九二：見龍在田，利見大人。", "九三：君子終日乾乾，夕惕若，厲無咎。", "九四：或躍在淵，無咎。", "九五：飛龍在天，利見大人。", "上九：亢龍有悔。"] },
             "2": { name: "坤為地", lines: ['yin', 'yin', 'yin', 'yin', 'yin', 'yin'], judgement: "元，亨，利牝馬之貞。君子有攸往，先迷後得主，利。西南得朋，東北喪朋。安貞，吉。", commentary: "地勢坤，君子以厚德載物。", lines_text: ["初六：履霜，堅冰至。", "六二：直，方，大，不習無不利。", "六三：含章可貞。或從王事，無成有終。", "六四：括囊，無咎無譽。", "六五：黃裳，元吉。", "上六：龍戰于野，其血玄黃。"] },
@@ -332,20 +347,27 @@
             "64": { name: "火水未濟", lines: ['yin', 'yang', 'yin', 'yang', 'yin', 'yang'], judgement: "亨，小狐汔濟，濡其尾，無攸利。", commentary: "火在水上，未濟。君子以慎辨物居方。", lines_text: ["初六：濡其尾，吝。", "九二：曳其輪，貞吉。", "六三：未濟，征凶，利涉大川。", "四九：貞吉，悔亡，震用伐鬼方，三年有賞于大國。", "六五：貞吉，無悔，君子之光，有孚，吉。", "上九：有孚于飲酒，無咎，濡其首，有孚失是。"] }
         };
 
+        const REQUIRED_PASSWORD = "590123";
+
         const selectElement = document.getElementById('hexagram-select');
         const detailsElement = document.getElementById('hexagram-details');
+        const passwordInput = document.getElementById('password-input'); // 新增密碼輸入框
         const userQuestionInput = document.getElementById('user-question');
         const interpretButton = document.getElementById('interpret-button');
         const interpretationOutput = document.getElementById('interpretation-output');
         const interpretationText = document.getElementById('interpretation-text');
         const interpretationLoading = document.getElementById('interpretation-loading');
+        const authMessage = document.getElementById('auth-message'); // 新增認證訊息區域
         
         // LLM configuration
         const apiKey = "AIzaSyCkOcZRq1yWBb93oHKzRgHoq700797SGI4";
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+        // 保持與前一次生成一致的模型
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`; 
 
         // --- 函式：渲染卦象圖形 ---
         function renderHexagramImage(lines) {
+            // lines 陣列的順序是 '初爻' (bottom) 到 '上爻' (top)
+            // 但渲染時需要從上到下，所以需要反轉
             return `
                 <div class="w-16 mx-auto text-amber-600 dark:text-amber-400">
                     ${lines.slice().reverse().map(line => `
@@ -383,19 +405,10 @@
                     </ul>
                 </div>
             `;
-            // Reset interpretation output on new hexagram selection
+            // Reset interpretation output and messages on new hexagram selection
             interpretationOutput.classList.add('hidden');
+            authMessage.classList.add('hidden');
             interpretationText.textContent = '';
-        }
-
-        // --- 函式：填滿下拉選單 ---
-        function populateSelect() {
-            Object.keys(iChingData).forEach(id => {
-                const option = document.createElement('option');
-                option.value = id;
-                option.textContent = `${id}. ${iChingData[id].name}`;
-                selectElement.appendChild(option);
-            });
         }
 
         // --- LLM 解卦函式 ---
@@ -406,8 +419,10 @@
                 return "無法找到對應的卦象資料。";
             }
             if (!userQuestion.trim()) {
-                // Return a gentle message if no question is asked
-                return "請輸入您的具體問題，以便提供更個人化的解讀。";
+                authMessage.textContent = "請輸入您的具體問題，以便提供更個人化的解讀。";
+                authMessage.classList.remove('hidden');
+                interpretationOutput.classList.add('hidden');
+                return;
             }
 
             const hexagramDetails = `
@@ -435,39 +450,60 @@
                 },
             };
 
+            // 準備顯示載入中
             interpretationOutput.classList.add('hidden');
+            authMessage.classList.add('hidden'); // 確保密碼錯誤訊息被隱藏
             interpretationLoading.classList.remove('hidden');
             interpretButton.disabled = true;
 
             let responseText = "對不起，解卦服務暫時無法回應。請稍後再試。";
 
             try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                // Implement basic exponential backoff
+                let maxRetries = 3;
+                let delay = 1000;
                 
-                if (!response.ok) {
-                    throw new Error(`API call failed with status: ${response.status}`);
-                }
+                for (let i = 0; i < maxRetries; i++) {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
-                const result = await response.json();
-                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (response.ok) {
+                        const result = await response.json();
+                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
-                if (text) {
-                    responseText = text;
-                } else {
-                    console.error("Gemini response structure invalid or empty text:", result);
+                        if (text) {
+                            responseText = text;
+                        } else {
+                            console.error("Gemini response structure invalid or empty text:", result);
+                            responseText = "模型返回的數據結構無效。";
+                        }
+                        break; // Success
+                    } else if (i < maxRetries - 1) {
+                        // Retry with exponential backoff
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2;
+                    } else {
+                        // Last attempt failed
+                        throw new Error(`API call failed with status: ${response.status}`);
+                    }
                 }
 
             } catch (error) {
                 console.error("Error fetching Gemini interpretation:", error);
+                authMessage.textContent = "網路連線或伺服器錯誤，無法完成解卦。";
+                authMessage.classList.remove('hidden');
             } finally {
                 interpretationLoading.classList.add('hidden');
-                interpretationOutput.classList.remove('hidden');
                 interpretButton.disabled = false;
-                interpretationText.textContent = responseText;
+                
+                // 只有在成功取得回應時才顯示 output
+                if (responseText !== "對不起，解卦服務暫時無法回應。請稍後再試。") {
+                    interpretationOutput.classList.remove('hidden');
+                    interpretationText.textContent = responseText;
+                }
             }
         }
 
@@ -480,6 +516,20 @@
         interpretButton.addEventListener('click', () => {
             const selectedHexagramId = selectElement.value;
             const question = userQuestionInput.value;
+            const enteredPassword = passwordInput.value;
+            
+            // 1. Password Verification
+            if (enteredPassword !== REQUIRED_PASSWORD) {
+                // Hide previous results/loading and show error
+                interpretationOutput.classList.add('hidden');
+                interpretationLoading.classList.add('hidden');
+                authMessage.textContent = "密碼錯誤，請重新輸入。";
+                authMessage.classList.remove('hidden');
+                return;
+            }
+
+            // 2. If password is correct, hide the error message and proceed
+            authMessage.classList.add('hidden');
             getGeminiInterpretation(selectedHexagramId, question);
         });
 
@@ -513,6 +563,16 @@
         });
 
 
+        // --- 初始化填充下拉選單 ---
+        function populateSelect() {
+            Object.keys(iChingData).forEach(id => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = `${id}. ${iChingData[id].name}`;
+                selectElement.appendChild(option);
+            });
+        }
+        
         // --- 初始載入 ---
         window.addEventListener('DOMContentLoaded', () => {
             populateSelect();
@@ -521,3 +581,8 @@
     </script>
 </body>
 </html>
+
+
+
+
+
