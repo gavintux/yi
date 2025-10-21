@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>漢語拼音輸入法練習平台</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* 設定字體 */
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        /* 自定義焦點樣式 */
+        .input-focus:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); /* Blue ring */
+            border-color: #4299e1;
+        }
+        /* 聲調開關的點移動樣式 */
+        #tone-switch:checked ~ .block {
+            background-color: #4f46e5; /* indigo-600 */
+        }
+        #tone-switch:checked ~ .dot {
+            transform: translateX(100%);
+        }
+        /* 確保注音符號正確顯示 */
+        .zhuyin {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 700; /* font-bold */
+            color: #4338ca; /* indigo-700 */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-lg bg-white shadow-2xl rounded-xl p-6 md:p-10 border border-gray-100">
+        
+        <!-- Header -->
+        <h1 class="text-3xl font-bold text-center text-indigo-700 mb-6 border-b pb-3">
+            漢語拼音練習
+        </h1>
+
+        <!-- Settings -->
+        <div class="flex justify-between items-center mb-6 p-3 bg-indigo-50 rounded-lg">
+            <label for="tone-switch" class="flex items-center space-x-2 cursor-pointer">
+                <span class="text-sm font-medium text-indigo-800">要求聲調 (e.g., zhong1)</span>
+                <div class="relative">
+                    <input type="checkbox" id="tone-switch" class="sr-only" checked>
+                    <div class="block bg-gray-300 w-10 h-6 rounded-full transition-all"></div>
+                    <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-all shadow"></div>
+                </div>
+            </label>
+            <p class="text-lg font-semibold text-gray-700">
+                得分: <span id="score-display">0</span>
+            </p>
+        </div>
+
+        <!-- Practice Area -->
+        <div class="text-center mb-8">
+            <p class="text-gray-500 mb-4 text-base font-medium" id="pinyin-hint">
+                <!-- 拼音提示會顯示在這裡 (若需要) -->
+            </p>
+            <div id="target-text-container" class="min-h-[120px] flex items-center justify-center">
+                <p id="target-text" class="text-6xl md:text-7xl font-extrabold text-gray-900 tracking-wider">
+                    讀取中...
+                </p>
+            </div>
+        </div>
+        
+        <!-- Pinyin Chart Toggle Button -->
+        <button id="toggle-chart-btn" class="w-full text-sm font-semibold text-center py-2 px-4 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors mt-4">
+            顯示 注音及漢語拼音對照表
+        </button>
+
+        <!-- Pinyin Chart Container (Initially hidden) -->
+        <div id="pinyin-chart-container" class="mt-4 p-4 border border-gray-200 rounded-lg bg-white hidden max-h-[400px] overflow-y-auto">
+            
+            <h3 class="text-xl font-bold text-gray-800 mb-3 border-b pb-2">聲調對照 (Tones)</h3>
+            <!-- Tones Table: 5 Columns -->
+            <div class="grid grid-cols-5 text-center gap-1 mb-6 text-sm">
+                <div class="p-1 bg-gray-100 font-bold">注音聲調</div>
+                <div class="p-1 bg-gray-100 font-bold">拼音調號</div>
+                <div class="p-1 bg-gray-100 font-bold">數字</div>
+                <div class="p-1 bg-gray-100 font-bold col-span-2">範例 (Pinyin)</div>
+                
+                <div class="p-1 border text-green-700 font-medium">無</div>
+                <div class="p-1 border text-green-700 font-medium">ā</div>
+                <div class="p-1 border font-mono">1</div>
+                <div class="p-1 border font-mono col-span-2">mā</div>
+
+                <div class="p-1 border text-green-700 font-medium">ˊ</div>
+                <div class="p-1 border text-green-700 font-medium">á</div>
+                <div class="p-1 border font-mono">2</div>
+                <div class="p-1 border font-mono col-span-2">má</div>
+
+                <div class="p-1 border text-green-700 font-medium">ˇ</div>
+                <div class="p-1 border text-green-700 font-medium">ǎ</div>
+                <div class="p-1 border font-mono">3</div>
+                <div class="p-1 border font-mono col-span-2">mǎ</div>
+
+                <div class="p-1 border text-green-700 font-medium">ˋ</div>
+                <div class="p-1 border text-green-700 font-medium">à</div>
+                <div class="p-1 border font-mono">4</div>
+                <div class="p-1 border font-mono col-span-2">mà</div>
+
+                <div class="p-1 border text-green-700 font-medium">˙</div>
+                <div class="p-1 border text-green-700 font-medium">a</div>
+                <div class="p-1 border font-mono">5 / 無</div>
+                <div class="p-1 border font-mono col-span-2">ma (輕聲)</div>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 mb-3 border-b pb-2">聲母對照 (Initials)</h3>
+            <!-- Initials Table: Using grid-cols-8 for a balanced layout -->
+            <div class="grid grid-cols-8 text-center gap-1 text-sm mb-6">
+                
+                <div class="p-1 bg-indigo-100 font-bold col-span-8">雙唇/唇齒 (Zhuyin | Pinyin)</div>
+                <div class="p-1 border col-span-2 zhuyin">ㄅ (b)</div>
+                <div class="p-1 border col-span-2 zhuyin">ㄆ (p)</div>
+                <div class="p-1 border col-span-2 zhuyin">ㄇ (m)</div>
+                <div class="p-1 border col-span-2 zhuyin">ㄈ (f)</div>
+                
+                <div class="p-1 bg-indigo-100 font-bold col-span-8">舌尖中 (Zhuyin | Pinyin)</div>
+                <div class="p-1 border col-span-2 zhuyin">ㄉ (d)</div>
+                <div class="p-1 border col-span-2 zhuyin">ㄊ (t)</div>
+                <div class="p-1 border col-span-2 zhuyin">ㄋ (n)</div>
+                <div class="p-1 border col-span-2 zhuyin">ㄌ (l)</div>
+                
+                <div class="p-1 bg-indigo-100 font-bold col-span-8">舌根/舌面前 (Zhuyin | Pinyin)</div>
+                <div class="p-1 border zhuyin">ㄍ (g)</div>
+                <div class="p-1 border zhuyin">ㄎ (k)</div>
+                <div class="p-1 border zhuyin">ㄏ (h)</div>
+                <div class="p-1 border zhuyin">ㄐ (j)</div>
+                <div class="p-1 border zhuyin">ㄑ (q)</div>
+                <div class="p-1 border zhuyin">ㄒ (x)</div>
+                <div class="p-1 border col-span-2 text-gray-400"></div>
+
+                <div class="p-1 bg-indigo-100 font-bold col-span-8">捲舌/舌尖前/半元音 (Zhuyin | Pinyin)</div>
+                <div class="p-1 border zhuyin">ㄓ (zh)</div>
+                <div class="p-1 border zhuyin">ㄔ (ch)</div>
+                <div class="p-1 border zhuyin">ㄕ (sh)</div>
+                <div class="p-1 border zhuyin">ㄖ (r)</div>
+                <div class="p-1 border zhuyin">ㄗ (z)</div>
+                <div class="p-1 border zhuyin">ㄘ (c)</div>
+                <div class="p-1 border zhuyin">ㄙ (s)</div>
+                <div class="p-1 border text-gray-400"></div>
+            </div>
+
+            <h3 class="text-xl font-bold text-gray-800 mb-3 border-b pb-2">韻母對照 (Finals)</h3>
+            <!-- Finals Table: Using grid-cols-7 -->
+            <div class="grid grid-cols-7 text-center gap-1 text-sm">
+                <div class="p-1 bg-indigo-100 font-bold col-span-7">單韻母 & 複韻母 (Zhuyin | Pinyin)</div>
+                <div class="p-1 border zhuyin">ㄚ (a)</div><div class="p-1 border zhuyin">ㄛ (o)</div><div class="p-1 border zhuyin">ㄜ (e)</div><div class="p-1 border zhuyin">ㄝ (ê)</div><div class="p-1 border zhuyin">ㄧ (i)</div><div class="p-1 border zhuyin">ㄨ (u)</div><div class="p-1 border zhuyin">ㄩ (ü/v)</div>
+                <div class="p-1 border zhuyin">ㄞ (ai)</div><div class="p-1 border zhuyin">ㄟ (ei)</div><div class="p-1 border zhuyin">ㄠ (ao)</div><div class="p-1 border zhuyin">ㄡ (ou)</div><div class="p-1 border zhuyin"></div><div class="p-1 border zhuyin"></div><div class="p-1 border zhuyin">ㄦ (er)</div>
+
+                <div class="p-1 bg-indigo-100 font-bold col-span-7">前鼻音韻母 (-n)</div>
+                <div class="p-1 border zhuyin">ㄢ (an)</div><div class="p-1 border zhuyin">ㄣ (en)</div><div class="p-1 border zhuyin">ㄧㄣ (in)</div><div class="p-1 border zhuyin">ㄨㄣ (un)</div><div class="p-1 border zhuyin">ㄩㄣ (ün)</div><div class="p-1 border zhuyin"></div><div class="p-1 border zhuyin"></div>
+
+                <div class="p-1 bg-indigo-100 font-bold col-span-7">後鼻音韻母 (-ng)</div>
+                <div class="p-1 border zhuyin">ㄤ (ang)</div><div class="p-1 border zhuyin">ㄥ (eng)</div><div class="p-1 border zhuyin">ㄧㄥ (ing)</div><div class="p-1 border zhuyin">ㄨㄥ (ong)</div><div class="p-1 border zhuyin"></div><div class="p-1 border zhuyin"></div><div class="p-1 border zhuyin"></div>
+
+                <div class="p-1 bg-indigo-100 font-bold col-span-7">結合韻母 (i, u, ü)</div>
+                <div class="p-1 border zhuyin">ㄧㄚ (ia)</div><div class="p-1 border zhuyin">ㄧㄝ (ie)</div><div class="p-1 border zhuyin">ㄨㄚ (ua)</div><div class="p-1 border zhuyin">ㄨㄛ (uo)</div><div class="p-1 border zhuyin">ㄩㄝ (üe)</div><div class="p-1 border zhuyin"></div><div class="p-1 border zhuyin"></div>
+                <div class="p-1 border zhuyin">ㄧㄠ (iao)</div><div class="p-1 border zhuyin">ㄧㄡ (iu)</div><div class="p-1 border zhuyin">ㄨㄞ (uai)</div><div class="p-1 border zhuyin">ㄨㄟ (ui)</div><div class="p-1 border zhuyin"></div><div class="p-1 border zhuyin"></div><div class="p-1 border zhuyin"></div>
+                <div class="p-1 border zhuyin">ㄧㄢ (ian)</div><div class="p-1 border zhuyin">ㄧㄤ (iang)</div><div class="p-1 border zhuyin">ㄧㄥ (ing)</div><div class="p-1 border zhuyin">ㄨㄢ (uan)</div><div class="p-1 border zhuyin">ㄨㄤ (uang)</div><div class="p-1 border zhuyin"></div><div class="p-1 border zhuyin"></div>
+            </div>
+        </div>
+
+        <!-- Input and Feedback -->
+        <div class="space-y-4">
+            <input 
+                type="text" 
+                id="pinyin-input" 
+                placeholder="在此輸入拼音 (例如: zhongguo2)" 
+                class="w-full p-3 md:p-4 text-xl border-2 border-gray-300 rounded-lg input-focus transition-colors shadow-inner"
+                autocomplete="off"
+            >
+            <div id="feedback-message" class="min-h-[30px] text-center text-lg font-semibold rounded-lg p-1">
+                <!-- 練習開始！ -->
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // 核心資料集: 中文字與對應的數字聲調拼音
+        const dataSet = [
+            { hanzi: "中國", pinyin: "zhong1 guo2" },
+            { hanzi: "學習", pinyin: "xue2 xi2" },
+            { hanzi: "語言", pinyin: "yu3 yan2" },
+            { hanzi: "電腦", pinyin: "dian4 nao3" },
+            { hanzi: "設計", pinyin: "she4 ji4" },
+            { hanzi: "輸入法", pinyin: "shu1 ru4 fa3" },
+            { hanzi: "鍵盤", pinyin: "jian4 pan2" },
+            { hanzi: "測試", pinyin: "ce4 shi4" },
+            { hanzi: "歡迎", pinyin: "huan1 ying2" },
+            { hanzi: "世界", pinyin: "shi4 jie4" },
+            { hanzi: "生活", pinyin: "sheng1 huo2" },
+            { hanzi: "朋友", pinyin: "peng2 you" },
+            { hanzi: "老師", pinyin: "lao3 shi1" },
+            { hanzi: "水果", pinyin: "shui3 guo3" },
+            { hanzi: "春天", pinyin: "chun1 tian1" },
+            { hanzi: "夏日", pinyin: "xia4 ri4" },
+            { hanzi: "秋風", pinyin: "qiu1 feng1" },
+            { hanzi: "冬雪", pinyin: "dong1 xue3" },
+            { hanzi: "美麗", pinyin: "mei3 li4" },
+            { hanzi: "快樂", pinyin: "kuai4 le4" },
+        ];
+
+        let currentIndex = -1;
+        let score = 0;
+        let useTones = true; // 預設使用聲調
+        let shuffledDataSet = [];
+        
+        // DOM 元素
+        const targetTextElement = document.getElementById('target-text');
+        const pinyinInputElement = document.getElementById('pinyin-input');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const scoreDisplayElement = document.getElementById('score-display');
+        const toneSwitch = document.getElementById('tone-switch');
+        const pinyinHintElement = document.getElementById('pinyin-hint');
+        
+        // 漢語拼音對照表相關 DOM 元素 (新增)
+        const toggleChartBtn = document.getElementById('toggle-chart-btn');
+        const pinyinChartContainer = document.getElementById('pinyin-chart-container');
+
+        /**
+         * 洗牌演算法 (Fisher-Yates)
+         * @param {Array} array 
+         */
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        /**
+         * 移除拼音中的數字聲調
+         * @param {string} pinyin - 數字聲調拼音 (e.g., 'zhong1 guo2')
+         * @returns {string} - 無聲調拼音 (e.g., 'zhong guo')
+         */
+        function stripTones(pinyin) {
+            return pinyin.replace(/[1-5]/g, '').trim();
+        }
+
+        /**
+         * 格式化用戶輸入，方便比較
+         * @param {string} input - 用戶輸入的原始字串
+         * @returns {string} - 標準化後的拼音字串
+         */
+        function normalizeInput(input) {
+            // 轉換為小寫，替換 'v' 為 'ü' (雖然拼音輸入法通常接受 v)
+            let normalized = input.toLowerCase().trim();
+            normalized = normalized.replace(/v/g, 'ü');
+            // 將所有連續空格替換為單個空格
+            return normalized.replace(/\s+/g, ' ');
+        }
+        
+        /**
+         * 載入下一道題目
+         */
+        function loadNextWord() {
+            currentIndex = (currentIndex + 1) % shuffledDataSet.length;
+            const currentItem = shuffledDataSet[currentIndex];
+            
+            targetTextElement.textContent = currentItem.hanzi;
+            pinyinInputElement.value = '';
+            pinyinInputElement.focus();
+            feedbackMessageElement.textContent = '請輸入拼音...';
+            feedbackMessageElement.className = 'min-h-[30px] text-center text-lg font-semibold rounded-lg p-1 text-gray-500';
+
+            // 根據模式設定拼音提示 (僅用於展示，實際練習中不應該提示)
+            if (currentIndex === 0) {
+                 pinyinHintElement.textContent = `當前模式：${useTones ? '要求聲調' : '不要求聲調'}`;
+            } else {
+                 pinyinHintElement.textContent = '';
+            }
+        }
+
+        /**
+         * 處理並檢查用戶輸入
+         */
+        function checkInput() {
+            const userInput = normalizeInput(pinyinInputElement.value);
+            const currentItem = shuffledDataSet[currentIndex];
+            const correctPinyinWithTones = normalizeInput(currentItem.pinyin);
+
+            let isCorrect = false;
+            let expectedPinyin = correctPinyinWithTones;
+
+            if (useTones) {
+                // 聲調模式: 必須完全匹配
+                isCorrect = (userInput === correctPinyinWithTones);
+            } else {
+                // 無聲調模式: 移除聲調後匹配
+                const correctPinyinNoTones = stripTones(correctPinyinWithTones);
+                const userInputNoTones = stripTones(userInput);
+                isCorrect = (userInputNoTones === correctPinyinNoTones);
+                expectedPinyin = correctPinyinNoTones; // 顯示無聲調的正確答案
+            }
+
+            if (isCorrect) {
+                // 答對
+                score++;
+                scoreDisplayElement.textContent = score;
+                feedbackMessageElement.textContent = '正確！👏';
+                feedbackMessageElement.className = 'min-h-[30px] text-center text-lg font-semibold rounded-lg p-1 text-green-700 bg-green-100';
+                
+                // 延遲載入下一題
+                setTimeout(loadNextWord, 500);
+            } else {
+                // 答錯
+                feedbackMessageElement.textContent = `錯誤！正確答案是: ${expectedPinyin}`;
+                feedbackMessageElement.className = 'min-h-[30px] text-center text-lg font-semibold rounded-lg p-1 text-red-700 bg-red-100';
+            }
+        }
+
+        /**
+         * 初始化應用程式
+         */
+        function init() {
+            // 複製並洗牌資料集
+            shuffledDataSet = shuffle([...dataSet]);
+            
+            // 監聽輸入框的 Enter 鍵
+            pinyinInputElement.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // 防止換行
+                    checkInput();
+                }
+            });
+
+            // 監聽聲調開關
+            toneSwitch.addEventListener('change', function() {
+                useTones = this.checked;
+                // 重置分數並重新開始，以應用新設定
+                score = 0;
+                scoreDisplayElement.textContent = 0;
+                shuffledDataSet = shuffle([...dataSet]);
+                currentIndex = -1; // 會被 loadNextWord 遞增到 0
+                loadNextWord();
+            });
+
+            // 漢語拼音對照表開關邏輯 (新增)
+            toggleChartBtn.addEventListener('click', function() {
+                const isHidden = pinyinChartContainer.classList.toggle('hidden');
+                if (isHidden) {
+                    toggleChartBtn.textContent = '顯示 注音及漢語拼音對照表';
+                } else {
+                    toggleChartBtn.textContent = '隱藏 注音及漢語拼音對照表';
+                }
+            });
+
+            // 設定聲調開關初始狀態
+            toneSwitch.checked = useTones;
+
+            // 載入第一道題目
+            loadNextWord();
+            feedbackMessageElement.textContent = '練習開始！請輸入拼音並按 Enter。';
+        }
+
+        // 啟動應用程式
+        window.onload = init;
+    </script>
+</body>
+</html>
