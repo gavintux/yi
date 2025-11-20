@@ -90,8 +90,8 @@
             { id: "1", title: "2025 年度目標規劃", description: "包含 #工作 #學習 的年度大計畫", modified_at: "2025-01-21T09:00:00Z" },
             { id: "2", title: "網站改版架構圖", description: "公司官網設計 #工作 #專案 #急件", modified_at: "2025-01-15T14:30:00Z" },
             { id: "3", title: "個人財務報表", description: "每季回顧 #健康 #財務", modified_at: "2025-01-10T11:00:00Z" },
-            { id: "4", title: "Python 學習筆記", description: "爬蟲與數據分析 #學習 #程式 #Coding", modified_at: "2025-01-18T16:00:00Z" },
-            { id: "5", title: "健身菜單", description: "重訓與飲食控制 #健康 #運動", modified_at: "2024-12-25T10:15:00Z" },
+            { id: "4", title: "Python 學習筆記", description: "爬蟲與數據分析 #學習 #程式", modified_at: "2025-01-18T16:00:00Z" },
+            { id: "5", title: "健身菜單", description: "重訓與飲食控制 #健康", modified_at: "2024-12-25T10:15:00Z" },
             { id: "6", title: "雜七雜八的想法", description: "還沒整理的靈感", modified_at: "2025-01-22T10:00:00Z" }, 
             { id: "7", title: "日本旅遊攻略", description: "行程安排 #旅遊 #休閒 #2025", modified_at: "2024-11-05T09:00:00Z" },
             { id: "8", title: "讀書筆記：原子習慣", description: "#學習 #閱讀 #習慣", modified_at: "2024-11-01T09:00:00Z" },
@@ -141,13 +141,17 @@
         };
 
         const ITEMS_PER_PAGE = 9;
+        const LS_KEY_TOKEN = 'mindomo_api_token';
 
         const App = () => {
-            const [apiToken, setApiToken] = useState('KgWdA3krt3dkuS3yQ0TWiOghaYeSGR_tp7u_SV9k_go');
+            // 1. 安全更新：從 LocalStorage 讀取 Token，預設為空字串，不再 hardcode
+            const [apiToken, setApiToken] = useState(localStorage.getItem(LS_KEY_TOKEN) || '');
+            
             const [diagrams, setDiagrams] = useState([]);
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState(null);
-            const [useRealApi, setUseRealApi] = useState(true);
+            // 2. 預設不開啟 Real API 模式，讓使用者先看到介面
+            const [useRealApi, setUseRealApi] = useState(false);
             const [showConfig, setShowConfig] = useState(false);
             const [showDebug, setShowDebug] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
@@ -158,11 +162,8 @@
             const [expandedFolders, setExpandedFolders] = useState(PARA_ROOTS.reduce((acc, root) => ({...acc, [root]: true}), {}));
             const [currentPage, setCurrentPage] = useState(1);
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-            // 側邊欄標籤相關狀態
             const [tagSearchQuery, setTagSearchQuery] = useState('');
             const [isTagExpanded, setIsTagExpanded] = useState(false);
-
             const [sortField, setSortField] = useState('modified_at');
             const [sortOrder, setSortOrder] = useState('desc');
 
@@ -179,12 +180,21 @@
 
             useEffect(() => {
                 if (useRealApi && apiToken) setShowConfig(false);
-                else setShowConfig(true);
-            }, [useRealApi]);
+                else if (useRealApi && !apiToken) setShowConfig(true);
+            }, [useRealApi, apiToken]);
 
             useEffect(() => {
                 setCurrentPage(1);
             }, [searchTerm, activeCategory, sortField, sortOrder]);
+
+            // 3. 儲存 Token 功能
+            const handleSaveToken = () => {
+                localStorage.setItem(LS_KEY_TOKEN, apiToken);
+                if (apiToken) {
+                    fetchDiagrams();
+                    setShowConfig(false);
+                }
+            };
 
             const fetchDiagrams = async () => {
                 if (!apiToken) { setError("請輸入 API Token"); return; }
@@ -262,7 +272,6 @@
                 }
             };
 
-            // 側邊欄標籤計算邏輯 (依頻率排序)
             const sortedTags = useMemo(() => {
                 const tagsCount = {};
                 diagrams.forEach(d => {
@@ -273,17 +282,15 @@
                     }
                 });
                 return Object.entries(tagsCount)
-                    .sort(([, a], [, b]) => b - a) // 依數量降序
+                    .sort(([, a], [, b]) => b - a) 
                     .map(([tag, count]) => ({ name: tag, count }));
             }, [diagrams]);
 
-            // 側邊欄顯示的標籤
             const visibleTags = useMemo(() => {
                 let tags = sortedTags;
                 if (tagSearchQuery) {
                     tags = tags.filter(t => t.name.toLowerCase().includes(tagSearchQuery.toLowerCase()));
                 }
-                // 若未展開且無搜尋，只顯示前 10 個
                 if (!isTagExpanded && !tagSearchQuery) {
                     return tags.slice(0, 10);
                 }
@@ -388,7 +395,8 @@
                 <div className="min-h-screen bg-gray-50 flex flex-col">
                     <header className="bg-white border-b border-gray-200 sticky top-0 z-30 h-16 flex items-center px-4 justify-between lg:hidden">
                         <div className="flex items-center gap-2">
-                            <div className="bg-blue-600 p-1.5 rounded-lg"><svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg></div>
+                            {/* Logo in Mobile Header */}
+                            <img src="linkc-w0.png" alt="Logo" className="h-8 w-8 rounded-lg object-cover" />
                             <h1 className="font-bold text-gray-800">Mindomo Tags</h1>
                         </div>
                         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-md"><Icons.Menu /></button>
@@ -399,7 +407,8 @@
                             <div className="h-full flex flex-col">
                                 <div className="hidden lg:flex h-16 items-center px-6 border-b border-gray-100">
                                     <div className="flex items-center gap-2 text-blue-700">
-                                        <div className="bg-blue-600 p-1.5 rounded-lg"><svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg></div>
+                                        {/* Logo in Desktop Sidebar Header */}
+                                        <img src="linkc-w0.png" alt="Logo" className="h-8 w-8 rounded-lg object-cover" />
                                         <span className="font-bold text-lg">Mindomo</span>
                                     </div>
                                 </div>
@@ -413,7 +422,6 @@
                                     <div className="mb-6">
                                         <div className="flex items-center justify-between px-3 mb-2">
                                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">標籤分類 (#Tag)</p>
-                                            {/* 標籤篩選框 */}
                                             {(isTagExpanded || sortedTags.length > 8) && (
                                                 <div className="relative">
                                                     <input 
@@ -449,7 +457,6 @@
                                             })}
                                         </div>
                                         
-                                        {/* 展開/收合按鈕 */}
                                         {sortedTags.length > 10 && !tagSearchQuery && (
                                             <button 
                                                 onClick={() => setIsTagExpanded(!isTagExpanded)}
@@ -548,7 +555,7 @@
                                         <label className="block text-sm font-medium text-gray-700 mb-2">API Access Token</label>
                                         <div className="flex gap-3">
                                             <input type="password" value={apiToken} onChange={(e) => setApiToken(e.target.value)} className="flex-1 px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="Token" />
-                                            <button onClick={fetchDiagrams} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">儲存</button>
+                                            <button onClick={handleSaveToken} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">儲存</button>
                                         </div>
                                     </div>
                                 )}
