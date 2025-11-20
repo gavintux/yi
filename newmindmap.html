@@ -4,12 +4,14 @@
   <meta charset="UTF-8">
   <title>Mindomo 檔案列表</title>
   <style>
-    #apiDiv, #searchDiv, #sortDiv { margin: 20px 0; }
+    #apiDiv, #searchDiv, #sortDiv, #paginationDiv { margin: 20px 0; }
     #apiKey { user-select: none; }
     #apiDiv { display: block; }
     #fileTable { border-collapse: collapse; width: 100%; }
     #fileTable th, #fileTable td { border: 1px solid #ccc; padding: 8px; text-align: left; }
     #hideTip { color: #888; font-size: 12px; }
+    .pageBtn { background:#eee;border:1px solid #aaa;padding:4px 12px;margin:0 2px;cursor:pointer;}
+    .pageBtn.active { background:#bdf; }
   </style>
 </head>
 <body>
@@ -19,7 +21,7 @@
   <button onclick="submitKey()">確認</button>
   <span id="hideTip">（只保存於本頁面記憶體，輸入後隱藏且不可複製，不外洩）</span>
 </div>
-<div id="sortDiv" style="display:none">
+<div id="sortDiv" style="display:none;">
   <label>排序依據：</label>
   <select id="sortKey" onchange="renderTable()">
     <option value="name">檔案名稱</option>
@@ -31,25 +33,29 @@
     <option value="desc">遞減</option>
   </select>
 </div>
-<div id="searchDiv" style="display:none">
+<div id="searchDiv" style="display:none;">
   <label>搜尋檔名：</label>
   <input type="text" id="search" oninput="renderTable()">
 </div>
-<table id="fileTable" style="display:none">
+<table id="fileTable" style="display:none;">
   <thead>
     <tr>
       <th>類別</th>
       <th>檔名</th>
       <th>建立時間</th>
       <th>修改時間</th>
+      <th>操作</th>
     </tr>
   </thead>
   <tbody id="fileBody"></tbody>
 </table>
+<div id="paginationDiv" style="display:none;"></div>
 
 <script>
 let apiKey = "";
 let allFiles = [];
+let currentPage = 1;
+const PAGE_SIZE = 12;
 
 function submitKey() {
   apiKey = document.getElementById("apiKey").value;
@@ -57,10 +63,10 @@ function submitKey() {
   document.getElementById("searchDiv").style.display = "block";
   document.getElementById("fileTable").style.display = "table";
   document.getElementById("sortDiv").style.display = "block";
+  document.getElementById("paginationDiv").style.display = "block";
   fetchFiles();
 }
 
-// 禁止 API key 複製，不允許 user-select
 document.getElementById("apiKey").addEventListener('copy', function(e) { e.preventDefault(); });
 
 function fetchFiles() {
@@ -70,6 +76,7 @@ function fetchFiles() {
   .then(response => response.json())
   .then(files => {
     allFiles = Array.isArray(files) ? files : [];
+    currentPage = 1;
     renderTable();
   });
 }
@@ -81,11 +88,10 @@ function renderTable() {
   const sortKey = document.getElementById("sortKey").value;
   const sortOrder = document.getElementById("sortOrder").value;
 
-  const filteredFiles = allFiles.filter(file =>
+  let filteredFiles = allFiles.filter(file =>
     (file.name || "").toLowerCase().includes(searchVal)
   );
 
-  // 排序
   filteredFiles.sort((a, b) => {
     const aVal = a[sortKey] || "";
     const bVal = b[sortKey] || "";
@@ -99,16 +105,41 @@ function renderTable() {
       : bVal.localeCompare(aVal, "zh-Hant");
   });
 
-  filteredFiles.forEach(file => {
+  // 分頁資料
+  const total = filteredFiles.length;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  // 當前分頁校正
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  // 取分頁資料
+  const pageFiles = filteredFiles.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+
+  pageFiles.forEach(file => {
     const category = file.category || file.folder || "";
+    const fileId = file.id || file.diagramId || "";
     const row = `<tr>
       <td>${category}</td>
       <td>${file.name || ""}</td>
       <td>${file.createdAt || ""}</td>
       <td>${file.updatedAt || ""}</td>
+      <td>
+        <button onclick="window.open('https://www.mindomo.com/mindmap/${fileId}', '_blank')">開啟</button>
+      </td>
     </tr>`;
     tbody.insertAdjacentHTML("beforeend", row);
   });
+
+  // 分頁按鈕
+  const pageDiv = document.getElementById("paginationDiv");
+  pageDiv.innerHTML = "";
+  for (let i = 1; i <= totalPages; i++) {
+    pageDiv.innerHTML += `<button class="pageBtn${i===currentPage?' active':''}" onclick="gotoPage(${i})">${i}</button>`;
+  }
+}
+
+function gotoPage(p) {
+  currentPage = p;
+  renderTable();
 }
 </script>
 </body>
