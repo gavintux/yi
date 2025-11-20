@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <title>Mindomo API 多功能 Demo</title>
+</head>
+<body>
+  <h2>Mindomo 圖表</h2>
+  <button onclick="createMindmap()">建立新空白圖</button>
+  <input id="ai_topic" type="text" placeholder="AI主題（例：量子運算學習）">
+  <button onclick="aiGenerateMindmap()">AI 生成圖</button>
+  <ul id="mindmap-list"></ul>
+  
+  <script>
+    const API_TOKEN = 'KgWdA3krt3dkuS3yQ0TWiOghaYeSGR_tp7u_SV9k_go';
+    const API_URL = 'https://www.mindomo.com/api/v1';
+
+    // 列出所有心智圖
+    function fetchMindmaps() {
+      fetch(`${API_URL}/diagrams`, {
+        headers: {
+          'Authorization': `Bearer ${API_TOKEN}`
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById('mindmap-list');
+        list.innerHTML = '';
+        data.forEach(map => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <a href="https://www.mindomo.com/mindmap/${map.id}" target="_blank">${map.title}</a>
+            <button onclick="deleteMindmap('${map.id}')">刪除</button>
+          `;
+          list.appendChild(li);
+        });
+      });
+    }
+
+    // 建立新空白心智圖
+    function createMindmap() {
+      fetch(`${API_URL}/diagrams`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${API_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title: "新心智圖" })
+      })
+      .then(res => res.json())
+      .then(() => {
+        fetchMindmaps();
+        alert('已建立新心智圖！');
+      });
+    }
+
+    // AI 生成心智圖
+    function aiGenerateMindmap() {
+      const topic = document.getElementById('ai_topic').value || 'Mindomo AI Demo';
+      fetch(`${API_URL}/diagrams/ai`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${API_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ topic, language: 'zh' })
+      })
+      .then(res => res.json())
+      .then(() => {
+        fetchMindmaps();
+        alert('AI 已生成心智圖！');
+      });
+    }
+
+    // 刪除心智圖
+    function deleteMindmap(id) {
+      if (!confirm('確認刪除這個心智圖？')) return;
+      fetch(`${API_URL}/diagrams/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${API_TOKEN}`
+        }
+      })
+      .then(() => {
+        fetchMindmaps();
+        alert('已刪除心智圖！');
+      });
+    }
+
+    // 首次載入
+    fetchMindmaps();
+  </script>
+</body>
+</html>
