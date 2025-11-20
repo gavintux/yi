@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mindomo PARA 儀表板 (Description 版)</title>
+    <title>Mindomo 標籤分類儀表板</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -51,6 +51,29 @@
             -moz-appearance: none;
             appearance: none;
         }
+        /* Tooltip 樣式 */
+        .tooltip {
+            visibility: hidden;
+            position: absolute;
+            z-index: 50;
+            right: 0;
+            top: 100%;
+            margin-top: 0.5rem;
+            width: 280px;
+            background-color: #1f2937;
+            color: white;
+            text-align: left;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            font-size: 0.75rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .has-tooltip:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -62,24 +85,27 @@
         // 定義主類別架構
         const PARA_ROOTS = ['00inbox', '01專案', '02領域', '03資源', '04檔案'];
 
-        // 模擬資料 (改用 description 作為分類依據)
-        const MOCK_DATA = [
-            { id: "1", title: "待辦事項彙整", description: "00inbox", modified_at: "2025-01-21T09:00:00Z" },
-            { id: "2", title: "網站改版", description: "01專案/公司網站", modified_at: "2025-01-15T14:30:00Z" },
-            { id: "3", title: "財務報表", description: "02領域/財務", modified_at: "2025-01-10T11:00:00Z" },
-            { id: "4", title: "Python 筆記", description: "03資源/程式", modified_at: "2025-01-18T16:00:00Z" },
-            { id: "5", title: "2023 封存", description: "04檔案/2023", modified_at: "2024-12-25T10:15:00Z" },
-            { id: "6", title: "未分類檔案", description: "", modified_at: "2025-01-22T10:00:00Z" } // 測試空描述
+        // 模擬資料
+        const INITIAL_MOCK_DATA = [
+            { id: "1", title: "2025 年度目標規劃", description: "包含 #工作 #學習 的年度大計畫", modified_at: "2025-01-21T09:00:00Z" },
+            { id: "2", title: "網站改版架構圖", description: "公司官網設計 #工作 #專案 #急件", modified_at: "2025-01-15T14:30:00Z" },
+            { id: "3", title: "個人財務報表", description: "每季回顧 #健康 #財務", modified_at: "2025-01-10T11:00:00Z" },
+            { id: "4", title: "Python 學習筆記", description: "爬蟲與數據分析 #學習 #程式 #Coding", modified_at: "2025-01-18T16:00:00Z" },
+            { id: "5", title: "健身菜單", description: "重訓與飲食控制 #健康 #運動", modified_at: "2024-12-25T10:15:00Z" },
+            { id: "6", title: "雜七雜八的想法", description: "還沒整理的靈感", modified_at: "2025-01-22T10:00:00Z" }, 
+            { id: "7", title: "日本旅遊攻略", description: "行程安排 #旅遊 #休閒 #2025", modified_at: "2024-11-05T09:00:00Z" },
+            { id: "8", title: "讀書筆記：原子習慣", description: "#學習 #閱讀 #習慣", modified_at: "2024-11-01T09:00:00Z" },
+            { id: "9", title: "Q1 專案檢討", description: "#工作 #專案 #會議", modified_at: "2025-02-01T09:00:00Z" }
         ];
 
-        // 輔助函數：標準化路徑
-        const normalizePath = (path) => {
-            if (!path || typeof path !== 'string') return null;
-            // 移除 HTML標籤 (Mindomo description 有時會包含 HTML)
-            const textOnly = path.replace(/<[^>]*>?/gm, '');
-            return textOnly.replace(/^\/+/, '').trim();
+        const extractTags = (text) => {
+            if (!text || typeof text !== 'string') return [];
+            const cleanText = text.replace(/<[^>]*>?/gm, '');
+            const matches = cleanText.match(/#[\S]+/g);
+            if (!matches) return [];
+            return matches.map(tag => tag.substring(1)).filter(t => t.length > 0);
         };
-
+        
         const formatDate = (isoString) => {
             if (!isoString) return "無資料";
             const date = new Date(isoString);
@@ -94,12 +120,12 @@
         const Icons = {
             File: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>,
             Clock: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-            Folder: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>,
-            FolderOpen: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="2" y1="10" x2="22" y2="10"/></svg>,
+            Tag: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>,
+            Hash: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>,
             Grid: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>,
             Menu: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>,
             Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
-            Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 0 2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
+            Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
             Refresh: ({ spin }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={spin ? "animate-spin" : ""}><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>,
             ChevronLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>,
             ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>,
@@ -108,10 +134,12 @@
             SortDesc: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/><path d="M11 12h4"/><path d="M11 16h7"/><path d="M11 20h10"/></svg>,
             ArrowDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>,
             Bug: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>,
-            AlignLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+            AlignLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>,
+            Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+            Info: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
+            Filter: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
         };
-        
-        // 修正: 補回遺失的常數定義
+
         const ITEMS_PER_PAGE = 9;
 
         const App = () => {
@@ -124,24 +152,28 @@
             const [showDebug, setShowDebug] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
             const [rawData, setRawData] = useState(null);
+            const [downloadingState, setDownloadingState] = useState(null);
             
-            // 導航與狀態
             const [activeCategory, setActiveCategory] = useState('recent'); 
             const [expandedFolders, setExpandedFolders] = useState(PARA_ROOTS.reduce((acc, root) => ({...acc, [root]: true}), {}));
             const [currentPage, setCurrentPage] = useState(1);
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+            // 側邊欄標籤相關狀態
+            const [tagSearchQuery, setTagSearchQuery] = useState('');
+            const [isTagExpanded, setIsTagExpanded] = useState(false);
 
             const [sortField, setSortField] = useState('modified_at');
             const [sortOrder, setSortOrder] = useState('desc');
 
             useEffect(() => {
                 if (!useRealApi) {
-                     const normalizedMock = MOCK_DATA.map(item => ({
+                     const normalizedMock = INITIAL_MOCK_DATA.map(item => ({
                          ...item,
-                         folder: normalizePath(item.description)
+                         tags: extractTags(item.description) 
                      }));
                      setDiagrams(normalizedMock);
-                     setRawData(MOCK_DATA);
+                     setRawData(INITIAL_MOCK_DATA);
                 }
             }, [useRealApi]);
 
@@ -169,21 +201,20 @@
                         throw new Error(`API 錯誤: ${response.status}`);
                     }
                     const data = await response.json();
-                    
                     setRawData(data);
-
                     let items = Array.isArray(data) ? data : (data.diagrams || []);
                     
                     const normalizedData = items.map(item => {
                         const modDate = item.modified || item.lastModified || item.modified_at || item.updated || item.updated_at || item.dateModified || item.last_modified;
                         const createDate = item.created_at || item.creationDate || item.created || item.dateCreated;
-                        
-                        const rawFolder = item.description || item.category || item.folder;
+                        const description = item.description || item.note || ""; 
+                        const tags = extractTags(description);
 
                         return {
                             id: item.id,
                             title: item.title || item.name || "未命名檔案",
-                            folder: normalizePath(rawFolder), 
+                            description: description,
+                            tags: tags, 
                             created_at: createDate || new Date().toISOString(),
                             modified_at: modDate || createDate,
                             _raw: item
@@ -198,44 +229,109 @@
                 }
             };
 
-            const folderTree = useMemo(() => {
-                const tree = {};
-                PARA_ROOTS.forEach(root => {
-                    tree[root] = { isParaRoot: true, subfolders: new Set(), countRecursive: 0, countDirect: 0 };
-                });
-                tree['others'] = { isParaRoot: false, subfolders: new Set(), countRecursive: 0, countDirect: 0 };
+            const handleDownload = async (e, item, format) => {
+                e.stopPropagation();
+                if (!apiToken) { alert("請先設定 API Token"); return; }
+                setDownloadingState({ id: item.id, format: format });
+                try {
+                    const apiFormat = format === 'md' ? 'txt' : format;
+                    if (!useRealApi) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        alert(`(Demo 模式) 模擬下載 ${item.title}.${format}`);
+                        setDownloadingState(null);
+                        return;
+                    }
+                    const response = await fetch(`https://www.mindomo.com/api/v1/diagrams/${item.id}.${apiFormat}`, {
+                        headers: { 'Authorization': `Bearer ${apiToken}` }
+                    });
+                    if (!response.ok) throw new Error(`API 錯誤: ${response.status} ${response.statusText}`);
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${item.title}.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (err) {
+                    console.error(err);
+                    alert('下載失敗: ' + err.message);
+                } finally {
+                    setDownloadingState(null);
+                }
+            };
 
+            // 側邊欄標籤計算邏輯 (依頻率排序)
+            const sortedTags = useMemo(() => {
+                const tagsCount = {};
                 diagrams.forEach(d => {
-                    if (!d.folder) return;
-                    let matchedRoot = PARA_ROOTS.find(root => d.folder === root || d.folder.startsWith(root + '/'));
-                    if (matchedRoot) {
-                        tree[matchedRoot].countRecursive++;
-                        if (d.folder === matchedRoot) {
-                            tree[matchedRoot].countDirect++;
-                        } else {
-                            tree[matchedRoot].subfolders.add(d.folder);
-                        }
-                    } else {
-                        tree['others'].subfolders.add(d.folder);
-                        tree['others'].countRecursive++;
+                    if (d.tags && d.tags.length > 0) {
+                        d.tags.forEach(tag => {
+                            tagsCount[tag] = (tagsCount[tag] || 0) + 1;
+                        });
                     }
                 });
-                return tree;
+                return Object.entries(tagsCount)
+                    .sort(([, a], [, b]) => b - a) // 依數量降序
+                    .map(([tag, count]) => ({ name: tag, count }));
             }, [diagrams]);
 
-            const toggleFolder = (folderName) => {
-                setExpandedFolders(prev => ({ ...prev, [folderName]: !prev[folderName] }));
+            // 側邊欄顯示的標籤
+            const visibleTags = useMemo(() => {
+                let tags = sortedTags;
+                if (tagSearchQuery) {
+                    tags = tags.filter(t => t.name.toLowerCase().includes(tagSearchQuery.toLowerCase()));
+                }
+                // 若未展開且無搜尋，只顯示前 10 個
+                if (!isTagExpanded && !tagSearchQuery) {
+                    return tags.slice(0, 10);
+                }
+                return tags;
+            }, [sortedTags, tagSearchQuery, isTagExpanded]);
+
+            const checkBooleanSearch = (item, query) => {
+                try {
+                    let evalStr = query.toLowerCase();
+                    evalStr = evalStr.replace(/\s*&\s*/g, ' && ').replace(/\s*\|\s*/g, ' || ').replace(/\s*!\s*/g, ' ! ');
+                    const itemTags = new Set((item.tags || []).map(t => t.toLowerCase()));
+                    evalStr = evalStr.replace(/#([a-zA-Z0-9\u4e00-\u9fa5_]+)/g, (match, tagName) => {
+                        return itemTags.has(tagName) ? 'true' : 'false';
+                    });
+                    if (!/^(true|false|&&|\|\||!|\(|\)|\s)+$/.test(evalStr)) return null;
+                    return new Function(`return (${evalStr})`)();
+                } catch (e) {
+                    return null;
+                }
             };
 
             const processedData = useMemo(() => {
                 let baseList = [...diagrams];
-                if (searchTerm.trim()) {
-                    const lower = searchTerm.toLowerCase();
-                    baseList = baseList.filter(item => 
-                        item.title.toLowerCase().includes(lower) || 
-                        (item.folder && item.folder.toLowerCase().includes(lower))
-                    );
+                const trimmedTerm = searchTerm.trim();
+
+                if (trimmedTerm) {
+                    const isBooleanQuery = /[&|!]/.test(trimmedTerm) && /#/.test(trimmedTerm);
+                    if (isBooleanQuery) {
+                         baseList = baseList.filter(item => {
+                             const result = checkBooleanSearch(item, trimmedTerm);
+                             if (result === null) {
+                                 const lower = trimmedTerm.toLowerCase();
+                                 return item.title.toLowerCase().includes(lower) || 
+                                        (item.description && item.description.toLowerCase().includes(lower)) ||
+                                        (item.tags && item.tags.some(t => t.toLowerCase().includes(lower)));
+                             }
+                             return result;
+                         });
+                    } else {
+                         const lower = trimmedTerm.toLowerCase();
+                         baseList = baseList.filter(item => 
+                            item.title.toLowerCase().includes(lower) || 
+                            (item.description && item.description.toLowerCase().includes(lower)) ||
+                            (item.tags && item.tags.some(t => t.toLowerCase().includes(lower)))
+                        );
+                    }
                 }
+                
                 let filtered = [];
                 if (activeCategory === 'recent') {
                     filtered = [...baseList]
@@ -245,18 +341,9 @@
                 } else if (activeCategory === 'all') {
                     filtered = baseList;
                 } else if (activeCategory === 'uncategorized') {
-                    filtered = baseList.filter(item => !item.folder);
-                } else if (activeCategory === 'others_root') {
-                     filtered = baseList.filter(d => {
-                         if(!d.folder) return false;
-                         return !PARA_ROOTS.some(root => d.folder.startsWith(root));
-                     });
+                    filtered = baseList.filter(item => !item.tags || item.tags.length === 0);
                 } else {
-                    if (PARA_ROOTS.includes(activeCategory)) {
-                        filtered = baseList.filter(item => item.folder && (item.folder === activeCategory || item.folder.startsWith(activeCategory + '/')));
-                    } else {
-                        filtered = baseList.filter(item => item.folder === activeCategory);
-                    }
+                    filtered = baseList.filter(item => item.tags && item.tags.includes(activeCategory));
                 }
 
                 if (activeCategory !== 'recent') {
@@ -277,42 +364,6 @@
                 const items = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
                 return { items, totalItems, totalPages };
             }, [diagrams, searchTerm, activeCategory, currentPage, sortField, sortOrder]);
-
-            const SidebarGroup = ({ rootName, data }) => {
-                const isExpanded = expandedFolders[rootName];
-                const isActive = activeCategory === rootName;
-                const subfolders = Array.from(data.subfolders).sort();
-                
-                return (
-                    <div className="mb-1">
-                        <div className={`flex items-center gap-1 px-2 py-2 rounded-lg transition-colors ${isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'}`}>
-                            <button onClick={(e) => { e.stopPropagation(); toggleFolder(rootName); }} className="p-1 text-gray-400 hover:text-gray-600 rounded">
-                                <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}><Icons.ChevronDown /></div>
-                            </button>
-                            <button onClick={() => { setActiveCategory(rootName); setIsMobileMenuOpen(false); }} className="flex-grow flex items-center gap-2 text-sm font-medium text-left">
-                                {isActive ? <Icons.FolderOpen /> : <Icons.Folder />}
-                                <span className="truncate">{rootName}</span>
-                            </button>
-                            {data.countRecursive > 0 && <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-md min-w-[20px] text-center">{data.countRecursive}</span>}
-                        </div>
-                        {isExpanded && subfolders.length > 0 && (
-                            <div className="ml-8 mt-1 space-y-0.5 border-l border-gray-200 pl-2">
-                                {subfolders.map(sub => {
-                                    const displayName = sub.split('/').pop();
-                                    const isSubActive = activeCategory === sub;
-                                    const count = diagrams.filter(d => d.folder === sub).length;
-                                    return (
-                                        <button key={sub} onClick={() => { setActiveCategory(sub); setIsMobileMenuOpen(false); }} className={`w-full text-left px-2 py-1.5 text-sm rounded-md flex justify-between items-center group transition-colors ${isSubActive ? 'text-blue-600 bg-blue-50 font-medium' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}>
-                                            <span className="truncate">{displayName}</span>
-                                            <span className={`text-xs ${isSubActive ? 'text-blue-400' : 'text-gray-300 group-hover:text-gray-400'}`}>{count}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                );
-            };
 
             const Pagination = () => {
                 if (processedData.totalPages <= 1) return null;
@@ -338,7 +389,7 @@
                     <header className="bg-white border-b border-gray-200 sticky top-0 z-30 h-16 flex items-center px-4 justify-between lg:hidden">
                         <div className="flex items-center gap-2">
                             <div className="bg-blue-600 p-1.5 rounded-lg"><svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg></div>
-                            <h1 className="font-bold text-gray-800">Mindomo PARA</h1>
+                            <h1 className="font-bold text-gray-800">Mindomo Tags</h1>
                         </div>
                         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-md"><Icons.Menu /></button>
                     </header>
@@ -358,14 +409,60 @@
                                         <SidebarItem id="recent" label="最近開啟" icon={<Icons.Clock />} />
                                         <SidebarItem id="all" label="全部檔案" icon={<Icons.Grid />} count={diagrams.length} />
                                     </div>
+                                    
                                     <div className="mb-6">
-                                        <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">分類資料夾 (PARA)</p>
-                                        {PARA_ROOTS.map(root => (<SidebarGroup key={root} rootName={root} data={folderTree[root]} />))}
+                                        <div className="flex items-center justify-between px-3 mb-2">
+                                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">標籤分類 (#Tag)</p>
+                                            {/* 標籤篩選框 */}
+                                            {(isTagExpanded || sortedTags.length > 8) && (
+                                                <div className="relative">
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="篩選..." 
+                                                        value={tagSearchQuery}
+                                                        onChange={(e) => setTagSearchQuery(e.target.value)}
+                                                        className="w-24 text-xs bg-gray-100 border border-transparent focus:bg-white focus:border-blue-300 rounded px-1.5 py-0.5 outline-none transition-colors"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="px-3 flex flex-wrap gap-2">
+                                            {visibleTags.length === 0 && <p className="text-xs text-gray-400 italic w-full">沒有發現標籤</p>}
+                                            {visibleTags.map(tag => {
+                                                const isActive = activeCategory === tag.name;
+                                                return (
+                                                    <button 
+                                                        key={tag.name}
+                                                        onClick={() => { setActiveCategory(tag.name); setIsMobileMenuOpen(false); }}
+                                                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${
+                                                            isActive 
+                                                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
+                                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600'
+                                                        }`}
+                                                        title={`${tag.name} (${tag.count})`}
+                                                    >
+                                                        <span className="truncate max-w-[80px]">{tag.name}</span>
+                                                        <span className={`ml-1.5 text-[10px] ${isActive ? 'text-blue-100' : 'text-gray-400'}`}>{tag.count}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        
+                                        {/* 展開/收合按鈕 */}
+                                        {sortedTags.length > 10 && !tagSearchQuery && (
+                                            <button 
+                                                onClick={() => setIsTagExpanded(!isTagExpanded)}
+                                                className="w-full text-center text-xs text-blue-500 hover:text-blue-700 mt-2 py-1 transition-colors"
+                                            >
+                                                {isTagExpanded ? '收合標籤' : `顯示全部 (${sortedTags.length})`}
+                                            </button>
+                                        )}
                                     </div>
+
                                     <div>
                                         <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">其他</p>
-                                        <SidebarItem id="uncategorized" label="未分類檔案" icon={<Icons.File />} count={diagrams.filter(d => !d.folder).length} />
-                                        {folderTree['others'].subfolders.size > 0 && (<SidebarGroup rootName="others" data={{...folderTree['others'], subfolders: folderTree['others'].subfolders}} />)}
+                                        <SidebarItem id="uncategorized" label="未分類 (無標籤)" icon={<Icons.File />} count={diagrams.filter(d => !d.tags || d.tags.length === 0).length} />
                                     </div>
                                 </div>
                                 <div className="p-4 border-t border-gray-100 bg-gray-50 space-y-2">
@@ -395,14 +492,35 @@
                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                                     <div>
                                         <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                                            {activeCategory === 'recent' ? '最近修改' : activeCategory === 'all' ? '全部檔案' : activeCategory === 'uncategorized' ? '未分類檔案' : activeCategory}
+                                            {activeCategory === 'recent' ? '最近修改' : 
+                                             activeCategory === 'all' ? '全部檔案' : 
+                                             activeCategory === 'uncategorized' ? '未分類檔案' : 
+                                             `# ${activeCategory}`}
                                         </h2>
                                         <p className="text-sm text-gray-500 mt-1">共 {processedData.totalItems} 個項目</p>
                                     </div>
                                     <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-                                        <div className="relative group">
+                                        <div className="relative group flex-1">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Icons.Search /></div>
-                                            <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="block w-full sm:w-56 pl-10 pr-3 py-2 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="搜尋..." />
+                                            <input 
+                                                type="text" 
+                                                value={searchTerm} 
+                                                onChange={(e) => setSearchTerm(e.target.value)} 
+                                                className="block w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm" 
+                                                placeholder="搜尋... (如 #工作 & #急件)" 
+                                            />
+                                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-help has-tooltip">
+                                                <div className="text-gray-400 hover:text-blue-500"><Icons.Info /></div>
+                                                <div className="tooltip">
+                                                    <p className="font-bold mb-1 text-blue-300">進階標籤搜尋語法：</p>
+                                                    <ul className="list-disc list-inside space-y-1">
+                                                        <li><code className="bg-gray-700 px-1 rounded">&</code> (AND): 同時包含</li>
+                                                        <li><code className="bg-gray-700 px-1 rounded">|</code> (OR): 包含任一</li>
+                                                        <li><code className="bg-gray-700 px-1 rounded">!</code> (NOT): 排除</li>
+                                                        <li><code className="bg-gray-700 px-1 rounded">()</code>: 優先權</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
                                         </div>
                                         {activeCategory !== 'recent' && (
                                             <>
@@ -423,7 +541,8 @@
                                         {useRealApi && <button onClick={fetchDiagrams} disabled={loading} className="p-2 bg-white border border-gray-200 rounded-lg text-blue-600 hover:bg-blue-50"><Icons.Refresh spin={loading} /></button>}
                                     </div>
                                 </div>
-
+                                
+                                {/* Main Content Area - Grid/Cards */}
                                 {useRealApi && showConfig && (
                                     <div className="mb-8 p-4 bg-white rounded-xl border border-blue-100 shadow-sm animate-fade-in">
                                         <label className="block text-sm font-medium text-gray-700 mb-2">API Access Token</label>
@@ -439,24 +558,47 @@
                                     <div className="text-center py-20 animate-fade-in">
                                         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 mb-4 text-gray-300"><Icons.Grid /></div>
                                         <h3 className="text-lg font-medium text-gray-900">沒有檔案</h3>
+                                        <p className="text-gray-500 mt-2 text-sm">確認是否有在 Mindomo 描述欄位加上 #標籤 ?</p>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                         {processedData.items.map((item) => (
                                             <div key={item.id} className="group bg-white rounded-xl border border-gray-200 p-5 transition-all duration-200 card-hover flex flex-col h-full relative overflow-hidden">
                                                 <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                                <div className="flex justify-between items-start mb-4">
+                                                <div className="flex justify-between items-start mb-3">
                                                     <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors"><Icons.File /></div>
-                                                    {useRealApi && <a href={`https://www.mindomo.com/mindmap/${item.id}`} target="_blank" className="text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">開啟</a>}
+                                                    <div className="flex gap-2">
+                                                        {useRealApi && <a href={`https://www.mindomo.com/mindmap/${item.id}`} target="_blank" className="text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-full hover:bg-blue-100 transition-colors flex items-center">開啟</a>}
+                                                    </div>
                                                 </div>
+                                                
                                                 <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors">{item.title}</h3>
+                                                
+                                                {/* 顯示標籤區塊 */}
+                                                <div className="flex flex-wrap gap-1 mb-4 min-h-[24px]">
+                                                    {item.tags && item.tags.length > 0 ? (
+                                                        item.tags.map(tag => (
+                                                            <span key={tag} onClick={(e) => { e.stopPropagation(); setActiveCategory(tag); }} className="cursor-pointer inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600 transition-colors">
+                                                                #{tag}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400 italic">無標籤</span>
+                                                    )}
+                                                </div>
+
                                                 <div className="mt-auto pt-4 border-t border-gray-50 space-y-2">
-                                                    {item.folder && (<div className="flex items-center text-xs text-gray-500" title={item._rawFolder}><Icons.AlignLeft /><span className="ml-2 truncate">{item.folder}</span></div>)}
                                                     <div className="flex items-center text-xs text-gray-500">
                                                         <Icons.Clock />
                                                         <span className="ml-2">
                                                             {item.modified_at ? `最後修改於 ${formatDate(item.modified_at)}` : '無修改日期'}
                                                         </span>
+                                                    </div>
+                                                    
+                                                    <div className="flex gap-2 pt-2 border-t border-gray-100 justify-end">
+                                                        <button onClick={(e) => handleDownload(e, item, 'md')} disabled={downloadingState && downloadingState.id === item.id} className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded transition-colors disabled:opacity-50" title="下載 Markdown (.md)">{downloadingState && downloadingState.id === item.id && downloadingState.format === 'md' ? <Icons.Refresh spin={true} /> : <span>MD</span>}</button>
+                                                        <button onClick={(e) => handleDownload(e, item, 'mm')} disabled={downloadingState && downloadingState.id === item.id} className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded transition-colors disabled:opacity-50" title="下載 Freemind (.mm)">{downloadingState && downloadingState.id === item.id && downloadingState.format === 'mm' ? <Icons.Refresh spin={true} /> : <span>MM</span>}</button>
+                                                        <button onClick={(e) => handleDownload(e, item, 'pdf')} disabled={downloadingState && downloadingState.id === item.id} className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded transition-colors disabled:opacity-50" title="下載 PDF (.pdf)">{downloadingState && downloadingState.id === item.id && downloadingState.format === 'pdf' ? <Icons.Refresh spin={true} /> : <span>PDF</span>}</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -465,7 +607,6 @@
                                 )}
                                 <Pagination />
                                 
-                                {/* 除錯資訊區塊 - 增加 showDebug 判斷 */}
                                 {useRealApi && rawData && showDebug && (
                                     <div className="mt-16 p-6 bg-gray-900 text-gray-300 rounded-xl shadow-lg animate-fade-in">
                                         <div className="flex items-center justify-between mb-4 border-b border-gray-700 pb-4">
@@ -476,8 +617,7 @@
                                             <button onClick={() => setShowDebug(false)} className="text-xs text-gray-500 hover:text-white">關閉</button>
                                         </div>
                                         <p className="text-sm mb-4 text-gray-400">
-                                            請檢查 JSON 中是否有 <code>description</code> 欄位。
-                                            目前程式設定為優先讀取 <code>description</code> 作為分類路徑。
+                                            請檢查 JSON 中 <code>description</code> 欄位是否有包含 #標籤。
                                         </p>
                                         
                                         <div className="space-y-6">
@@ -493,6 +633,7 @@
                                                 <div className="bg-black p-4 rounded-lg text-xs font-mono border border-gray-800">
                                                     <p>總筆數: {Array.isArray(rawData) ? rawData.length : (rawData.diagrams ? rawData.diagrams.length : 0)}</p>
                                                     <p>包含 'description' 欄位的筆數: {(Array.isArray(rawData) ? rawData : (rawData.diagrams || [])).filter(i => i.description).length}</p>
+                                                    <p>偵測到的標籤總數: {allTags.length} ({allTags.join(', ')})</p>
                                                 </div>
                                             </div>
                                         </div>
