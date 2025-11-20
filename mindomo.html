@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mindomo 標籤分類儀表板</title>
     
+    <!-- 設定瀏覽器分頁圖示 (Favicon) -->
+    <link rel="icon" href="linkc-w0.png" />
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -90,8 +93,8 @@
             { id: "1", title: "2025 年度目標規劃", description: "包含 #工作 #學習 的年度大計畫", modified_at: "2025-01-21T09:00:00Z" },
             { id: "2", title: "網站改版架構圖", description: "公司官網設計 #工作 #專案 #急件", modified_at: "2025-01-15T14:30:00Z" },
             { id: "3", title: "個人財務報表", description: "每季回顧 #健康 #財務", modified_at: "2025-01-10T11:00:00Z" },
-            { id: "4", title: "Python 學習筆記", description: "爬蟲與數據分析 #學習 #程式", modified_at: "2025-01-18T16:00:00Z" },
-            { id: "5", title: "健身菜單", description: "重訓與飲食控制 #健康", modified_at: "2024-12-25T10:15:00Z" },
+            { id: "4", title: "Python 學習筆記", description: "爬蟲與數據分析 #學習 #程式 #Coding", modified_at: "2025-01-18T16:00:00Z" },
+            { id: "5", title: "健身菜單", description: "重訓與飲食控制 #健康 #運動", modified_at: "2024-12-25T10:15:00Z" },
             { id: "6", title: "雜七雜八的想法", description: "還沒整理的靈感", modified_at: "2025-01-22T10:00:00Z" }, 
             { id: "7", title: "日本旅遊攻略", description: "行程安排 #旅遊 #休閒 #2025", modified_at: "2024-11-05T09:00:00Z" },
             { id: "8", title: "讀書筆記：原子習慣", description: "#學習 #閱讀 #習慣", modified_at: "2024-11-01T09:00:00Z" },
@@ -396,7 +399,7 @@
                     <header className="bg-white border-b border-gray-200 sticky top-0 z-30 h-16 flex items-center px-4 justify-between lg:hidden">
                         <div className="flex items-center gap-2">
                             {/* Logo in Mobile Header */}
-                            <img src="linkc-w0.png" alt="Logo" className="h-8 w-8 rounded-lg object-cover" />
+                            <img src="linkc-w0.png" alt="Logo" className="h-10 w-10 rounded-lg object-contain" />
                             <h1 className="font-bold text-gray-800">Mindomo Tags</h1>
                         </div>
                         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-md"><Icons.Menu /></button>
@@ -406,10 +409,10 @@
                         <aside className={`fixed inset-y-0 left-0 z-20 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:h-auto ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                             <div className="h-full flex flex-col">
                                 <div className="hidden lg:flex h-16 items-center px-6 border-b border-gray-100">
-                                    <div className="flex items-center gap-2 text-blue-700">
+                                    <div className="flex items-center gap-3 text-blue-700">
                                         {/* Logo in Desktop Sidebar Header */}
-                                        <img src="linkc-w0.png" alt="Logo" className="h-8 w-8 rounded-lg object-cover" />
-                                        <span className="font-bold text-lg">Mindomo</span>
+                                        <img src="linkc-w0.png" alt="Logo" className="h-10 w-10 rounded-lg object-contain" />
+                                        <span className="font-bold text-xl">Mindomo</span>
                                     </div>
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
