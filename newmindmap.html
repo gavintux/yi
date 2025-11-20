@@ -6,11 +6,7 @@
   <style>
     body { font-family: "Segoe UI", "微軟正黑體", "Arial"; background:#f7f8fa; margin:0; }
     .container { display: flex; min-height: 100vh; }
-    .sidebar {
-      width: 225px; background: #fff; border-right:1px solid #e5eaf2; padding: 24px 0 0 0;
-      display: flex; flex-direction: column;
-      box-shadow: 1px 0 8px #eaecf2;
-    }
+    .sidebar { width: 225px; background: #fff; border-right:1px solid #e5eaf2; padding: 24px 0 0 0; box-shadow: 1px 0 8px #eaecf2; }
     .sidebar h2 { margin: 2px 24px 18px 32px; color:#276beb;}
     .sidebar .section { margin: 18px 0 0 32px;}
     .sidebar .section-title {font-size:15px;font-weight:bold;color:#555;}
@@ -19,125 +15,135 @@
     .selected {background:#e7f2fd;color:#276beb;border-radius:3px;}
     .main-content {flex:1;padding:32px;}
     .header { display:flex; align-items:center; margin-bottom:18px;}
-    .header input[type=text] {
-      width:240px;height:32px;border-radius:4px;border:1px solid #ddd;padding:0 10px;font-size:14px;
-      margin-right:18px;
-    }
+    .header input[type=text] { width:240px;height:32px;border-radius:4px;border:1px solid #ddd;padding:0 10px;font-size:14px; margin-right:18px;}
     .header select {height:32px;font-size:14px;}
     .card-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:20px;}
-    .card {
-      background:#fff; border-radius:8px; box-shadow:0 2px 8px #e5eaf2;
-      padding:22px 20px; min-height:120px;
-      display:flex;flex-direction:column;justify-content:space-between;position:relative;
-      transition:box-shadow .2s;
-    }
+    .card { background:#fff; border-radius:8px; box-shadow:0 2px 8px #e5eaf2; padding:22px 20px; min-height:120px; display:flex; flex-direction:column; justify-content:space-between;position:relative; transition:box-shadow .2s;}
     .card:hover {box-shadow:0 8px 20px #d2e3fa;}
     .card-title {font-weight: bold; font-size: 17px; margin-bottom: 8px;}
     .card-meta {color:#888;font-size:13px;display:flex;align-items:center;}
-    .card-btn {
-      position: absolute; top:18px; right:18px;
-      background:#ecf4ff; color:#2c68d0; border:none; border-radius:5px; padding:6px 16px; cursor:pointer;
-      font-weight:bold; transition:background .2s;
-    }
+    .card-btn { position: absolute; top:18px; right:18px; background:#ecf4ff; color:#2c68d0; border:none; border-radius:5px; padding:6px 16px; cursor:pointer;font-weight:bold; transition:background .2s;}
     .card-btn:hover {background:#d6eaff;}
-    .pagination {
-      margin:26px 0 0 0; text-align:center;
-    }
-    .pagination button {
-      background:#f3f7fa; border:1px solid #abc; border-radius:4px;
-      margin:0 3px; padding:6px 14px; cursor:pointer;
-    }
+    .pagination { margin:26px 0 0 0; text-align:center;}
+    .pagination button { background:#f3f7fa; border:1px solid #abc; border-radius:4px; margin:0 3px; padding:6px 14px; cursor:pointer;}
     .pagination .active {background:#276beb;color:#fff;}
+    #apiDiv { background: #fff; box-shadow:0 2px 6px #e5eaf2; padding:42px; position:fixed; top:23%; left:50%; transform:translateX(-50%); z-index:99; border-radius:14px;}
+    #apiDiv h3 {margin:0 0 18px 0;}
+    #apiKey { user-select: none; width:260px;font-size:16px;}
+    #hideTip { color: #888; font-size: 12px; margin-left:8px;}
+    #apiDiv button {font-size:16px;padding:6px 18px; margin-left:18px;}
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="sidebar">
-      <h2>Mindomo</h2>
-      <div class="section">
-        <div class="section-title">分組資料夾 (PARA)</div>
-        <ul id="folderList"></ul>
-      </div>
-    </div>
-    <div class="main-content">
-      <div class="header">
-        <input type="text" id="searchBox" placeholder="搜尋...">
-        <select id="sortKey">
-          <option value="name">檔案名稱</option>
-          <option value="createdAt">建立時間</option>
-          <option value="updatedAt">修改時間</option>
-        </select>
-        <select id="sortOrder">
-          <option value="asc">遞增</option>
-          <option value="desc">遞減</option>
-        </select>
-      </div>
-      <div id="fileStats" style="font-size:14px;color:#888;margin-bottom:18px;"></div>
-      <div class="card-grid" id="cardGrid"></div>
-      <div class="pagination" id="pagination"></div>
+<div id="apiDiv">
+  <h3>請輸入 Mindomo API key</h3>
+  <input type="password" id="apiKey" autocomplete="new-password">
+  <button onclick="submitKey()">確定</button>
+  <span id="hideTip">（只保存於本頁面記憶體，輸入後隱藏且不可複製，不外洩）</span>
+</div>
+<div class="container" style="display:none" id="mainBox">
+  <div class="sidebar">
+    <h2>Mindomo</h2>
+    <div class="section">
+      <div class="section-title">分組資料夾 (PARA)</div>
+      <ul id="folderList"></ul>
     </div>
   </div>
-<script>
-// *** 假資料範例：請改成 API 回傳的資料結構 ***
-let allFiles=[
-  {id:'1',folder:'00inbox',name:'要記什麼 思維歷程',updatedAt:'2025/11/20 下午02:24',createdAt:'2025/11/20 下午01:40'},
-  {id:'2',folder:'01專案',name:'記錄真實 分類法',updatedAt:'2025/11/20 下午02:24',createdAt:'2025/11/18 下午04:10'},
-  // ...更多...
-];
-let allFolders=['00inbox','01專案','02領域','03資源','04檔案'];
-let currentFolder='全部檔案';
-let currentPage=1,PAGE_SIZE=12;
+  <div class="main-content">
+    <div class="header">
+      <input type="text" id="searchBox" placeholder="搜尋...">
+      <select id="sortKey">
+        <option value="name">檔案名稱</option>
+        <option value="createdAt">建立時間</option>
+        <option value="updatedAt">修改時間</option>
+      </select>
+      <select id="sortOrder">
+        <option value="asc">遞增</option>
+        <option value="desc">遞減</option>
+      </select>
+    </div>
+    <div id="fileStats" style="font-size:14px;color:#888;margin-bottom:18px;"></div>
+    <div class="card-grid" id="cardGrid"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
 
-function groupFiles(){
-  return allFiles.filter(f=>currentFolder==='全部檔案'||f.folder===currentFolder);
+<script>
+let allFiles = [], allFolders = [], currentFolder = '全部檔案', currentPage = 1, PAGE_SIZE = 12;
+function submitKey() {
+  let apiKey = document.getElementById("apiKey").value;
+  document.getElementById("apiDiv").style.display = "none";
+  document.getElementById("mainBox").style.display = "flex";
+
+  // API 欄位組合，請根據你的 Mindomo API response 微調
+  fetch("https://www.mindomo.com/api/v1/diagrams", {
+    headers: { Authorization: `Bearer ${apiKey}` }
+  }).then(response => response.json())
+    .then(files => {
+      // 假設 files 為 array，每筆含id/name/folder/createdAt/updatedAt
+      allFiles = files.map(f => ({
+        id: f.id || f.diagramId || "",          // Mindomo 地圖ID
+        name: f.name || f.title || "",          // 地圖名
+        folder: f.folder || f.category || "未分類", // 分類或資料夾
+        createdAt: formatTime(f.createdAt),     // 建立時間
+        updatedAt: formatTime(f.updatedAt)      // 修改時間
+      }));
+      // 收集所有資料夾
+      let set = new Set();
+      allFiles.forEach(f => set.add(f.folder));
+      allFolders = Array.from(set).filter(fld => fld); // 移除 undefined/空字串
+      renderAll();
+    });
 }
+function formatTime(val) {
+  if (!val) return "";
+  const dt = new Date(val);
+  if (isNaN(dt.getTime())) return val; //原始字串
+  let y=dt.getFullYear(),m=dt.getMonth()+1,d=dt.getDate(),hr=dt.getHours(),min=dt.getMinutes();
+  let ap=hr>=12?"下午":"上午";hr=hr>12?hr-12:hr;
+  return `${y}/${m}/${d} ${ap}${hr.toString().padStart(2,"0")}:${min.toString().padStart(2,"0")}`;
+}
+function groupFiles(){ return allFiles.filter(f => currentFolder==='全部檔案'||f.folder===currentFolder);}
 function renderSidebar(){
-  let html='<li'+(currentFolder==='全部檔案'?' class="selected"':'')+'" onclick="selectFolder(\'全部檔案\')">全部檔案</li>';
-  allFolders.forEach(fld=>
-    html+=`<li${fld===currentFolder?' class="selected"':''} onclick="selectFolder('${fld}')">${fld}</li>`
-  );
-  document.getElementById("folderList").innerHTML=html;
+  let html = '<li'+(currentFolder==='全部檔案'?' class="selected"':'')+'" onclick="selectFolder(\'全部檔案\')">全部檔案</li>';
+  allFolders.forEach(fld => html += `<li${fld===currentFolder?' class="selected"':''} onclick="selectFolder('${fld}')">${fld}</li>`);
+  document.getElementById("folderList").innerHTML = html;
 }
-function selectFolder(fld){
-  currentFolder=fld;currentPage=1;renderAll();
-}
+function selectFolder(fld){ currentFolder=fld; currentPage=1; renderAll();}
 function renderCards(){
   let searchVal = document.getElementById("searchBox").value.toLowerCase();
   let sortKey = document.getElementById("sortKey").value;
   let sortOrder = document.getElementById("sortOrder").value;
-  let files=groupFiles().filter(f=>(f.name||"").toLowerCase().includes(searchVal));
+  let files = groupFiles().filter(f=>(f.name||"").toLowerCase().includes(searchVal));
   files.sort((a,b)=>{
     let aVal=a[sortKey]||"",bVal=b[sortKey]||"";
     if(sortKey!=='name'){aVal=new Date(aVal).getTime();bVal=new Date(bVal).getTime();}
     return sortOrder==='asc'?aVal-bVal:bVal-aVal;
   });
-  //分頁
   let total=files.length, totalPages=Math.max(1,Math.ceil(total/PAGE_SIZE));
   if(currentPage>totalPages)currentPage=totalPages;
   let showFiles=files.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
-
-  let grid=document.getElementById("cardGrid");
-  grid.innerHTML="";
-  showFiles.forEach(f=>{
-    grid.innerHTML+=`
+  let grid = document.getElementById("cardGrid"); grid.innerHTML = "";
+  showFiles.forEach(f => {
+    grid.innerHTML += `
       <div class="card">
         <div class="card-title">${f.name||""}</div>
         <button class="card-btn" onclick="window.open('https://www.mindomo.com/mindmap/${f.id}','_blank')">開啟</button>
         <div class="card-meta">🕒 最後修改於 ${f.updatedAt||""}</div>
-      </div>`;
+      </div>
+    `;
   });
-  document.getElementById("fileStats").innerText="共 "+total+" 個項目，頁 "+currentPage+"/"+totalPages;
-  let pagHtml="";
+  document.getElementById("fileStats").innerText = "共 "+total+" 個項目，頁 "+currentPage+"/"+totalPages;
+  let pagHtml = "";
   for(let i=1;i<=totalPages;i++)
-    pagHtml+=`<button class="${i===currentPage?'active':''}" onclick="gotoPage(${i})">${i}</button>`;
-  document.getElementById("pagination").innerHTML=pagHtml;
+    pagHtml += `<button class="${i===currentPage?'active':''}" onclick="gotoPage(${i})">${i}</button>`;
+  document.getElementById("pagination").innerHTML = pagHtml;
 }
-function gotoPage(p){currentPage=p;renderAll();}
-function renderAll(){renderSidebar();renderCards();}
-document.getElementById("searchBox").oninput=renderAll;
-document.getElementById("sortKey").onchange=renderAll;
-document.getElementById("sortOrder").onchange=renderAll;
-renderAll();
+function gotoPage(p){ currentPage=p; renderAll();}
+function renderAll(){ renderSidebar(); renderCards(); }
+document.getElementById("searchBox").oninput = renderAll;
+document.getElementById("sortKey").onchange = renderAll;
+document.getElementById("sortOrder").onchange = renderAll;
 </script>
 </body>
 </html>
