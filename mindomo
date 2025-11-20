@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <title>我的 Mindomo 圖表清單</title>
+</head>
+<body>
+  <h2>Mindomo 圖表</h2>
+  <ul id="mindmap-list"></ul>
+
+  <script>
+    // 這裡請用自己的 Mindomo API Token 取代 'YOUR_API_TOKEN'
+    const API_TOKEN = 'KgWdA3krt3dkuS3yQ0TWiOghaYeSGR_tp7u_SV9k_go';
+
+    fetch('https://www.mindomo.com/api/v1/diagrams', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${API_TOKEN}`
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      const list = document.getElementById('mindmap-list');
+      data.forEach(map => {
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="https://www.mindomo.com/mindmap/${map.id}" target="_blank">${map.title}</a>`;
+        list.appendChild(li);
+      });
+    })
+    .catch(error => {
+      alert('取得 Mindomo 資料失敗！');
+      console.error(error);
+    });
+  </script>
+</body>
+</html>
