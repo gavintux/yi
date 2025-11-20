@@ -2,145 +2,142 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>Mindomo 檔案列表</title>
+  <title>Mindomo 卡片式檔案瀏覽</title>
   <style>
-    #apiDiv, #searchDiv, #sortDiv, #paginationDiv { margin: 20px 0; }
-    #apiKey { user-select: none; }
-    #apiDiv { display: block; }
-    #fileTable { border-collapse: collapse; width: 100%; }
-    #fileTable th, #fileTable td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    #hideTip { color: #888; font-size: 12px; }
-    .pageBtn { background:#eee;border:1px solid #aaa;padding:4px 12px;margin:0 2px;cursor:pointer;}
-    .pageBtn.active { background:#bdf; }
+    body { font-family: "Segoe UI", "微軟正黑體", "Arial"; background:#f7f8fa; margin:0; }
+    .container { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 225px; background: #fff; border-right:1px solid #e5eaf2; padding: 24px 0 0 0;
+      display: flex; flex-direction: column;
+      box-shadow: 1px 0 8px #eaecf2;
+    }
+    .sidebar h2 { margin: 2px 24px 18px 32px; color:#276beb;}
+    .sidebar .section { margin: 18px 0 0 32px;}
+    .sidebar .section-title {font-size:15px;font-weight:bold;color:#555;}
+    .sidebar ul {padding:0;margin:8px 0;}
+    .sidebar li {list-style:none; margin:8px 0; font-size:14px; cursor:pointer;}
+    .selected {background:#e7f2fd;color:#276beb;border-radius:3px;}
+    .main-content {flex:1;padding:32px;}
+    .header { display:flex; align-items:center; margin-bottom:18px;}
+    .header input[type=text] {
+      width:240px;height:32px;border-radius:4px;border:1px solid #ddd;padding:0 10px;font-size:14px;
+      margin-right:18px;
+    }
+    .header select {height:32px;font-size:14px;}
+    .card-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:20px;}
+    .card {
+      background:#fff; border-radius:8px; box-shadow:0 2px 8px #e5eaf2;
+      padding:22px 20px; min-height:120px;
+      display:flex;flex-direction:column;justify-content:space-between;position:relative;
+      transition:box-shadow .2s;
+    }
+    .card:hover {box-shadow:0 8px 20px #d2e3fa;}
+    .card-title {font-weight: bold; font-size: 17px; margin-bottom: 8px;}
+    .card-meta {color:#888;font-size:13px;display:flex;align-items:center;}
+    .card-btn {
+      position: absolute; top:18px; right:18px;
+      background:#ecf4ff; color:#2c68d0; border:none; border-radius:5px; padding:6px 16px; cursor:pointer;
+      font-weight:bold; transition:background .2s;
+    }
+    .card-btn:hover {background:#d6eaff;}
+    .pagination {
+      margin:26px 0 0 0; text-align:center;
+    }
+    .pagination button {
+      background:#f3f7fa; border:1px solid #abc; border-radius:4px;
+      margin:0 3px; padding:6px 14px; cursor:pointer;
+    }
+    .pagination .active {background:#276beb;color:#fff;}
   </style>
 </head>
 <body>
-<div id="apiDiv">
-  <label>輸入 Mindomo API key：</label>
-  <input type="password" id="apiKey" autocomplete="new-password">
-  <button onclick="submitKey()">確認</button>
-  <span id="hideTip">（只保存於本頁面記憶體，輸入後隱藏且不可複製，不外洩）</span>
-</div>
-<div id="sortDiv" style="display:none;">
-  <label>排序依據：</label>
-  <select id="sortKey" onchange="renderTable()">
-    <option value="name">檔案名稱</option>
-    <option value="createdAt">建立時間</option>
-    <option value="updatedAt">修改時間</option>
-  </select>
-  <select id="sortOrder" onchange="renderTable()">
-    <option value="asc">遞增</option>
-    <option value="desc">遞減</option>
-  </select>
-</div>
-<div id="searchDiv" style="display:none;">
-  <label>搜尋檔名：</label>
-  <input type="text" id="search" oninput="renderTable()">
-</div>
-<table id="fileTable" style="display:none;">
-  <thead>
-    <tr>
-      <th>類別</th>
-      <th>檔名</th>
-      <th>建立時間</th>
-      <th>修改時間</th>
-      <th>操作</th>
-    </tr>
-  </thead>
-  <tbody id="fileBody"></tbody>
-</table>
-<div id="paginationDiv" style="display:none;"></div>
-
+  <div class="container">
+    <div class="sidebar">
+      <h2>Mindomo</h2>
+      <div class="section">
+        <div class="section-title">分組資料夾 (PARA)</div>
+        <ul id="folderList"></ul>
+      </div>
+    </div>
+    <div class="main-content">
+      <div class="header">
+        <input type="text" id="searchBox" placeholder="搜尋...">
+        <select id="sortKey">
+          <option value="name">檔案名稱</option>
+          <option value="createdAt">建立時間</option>
+          <option value="updatedAt">修改時間</option>
+        </select>
+        <select id="sortOrder">
+          <option value="asc">遞增</option>
+          <option value="desc">遞減</option>
+        </select>
+      </div>
+      <div id="fileStats" style="font-size:14px;color:#888;margin-bottom:18px;"></div>
+      <div class="card-grid" id="cardGrid"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
 <script>
-let apiKey = "";
-let allFiles = [];
-let currentPage = 1;
-const PAGE_SIZE = 12;
+// *** 假資料範例：請改成 API 回傳的資料結構 ***
+let allFiles=[
+  {id:'1',folder:'00inbox',name:'要記什麼 思維歷程',updatedAt:'2025/11/20 下午02:24',createdAt:'2025/11/20 下午01:40'},
+  {id:'2',folder:'01專案',name:'記錄真實 分類法',updatedAt:'2025/11/20 下午02:24',createdAt:'2025/11/18 下午04:10'},
+  // ...更多...
+];
+let allFolders=['00inbox','01專案','02領域','03資源','04檔案'];
+let currentFolder='全部檔案';
+let currentPage=1,PAGE_SIZE=12;
 
-function submitKey() {
-  apiKey = document.getElementById("apiKey").value;
-  document.getElementById("apiDiv").style.display = "none";
-  document.getElementById("searchDiv").style.display = "block";
-  document.getElementById("fileTable").style.display = "table";
-  document.getElementById("sortDiv").style.display = "block";
-  document.getElementById("paginationDiv").style.display = "block";
-  fetchFiles();
+function groupFiles(){
+  return allFiles.filter(f=>currentFolder==='全部檔案'||f.folder===currentFolder);
 }
-
-document.getElementById("apiKey").addEventListener('copy', function(e) { e.preventDefault(); });
-
-function fetchFiles() {
-  fetch("https://www.mindomo.com/api/v1/diagrams", {
-    headers: { Authorization: `Bearer ${apiKey}` }
-  })
-  .then(response => response.json())
-  .then(files => {
-    allFiles = Array.isArray(files) ? files : [];
-    currentPage = 1;
-    renderTable();
-  });
-}
-
-function renderTable() {
-  const tbody = document.getElementById("fileBody");
-  tbody.innerHTML = "";
-  const searchVal = document.getElementById("search").value.toLowerCase();
-  const sortKey = document.getElementById("sortKey").value;
-  const sortOrder = document.getElementById("sortOrder").value;
-
-  let filteredFiles = allFiles.filter(file =>
-    (file.name || "").toLowerCase().includes(searchVal)
+function renderSidebar(){
+  let html='<li'+(currentFolder==='全部檔案'?' class="selected"':'')+'" onclick="selectFolder(\'全部檔案\')">全部檔案</li>';
+  allFolders.forEach(fld=>
+    html+=`<li${fld===currentFolder?' class="selected"':''} onclick="selectFolder('${fld}')">${fld}</li>`
   );
-
-  filteredFiles.sort((a, b) => {
-    const aVal = a[sortKey] || "";
-    const bVal = b[sortKey] || "";
-    if (sortKey === "createdAt" || sortKey === "updatedAt") {
-      const aTime = new Date(aVal).getTime();
-      const bTime = new Date(bVal).getTime();
-      return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
-    }
-    return sortOrder === "asc"
-      ? aVal.localeCompare(bVal, "zh-Hant")
-      : bVal.localeCompare(aVal, "zh-Hant");
-  });
-
-  // 分頁資料
-  const total = filteredFiles.length;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  // 當前分頁校正
-  if (currentPage > totalPages) currentPage = totalPages;
-  if (currentPage < 1) currentPage = 1;
-  // 取分頁資料
-  const pageFiles = filteredFiles.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
-
-  pageFiles.forEach(file => {
-    const category = file.category || file.folder || "";
-    const fileId = file.id || file.diagramId || "";
-    const row = `<tr>
-      <td>${category}</td>
-      <td>${file.name || ""}</td>
-      <td>${file.createdAt || ""}</td>
-      <td>${file.updatedAt || ""}</td>
-      <td>
-        <button onclick="window.open('https://www.mindomo.com/mindmap/${fileId}', '_blank')">開啟</button>
-      </td>
-    </tr>`;
-    tbody.insertAdjacentHTML("beforeend", row);
-  });
-
-  // 分頁按鈕
-  const pageDiv = document.getElementById("paginationDiv");
-  pageDiv.innerHTML = "";
-  for (let i = 1; i <= totalPages; i++) {
-    pageDiv.innerHTML += `<button class="pageBtn${i===currentPage?' active':''}" onclick="gotoPage(${i})">${i}</button>`;
-  }
+  document.getElementById("folderList").innerHTML=html;
 }
-
-function gotoPage(p) {
-  currentPage = p;
-  renderTable();
+function selectFolder(fld){
+  currentFolder=fld;currentPage=1;renderAll();
 }
+function renderCards(){
+  let searchVal = document.getElementById("searchBox").value.toLowerCase();
+  let sortKey = document.getElementById("sortKey").value;
+  let sortOrder = document.getElementById("sortOrder").value;
+  let files=groupFiles().filter(f=>(f.name||"").toLowerCase().includes(searchVal));
+  files.sort((a,b)=>{
+    let aVal=a[sortKey]||"",bVal=b[sortKey]||"";
+    if(sortKey!=='name'){aVal=new Date(aVal).getTime();bVal=new Date(bVal).getTime();}
+    return sortOrder==='asc'?aVal-bVal:bVal-aVal;
+  });
+  //分頁
+  let total=files.length, totalPages=Math.max(1,Math.ceil(total/PAGE_SIZE));
+  if(currentPage>totalPages)currentPage=totalPages;
+  let showFiles=files.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+
+  let grid=document.getElementById("cardGrid");
+  grid.innerHTML="";
+  showFiles.forEach(f=>{
+    grid.innerHTML+=`
+      <div class="card">
+        <div class="card-title">${f.name||""}</div>
+        <button class="card-btn" onclick="window.open('https://www.mindomo.com/mindmap/${f.id}','_blank')">開啟</button>
+        <div class="card-meta">🕒 最後修改於 ${f.updatedAt||""}</div>
+      </div>`;
+  });
+  document.getElementById("fileStats").innerText="共 "+total+" 個項目，頁 "+currentPage+"/"+totalPages;
+  let pagHtml="";
+  for(let i=1;i<=totalPages;i++)
+    pagHtml+=`<button class="${i===currentPage?'active':''}" onclick="gotoPage(${i})">${i}</button>`;
+  document.getElementById("pagination").innerHTML=pagHtml;
+}
+function gotoPage(p){currentPage=p;renderAll();}
+function renderAll(){renderSidebar();renderCards();}
+document.getElementById("searchBox").oninput=renderAll;
+document.getElementById("sortKey").onchange=renderAll;
+document.getElementById("sortOrder").onchange=renderAll;
+renderAll();
 </script>
 </body>
 </html>
