@@ -1,73 +1,85 @@
-import React, { useState, useEffect } from "react";
-import { Table, Input, Button, Modal } from "antd";
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Mindomo 檔案列表</title>
+  <style>
+    #apiDiv, #searchDiv { margin: 20px 0; }
+    #apiKey { user-select: none; }
+    #apiDiv { display: block; }
+    #fileTable { border-collapse: collapse; width: 100%; }
+    #fileTable th, #fileTable td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    #hideTip { color: #888; font-size: 12px; }
+  </style>
+</head>
+<body>
+<div id="apiDiv">
+  <label>輸入 Mindomo API key：</label>
+  <input type="password" id="apiKey" autocomplete="new-password">
+  <button onclick="submitKey()">確認</button>
+  <span id="hideTip">（只保存於本頁面記憶體，輸入後隱藏且不可複製，不外洩）</span>
+</div>
+<div id="searchDiv" style="display:none">
+  <label>搜尋檔名：</label>
+  <input type="text" id="search" oninput="renderTable()">
+</div>
+<table id="fileTable" style="display:none">
+  <thead>
+    <tr>
+      <th>類別</th>
+      <th>檔名</th>
+      <th>建立時間</th>
+      <th>修改時間</th>
+    </tr>
+  </thead>
+  <tbody id="fileBody"></tbody>
+</table>
 
-// 1. 使用者輸入 API KEY，存在 State，輸入後隱藏
-function MindomoFileList() {
-  const [apiKey, setApiKey] = useState("");
-  const [showInput, setShowInput] = useState(true);
-  const [data, setData] = useState([]);
-  const [search, setSearch] = useState("");
+<script>
+let apiKey = "";
+let allFiles = [];
 
-  // 提交 API key 後隱藏，不再顯示欄位
-  const handleKeySubmit = () => setShowInput(false);
-
-  // 取得資料：GET diagrams
-  useEffect(() => {
-    if (apiKey) {
-      fetch("https://www.mindomo.com/api/v1/diagrams", {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-      })
-        .then(res => res.json())
-        .then(res => setData(res)); // 假設回傳為 array
-    }
-  }, [apiKey]);
-
-  // 關鍵字搜尋
-  const filteredData = data.filter(item =>
-    item.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // 表格欄位設計
-  const columns = [
-    { title: "類別", dataIndex: "category", key: "category" },
-    { title: "檔名", dataIndex: "name", key: "name" },
-    { title: "建立時間", dataIndex: "createdAt", key: "createdAt" },
-    { title: "修改時間", dataIndex: "updatedAt", key: "updatedAt" }
-  ];
-
-  return (
-    <div>
-      {showInput && (
-        <Modal
-          title="輸入Mindomo API Key"
-          visible={showInput}
-          onOk={handleKeySubmit}
-          okText="確定"
-          cancelButtonProps={{ style: { display: 'none' } }}
-          closable={false}
-        >
-          <Input.Password
-            placeholder="請貼上 API Key"
-            onChange={e => setApiKey(e.target.value)}
-            style={{ userSelect: "none" }} // 禁止鍵選
-          />
-          <div style={{ fontSize: 12, color: "#888" }}>此欄輸入後將隱藏，且你的瀏覽器不會顯示明文 key</div>
-        </Modal>
-      )}
-      {!showInput && (
-        <div>
-          <Input.Search
-            placeholder="搜尋檔名..."
-            onChange={e => setSearch(e.target.value)}
-            style={{ width: 250, marginBottom: 12 }}
-          />
-          <Table columns={columns} dataSource={filteredData} rowKey="id" />
-        </div>
-      )}
-    </div>
-  );
+function submitKey() {
+  apiKey = document.getElementById("apiKey").value;
+  document.getElementById("apiDiv").style.display = "none";
+  document.getElementById("searchDiv").style.display = "block";
+  document.getElementById("fileTable").style.display = "table";
+  fetchFiles();
 }
 
-export default MindomoFileList;
+// 禁止 API key 複製，不允許 user-select
+document.getElementById("apiKey").addEventListener('copy', function(e) { e.preventDefault(); });
+
+// 取得 Mindomo 檔案列表
+function fetchFiles() {
+  fetch("https://www.mindomo.com/api/v1/diagrams", {
+    headers: { Authorization: `Bearer ${apiKey}` }
+  })
+  .then(response => response.json())
+  .then(files => {
+    allFiles = Array.isArray(files) ? files : [];
+    renderTable();
+  });
+}
+
+// 顯示表格與搜尋過濾
+function renderTable() {
+  const tbody = document.getElementById("fileBody");
+  tbody.innerHTML = "";
+  const searchVal = document.getElementById("search").value.toLowerCase();
+  allFiles.filter(file => file.name.toLowerCase().includes(searchVal))
+    .forEach(file => {
+      // 類別根據 API 檔案結構自行調整 ("category"/"folder"等)
+      const category = file.category || file.folder || "";
+      const row = `<tr>
+        <td>${category}</td>
+        <td>${file.name || ""}</td>
+        <td>${file.createdAt || ""}</td>
+        <td>${file.updatedAt || ""}</td>
+      </tr>`;
+      tbody.insertAdjacentHTML("beforeend", row);
+    });
+}
+</script>
+</body>
+</html>
