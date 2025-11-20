@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Mindomo 檔案列表</title>
   <style>
-    #apiDiv, #searchDiv { margin: 20px 0; }
+    #apiDiv, #searchDiv, #sortDiv { margin: 20px 0; }
     #apiKey { user-select: none; }
     #apiDiv { display: block; }
     #fileTable { border-collapse: collapse; width: 100%; }
@@ -18,6 +18,18 @@
   <input type="password" id="apiKey" autocomplete="new-password">
   <button onclick="submitKey()">確認</button>
   <span id="hideTip">（只保存於本頁面記憶體，輸入後隱藏且不可複製，不外洩）</span>
+</div>
+<div id="sortDiv" style="display:none">
+  <label>排序依據：</label>
+  <select id="sortKey" onchange="renderTable()">
+    <option value="name">檔案名稱</option>
+    <option value="createdAt">建立時間</option>
+    <option value="updatedAt">修改時間</option>
+  </select>
+  <select id="sortOrder" onchange="renderTable()">
+    <option value="asc">遞增</option>
+    <option value="desc">遞減</option>
+  </select>
 </div>
 <div id="searchDiv" style="display:none">
   <label>搜尋檔名：</label>
@@ -44,13 +56,13 @@ function submitKey() {
   document.getElementById("apiDiv").style.display = "none";
   document.getElementById("searchDiv").style.display = "block";
   document.getElementById("fileTable").style.display = "table";
+  document.getElementById("sortDiv").style.display = "block";
   fetchFiles();
 }
 
 // 禁止 API key 複製，不允許 user-select
 document.getElementById("apiKey").addEventListener('copy', function(e) { e.preventDefault(); });
 
-// 取得 Mindomo 檔案列表
 function fetchFiles() {
   fetch("https://www.mindomo.com/api/v1/diagrams", {
     headers: { Authorization: `Bearer ${apiKey}` }
@@ -62,23 +74,41 @@ function fetchFiles() {
   });
 }
 
-// 顯示表格與搜尋過濾
 function renderTable() {
   const tbody = document.getElementById("fileBody");
   tbody.innerHTML = "";
   const searchVal = document.getElementById("search").value.toLowerCase();
-  allFiles.filter(file => file.name.toLowerCase().includes(searchVal))
-    .forEach(file => {
-      // 類別根據 API 檔案結構自行調整 ("category"/"folder"等)
-      const category = file.category || file.folder || "";
-      const row = `<tr>
-        <td>${category}</td>
-        <td>${file.name || ""}</td>
-        <td>${file.createdAt || ""}</td>
-        <td>${file.updatedAt || ""}</td>
-      </tr>`;
-      tbody.insertAdjacentHTML("beforeend", row);
-    });
+  const sortKey = document.getElementById("sortKey").value;
+  const sortOrder = document.getElementById("sortOrder").value;
+
+  const filteredFiles = allFiles.filter(file =>
+    (file.name || "").toLowerCase().includes(searchVal)
+  );
+
+  // 排序
+  filteredFiles.sort((a, b) => {
+    const aVal = a[sortKey] || "";
+    const bVal = b[sortKey] || "";
+    if (sortKey === "createdAt" || sortKey === "updatedAt") {
+      const aTime = new Date(aVal).getTime();
+      const bTime = new Date(bVal).getTime();
+      return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
+    }
+    return sortOrder === "asc"
+      ? aVal.localeCompare(bVal, "zh-Hant")
+      : bVal.localeCompare(aVal, "zh-Hant");
+  });
+
+  filteredFiles.forEach(file => {
+    const category = file.category || file.folder || "";
+    const row = `<tr>
+      <td>${category}</td>
+      <td>${file.name || ""}</td>
+      <td>${file.createdAt || ""}</td>
+      <td>${file.updatedAt || ""}</td>
+    </tr>`;
+    tbody.insertAdjacentHTML("beforeend", row);
+  });
 }
 </script>
 </body>
