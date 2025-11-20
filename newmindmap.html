@@ -1,93 +1,73 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-  <title>Mindomo API 多功能 Demo</title>
-</head>
-<body>
-  <h2>Mindomo 圖表</h2>
-  <button onclick="createMindmap()">建立新空白圖</button>
-  <input id="ai_topic" type="text" placeholder="AI主題（例：量子運算學習）">
-  <button onclick="aiGenerateMindmap()">AI 生成圖</button>
-  <ul id="mindmap-list"></ul>
-  
-  <script>
-    const API_TOKEN = 'KgWdA3krt3dkuS3yQ0TWiOghaYeSGR_tp7u_SV9k_go';
-    const API_URL = 'https://www.mindomo.com/api/v1';
+import React, { useState, useEffect } from "react";
+import { Table, Input, Button, Modal } from "antd";
 
-    // 列出所有心智圖
-    function fetchMindmaps() {
-      fetch(`${API_URL}/diagrams`, {
-        headers: {
-          'Authorization': `Bearer ${API_TOKEN}`
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        const list = document.getElementById('mindmap-list');
-        list.innerHTML = '';
-        data.forEach(map => {
-          const li = document.createElement('li');
-          li.innerHTML = `
-            <a href="https://www.mindomo.com/mindmap/${map.id}" target="_blank">${map.title}</a>
-            <button onclick="deleteMindmap('${map.id}')">刪除</button>
-          `;
-          list.appendChild(li);
-        });
-      });
-    }
+// 1. 使用者輸入 API KEY，存在 State，輸入後隱藏
+function MindomoFileList() {
+  const [apiKey, setApiKey] = useState("");
+  const [showInput, setShowInput] = useState(true);
+  const [data, setData] = useState([]);
+  const [search, setSearch] = useState("");
 
-    // 建立新空白心智圖
-    function createMindmap() {
-      fetch(`${API_URL}/diagrams`, {
-        method: 'POST',
+  // 提交 API key 後隱藏，不再顯示欄位
+  const handleKeySubmit = () => setShowInput(false);
+
+  // 取得資料：GET diagrams
+  useEffect(() => {
+    if (apiKey) {
+      fetch("https://www.mindomo.com/api/v1/diagrams", {
         headers: {
-          'Authorization': `Bearer ${API_TOKEN}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({ title: "新心智圖" })
       })
-      .then(res => res.json())
-      .then(() => {
-        fetchMindmaps();
-        alert('已建立新心智圖！');
-      });
+        .then(res => res.json())
+        .then(res => setData(res)); // 假設回傳為 array
     }
+  }, [apiKey]);
 
-    // AI 生成心智圖
-    function aiGenerateMindmap() {
-      const topic = document.getElementById('ai_topic').value || 'Mindomo AI Demo';
-      fetch(`${API_URL}/diagrams/ai`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${API_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ topic, language: 'zh' })
-      })
-      .then(res => res.json())
-      .then(() => {
-        fetchMindmaps();
-        alert('AI 已生成心智圖！');
-      });
-    }
+  // 關鍵字搜尋
+  const filteredData = data.filter(item =>
+    item.name.toLowerCase().includes(search.toLowerCase())
+  );
 
-    // 刪除心智圖
-    function deleteMindmap(id) {
-      if (!confirm('確認刪除這個心智圖？')) return;
-      fetch(`${API_URL}/diagrams/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${API_TOKEN}`
-        }
-      })
-      .then(() => {
-        fetchMindmaps();
-        alert('已刪除心智圖！');
-      });
-    }
+  // 表格欄位設計
+  const columns = [
+    { title: "類別", dataIndex: "category", key: "category" },
+    { title: "檔名", dataIndex: "name", key: "name" },
+    { title: "建立時間", dataIndex: "createdAt", key: "createdAt" },
+    { title: "修改時間", dataIndex: "updatedAt", key: "updatedAt" }
+  ];
 
-    // 首次載入
-    fetchMindmaps();
-  </script>
-</body>
-</html>
+  return (
+    <div>
+      {showInput && (
+        <Modal
+          title="輸入Mindomo API Key"
+          visible={showInput}
+          onOk={handleKeySubmit}
+          okText="確定"
+          cancelButtonProps={{ style: { display: 'none' } }}
+          closable={false}
+        >
+          <Input.Password
+            placeholder="請貼上 API Key"
+            onChange={e => setApiKey(e.target.value)}
+            style={{ userSelect: "none" }} // 禁止鍵選
+          />
+          <div style={{ fontSize: 12, color: "#888" }}>此欄輸入後將隱藏，且你的瀏覽器不會顯示明文 key</div>
+        </Modal>
+      )}
+      {!showInput && (
+        <div>
+          <Input.Search
+            placeholder="搜尋檔名..."
+            onChange={e => setSearch(e.target.value)}
+            style={{ width: 250, marginBottom: 12 }}
+          />
+          <Table columns={columns} dataSource={filteredData} rowKey="id" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default MindomoFileList;
