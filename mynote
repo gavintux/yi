@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Prompt Architect: Obsidian Clone Project</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #f9fafb;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1d5db; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af; 
+        }
+
+        .sidebar-item {
+            transition: all 0.2s;
+        }
+        .sidebar-item.active {
+            background-color: #e5e7eb;
+            color: #111827;
+            font-weight: 500;
+            border-right: 3px solid #7c3aed; /* Purple accent similar to Obsidian */
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-700">
+
+    <aside class="w-72 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0">
+        <div class="p-4 border-b border-gray-200 flex items-center gap-2">
+            <i class="fa-solid fa-cube text-purple-600 text-xl"></i>
+            <h1 class="font-bold text-lg text-gray-800 tracking-tight">架構師工作台</h1>
+        </div>
+        
+        <div id="sidebar-content" class="flex-1 overflow-y-auto p-2 space-y-1">
+            </div>
+
+        <div class="p-4 border-t border-gray-200 text-xs text-gray-400 text-center">
+            AI Prompt Engineering System v1.0
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-white relative">
+        
+        <header class="h-14 border-b border-gray-100 flex items-center justify-between px-6 bg-white z-10">
+            <div class="flex items-center gap-2 text-sm breadcrumbs">
+                <span class="text-gray-400" id="breadcrumb-aspect">請選擇構面</span>
+                <i class="fa-solid fa-chevron-right text-xs text-gray-300"></i>
+                <span class="font-medium text-gray-800" id="breadcrumb-formula">請選擇公式</span>
+            </div>
+            <div>
+                <button onclick="resetForm()" class="text-xs text-gray-400 hover:text-red-500 transition">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> 重置
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6 pb-24" id="main-scroll-area">
+            <div id="empty-state" class="h-full flex flex-col items-center justify-center text-gray-300">
+                <i class="fa-regular fa-compass text-4xl mb-4"></i>
+                <p>請從左側選擇一個分析構面與公式以開始</p>
+            </div>
+
+            <div id="workspace" class="hidden max-w-4xl mx-auto space-y-8 fade-in">
+                
+                <section>
+                    <h2 id="formula-title" class="text-2xl font-bold text-gray-900 mb-2"></h2>
+                    <p id="formula-desc" class="text-gray-500 mb-6"></p>
+                    
+                    <div class="bg-gray-50 rounded-lg border border-gray-200 p-5">
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">參數設定 (Variables)</h3>
+                        <div id="variables-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            </div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">情境補充 (Context)</h3>
+                        <span class="text-xs text-gray-400">提供越多背景，AI 生成越精準</span>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:bg-gray-50 transition cursor-pointer relative group" onclick="document.getElementById('file-upload').click()">
+                            <input type="file" id="file-upload" multiple class="hidden" onchange="handleFileUpload(this)">
+                            <i class="fa-solid fa-cloud-arrow-up text-gray-300 text-2xl mb-2 group-hover:text-purple-500"></i>
+                            <p class="text-sm text-gray-500">拖曳 PDF/文件 至此，或點擊上傳</p>
+                            <div id="file-list" class="mt-2 flex flex-wrap gap-2 justify-center"></div>
+                        </div>
+
+                        <textarea id="context-text" rows="3" placeholder="在此貼上專案背景、特定限制或補充說明..." class="w-full p-3 border border-gray-200 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm resize-y"></textarea>
+                        
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-link text-gray-400"></i>
+                            <input type="text" id="context-url" placeholder="參考網址 (例如: GitHub repo, 競品頁面)" class="flex-1 p-2 border-b border-gray-200 focus:border-purple-500 outline-none text-sm bg-transparent">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="border-t border-gray-100 pt-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">最終提示詞 (Final Prompt)</h3>
+                        <div class="flex gap-2">
+                            <button onclick="downloadPrompt()" class="text-xs bg-white border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded text-gray-600">
+                                <i class="fa-solid fa-download mr-1"></i> 下載 .txt
+                            </button>
+                            <button onclick="copyPrompt()" class="text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded shadow-sm transition">
+                                <i class="fa-regular fa-copy mr-1"></i> 複製提示詞
+                            </button>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <textarea id="prompt-output" class="w-full h-64 p-4 bg-gray-50 border border-gray-200 rounded-lg font-mono text-sm text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none" spellcheck="false"></textarea>
+                        <div class="absolute bottom-2 right-2 text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded">
+                            可直接編輯
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Data Source (JSON) ---
+        const projectData = {
+          "topic": "打造類似 Obsidian 的雙向連結筆記軟體",
+          "aspects": [
+            {
+              "name": "產品哲學與定位",
+              "id": "aspect_1",
+              "formulas": [
+                {
+                  "id": "formula_1_1",
+                  "name": "核心價值主張生成器",
+                  "description": "定義產品在市場中的獨特位置與用戶核心價值。",
+                  "variables": [
+                    { "name": "目標用戶群體", "options": ["學術研究人員", "軟體開發者", "個人知識管理 (PKM) 愛好者", "長篇內容創作者", "企業內部知識庫用戶"] },
+                    { "name": "核心設計原則", "options": ["本地優先 (Local-first)", "極致的模組化 (Modular)", "所見即所得 (WYSIWYG)", "純文字檔案驅動 (Plain Text)", "協作優先 (Collaboration-first)"] },
+                    { "name": "差異化優勢", "options": ["比 Obsidian 更強的移動端體驗", "內建 AI 輔助思考", "更低的使用門檻與學習曲線", "原生的團隊即時協作", "視覺化圖譜的深度互動"] }
+                  ]
+                },
+                {
+                  "id": "formula_1_2",
+                  "name": "用戶旅程地圖設計",
+                  "description": "規劃用戶從接觸到深度依賴的路徑。",
+                  "variables": [
+                    { "name": "入門引導方式", "options": ["互動式教學 Sandbox", "極簡空白頁面 (Blank Slate)", "預設模板庫", "社群驅動的各種 Starter Kit"] },
+                    { "name": "留存鉤子 (Hook)", "options": ["每日回顧 (Daily Review)", "自動化連結建議", "視覺化知識增長圖譜", "跨設備無縫同步"] }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "技術架構與堆疊",
+              "id": "aspect_2",
+              "formulas": [
+                {
+                  "id": "formula_2_1",
+                  "name": "前端效能優化矩陣",
+                  "description": "決定如何處理大量文本與 DOM 渲染的技術決策。",
+                  "variables": [
+                    { "name": "核心框架選擇", "options": ["Electron + React", "Tauri + Svelte (輕量化)", "Flutter (跨平台一致性)", "Native Swift/Kotlin (極致效能)"] },
+                    { "name": "編輯器引擎", "options": ["CodeMirror 6 (強大擴展性)", "Prosemirror (富文本強項)", "Monaco Editor (VS Code 核心)", "自研 Canvas 渲染"] },
+                    { "name": "大量文件檢索策略", "options": ["Web Worker 全文索引", "SQLite 本地數據庫", "Rust 後端處理層", "簡單的 File System 遍歷"] }
+                  ]
+                },
+                {
+                  "id": "formula_2_2",
+                  "name": "數據同步方案設計",
+                  "description": "解決本地優先與多端同步的衝突。",
+                  "variables": [
+                    { "name": "同步協議", "options": ["CRDT (無衝突複製資料類型)", "Git 核心版本控制", "P2P 加密傳輸", "中央伺服器差異增量更新"] },
+                    { "name": "加密層級", "options": ["端對端加密 (E2EE)", "傳輸層加密 (TLS)", "用戶自管金鑰", "無加密純本地"] }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "功能特性設計",
+              "id": "aspect_3",
+              "formulas": [
+                {
+                  "id": "formula_3_1",
+                  "name": "雙向連結與圖譜邏輯",
+                  "description": "設計知識關聯的核心互動方式。",
+                  "variables": [
+                    { "name": "連結語法標準", "options": ["Wiki Links [[...]]", "Standard Markdown Links", "Hash Tags 系統", "自動語義關聯 (AI Semantic)"] },
+                    { "name": "圖譜視圖交互", "options": ["2D 力導向佈局", "3D WebGL 渲染", "基於目錄結構的樹狀圖", "時間軸流變圖"] },
+                    { "name": "反向連結呈現", "options": ["文末列表", "側邊欄即時預覽", "行內嵌入 (Inline Embed)", "彈出式懸浮視窗"] }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "插件與生態系統",
+              "id": "aspect_4",
+              "formulas": [
+                {
+                  "id": "formula_4_1",
+                  "name": "API 開放策略",
+                  "description": "定義第三方開發者如何介入系統。",
+                  "variables": [
+                    { "name": "插件權限管理", "options": ["沙盒隔離模式 (Sandboxed)", "完全訪問權限 (Full Access)", "需審核上架", "僅限 UI 層修改"] },
+                    { "name": "主題定製能力", "options": ["CSS 變數覆蓋", "完全 CSS 注入", "預設配色方案切換", "組件級別樣式替換"] }
+                  ]
+                }
+              ]
+            }
+          ]
+        };
+
+        // --- State ---
+        let currentFormula = null;
+        let uploadedFiles = [];
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSidebar();
+        });
+
+        // --- Render Logic ---
+        function renderSidebar() {
+            const container = document.getElementById('sidebar-content');
+            container.innerHTML = '';
+
+            projectData.aspects.forEach(aspect => {
+                // Aspect Header
+                const aspectHeader = document.createElement('div');
+                aspectHeader.className = 'px-3 py-2 mt-2 text-xs font-bold text-gray-400 uppercase tracking-wider flex justify-between items-center cursor-pointer hover:text-gray-600';
+                aspectHeader.innerHTML = `<span>${aspect.name}</span> <i class="fa-solid fa-chevron-down transition-transform transform"></i>`;
+                aspectHeader.onclick = function() {
+                    const list = this.nextElementSibling;
+                    list.classList.toggle('hidden');
+                    this.querySelector('i').classList.toggle('rotate-180');
+                };
+                container.appendChild(aspectHeader);
+
+                // Formula List
+                const list = document.createElement('div');
+                list.className = 'space-y-0.5 mb-2';
+                
+                aspect.formulas.forEach(formula => {
+                    const item = document.createElement('div');
+                    item.className = 'sidebar-item px-3 py-2 text-sm text-gray-600 cursor-pointer hover:bg-gray-100 rounded-r-md mx-2';
+                    item.innerHTML = `<i class="fa-solid fa-flask text-gray-400 mr-2 text-xs"></i>${formula.name}`;
+                    item.onclick = () => loadFormula(aspect, formula, item);
+                    list.appendChild(item);
+                });
+                container.appendChild(list);
+            });
+        }
+
+        function loadFormula(aspect, formula, domItem) {
+            // Highlight active item
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+            domItem.classList.add('active');
+
+            // Set state
+            currentFormula = formula;
+
+            // UI Updates
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('workspace').classList.remove('hidden');
+            document.getElementById('breadcrumb-aspect').textContent = aspect.name;
+            document.getElementById('breadcrumb-formula').textContent = formula.name;
+            document.getElementById('formula-title').textContent = formula.name;
+            document.getElementById('formula-desc').textContent = formula.description;
+
+            // Render Variables
+            const varContainer = document.getElementById('variables-container');
+            varContainer.innerHTML = '';
+
+            formula.variables.forEach((variable, index) => {
+                const wrapper = document.createElement('div');
+                
+                // Create options HTML
+                const optionsHtml = variable.options.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+                
+                wrapper.innerHTML = `
+                    <label class="block text-sm font-medium text-gray-700 mb-1">${variable.name}</label>
+                    <div class="relative">
+                        <select id="var-${index}" class="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md bg-white" onchange="updatePrompt()">
+                            ${optionsHtml}
+                            <option value="custom">-- 自定義 --</option>
+                        </select>
+                        <input type="text" id="custom-var-${index}" class="mt-2 hidden w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-purple-500 focus:border-purple-500" placeholder="請輸入自定義內容..." oninput="updatePrompt()">
+                    </div>
+                `;
+                varContainer.appendChild(wrapper);
+
+                // Add listener for 'custom' selection
+                const select = wrapper.querySelector(`select`);
+                const customInput = wrapper.querySelector(`input`);
+                select.addEventListener('change', (e) => {
+                    if (e.target.value === 'custom') {
+                        customInput.classList.remove('hidden');
+                        customInput.focus();
+                    } else {
+                        customInput.classList.add('hidden');
+                    }
+                });
+            });
+
+            updatePrompt();
+        }
+
+        // --- Actions & Logic ---
+
+        function handleFileUpload(input) {
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = '';
+            uploadedFiles = Array.from(input.files);
+
+            uploadedFiles.forEach(file => {
+                const tag = document.createElement('span');
+                tag.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800';
+                tag.innerHTML = `<i class="fa-regular fa-file-pdf mr-1"></i> ${file.name}`;
+                fileList.appendChild(tag);
+            });
+            updatePrompt();
+        }
+
+        document.getElementById('context-text').addEventListener('input', updatePrompt);
+        document.getElementById('context-url').addEventListener('input', updatePrompt);
+
+        function updatePrompt() {
+            if (!currentFormula) return;
+
+            // 1. Collect Variable Selections
+            let variablesContent = "";
+            currentFormula.variables.forEach((variable, index) => {
+                const select = document.getElementById(`var-${index}`);
+                let value = select.value;
+                if (value === 'custom') {
+                    value = document.getElementById(`custom-var-${index}`).value;
+                }
+                variablesContent += `- **${variable.name}**: ${value}\n`;
+            });
+
+            // 2. Collect Context
+            const contextText = document.getElementById('context-text').value;
+            const contextUrl = document.getElementById('context-url').value;
+            let contextContent = "";
+            
+            if (uploadedFiles.length > 0) {
+                contextContent += `[參考文件]: ${uploadedFiles.map(f => f.name).join(', ')}\n`;
+            }
+            if (contextText) {
+                contextContent += `[背景補充]: ${contextText}\n`;
+            }
+            if (contextUrl) {
+                contextContent += `[參考連結]: ${contextUrl}\n`;
+            }
+            if (!contextContent) contextContent = "(使用者未提供額外情境)";
+
+            // 3. Construct Prompt
+            const finalPrompt = `
+# Role
+你是一位頂尖的軟體架構師與產品經理，專精於知識管理工具（Knowledge Management Tools）的開發。
+
+# Task
+請針對以下設定，為一個「類似 Obsidian 的筆記軟體」生成詳細的規格建議與執行策略。
+
+# Configuration (核心參數)
+${variablesContent}
+
+# Context (情境資訊)
+${contextContent}
+
+# Output Requirements
+請根據以上參數與情境，提供一份結構化的分析報告，包含具體的技術建議或產品設計草圖。請確保邏輯清晰，並考慮到實際開發的可行性。
+`.trim();
+
+            document.getElementById('prompt-output').value = finalPrompt;
+        }
+
+        function copyPrompt() {
+            const textarea = document.getElementById('prompt-output');
+            textarea.select();
+            document.execCommand('copy');
+            
+            // Simple toast simulation
+            const btn = document.querySelector('button[onclick="copyPrompt()"]');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> 已複製';
+            setTimeout(() => btn.innerHTML = originalHTML, 2000);
+        }
+
+        function downloadPrompt() {
+            const text = document.getElementById('prompt-output').value;
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Obsidian_Clone_Prompt_${new Date().getTime()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function resetForm() {
+            document.getElementById('context-text').value = '';
+            document.getElementById('context-url').value = '';
+            document.getElementById('file-upload').value = '';
+            document.getElementById('file-list').innerHTML = '';
+            uploadedFiles = [];
+            if (currentFormula) {
+                // Reset selects to first option
+                currentFormula.variables.forEach((_, index) => {
+                    document.getElementById(`var-${index}`).selectedIndex = 0;
+                    document.getElementById(`custom-var-${index}`).classList.add('hidden');
+                    document.getElementById(`custom-var-${index}`).value = '';
+                });
+                updatePrompt();
+            }
+        }
+    </script>
+</body>
+</html>
