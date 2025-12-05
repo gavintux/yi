@@ -1,0 +1,862 @@
+import React, { useState, useEffect } from 'react';
+import { Camera, MapPin, Clock, Search, Upload, Download, Tag, Eye, X, Image as ImageIcon, Maximize2, Share2, Facebook, Instagram, MessageCircle, Copy, Check, Lock, Unlock, Edit, Trash2, LogOut, Cloud, RefreshCw } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+// Fix: Added signInWithCustomToken to imports
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
+
+// -----------------------------------------------------------------------------
+// Firebase Configuration & Initialization
+// -----------------------------------------------------------------------------
+
+const firebaseConfig = JSON.parse(__firebase_config);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+// Collection Path: Public data so everyone can see the shared photos
+const COLLECTION_NAME = 'linkc_photos_v1';
+
+// -----------------------------------------------------------------------------
+// Utility Functions
+// -----------------------------------------------------------------------------
+
+const downloadWithWatermark = async (imageUrl, filename, e) => {
+  if(e) e.stopPropagation();
+  
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  
+  img.crossOrigin = "anonymous";
+  img.src = imageUrl;
+
+  return new Promise((resolve, reject) => {
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      ctx.drawImage(img, 0, 0);
+
+      const fontSize = Math.max(20, img.width * 0.03); 
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+
+      const padding = fontSize;
+      ctx.fillText('Linkc', canvas.width - padding, canvas.height - padding);
+
+      try {
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        const link = document.createElement('a');
+        link.download = `Linkc_${filename}.jpg`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        resolve(true);
+      } catch (err) {
+        alert("無法下載此圖片（可能是原始圖片伺服器限制了跨域存取）。");
+        console.error(err);
+        resolve(false);
+      }
+    };
+    img.onerror = () => {
+      alert("圖片載入失敗。");
+      resolve(false);
+    };
+  });
+};
+
+const copyToClipboard = (text) => {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text);
+  } else {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textArea);
+  }
+};
+
+// -----------------------------------------------------------------------------
+// Components
+// -----------------------------------------------------------------------------
+
+const Header = ({ setView, isAdmin, onLoginClick, onLogout }) => (
+  <header className="bg-white shadow-sm sticky top-0 z-40">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div 
+        className="flex items-center cursor-pointer gap-2" 
+        onClick={() => setView('gallery')}
+      >
+        <div className="bg-indigo-600 p-2 rounded-lg">
+          <Camera className="w-6 h-6 text-white" />
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Linkc <span className="text-indigo-600 font-light">Gallery</span></h1>
+        {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2">ADMIN</span>}
+      </div>
+      
+      <div className="flex items-center gap-3">
+        {isAdmin ? (
+            <button
+                onClick={onLogout}
+                className="p-2 text-gray-500 hover:text-red-600 transition-colors"
+                title="登出管理模式"
+            >
+                <LogOut size={20} />
+            </button>
+        ) : (
+            <button
+                onClick={onLoginClick}
+                className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
+                title="管理員登入"
+            >
+                <Lock size={20} />
+            </button>
+        )}
+
+        <button
+          onClick={() => setView('upload')}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full transition-all shadow-md hover:shadow-lg"
+        >
+          <Upload size={18} />
+          <span className="hidden sm:inline">新增照片</span>
+        </button>
+      </div>
+    </div>
+  </header>
+);
+
+const ShareButtons = ({ photo, className = "" }) => {
+  const [showCopied, setShowCopied] = useState(false);
+  const shareText = `${photo.thoughts_shooting || '分享一張很棒的照片！'} \n\n#Linkc #${photo.tags.join(' #')}`;
+  const shareUrl = photo.url;
+
+  const handleFB = (e) => {
+    e.stopPropagation();
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`, '_blank');
+  };
+
+  const handleLine = (e) => {
+    e.stopPropagation();
+    window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`, '_blank');
+  };
+
+  const handleIG = async (e) => {
+    e.stopPropagation();
+    copyToClipboard(shareText);
+    setShowCopied(true);
+    setTimeout(() => setShowCopied(false), 2000);
+    await downloadWithWatermark(photo.url, photo.id, e);
+    alert("Instagram 不支援網頁直接發文。\n\n已為您：\n1. 複製貼文內容\n2. 下載照片\n\n請直接開啟 Instagram 發佈！");
+  };
+
+  return (
+    <div className={`flex items-center gap-2 ${className}`}>
+      <button onClick={handleFB} className="bg-[#1877F2] hover:bg-[#166fe5] text-white p-2 rounded-full transition-transform hover:scale-110 shadow-sm">
+        <Facebook size={18} fill="currentColor" className="stroke-none" />
+      </button>
+      <button onClick={handleLine} className="bg-[#00C300] hover:bg-[#00b300] text-white p-2 rounded-full transition-transform hover:scale-110 shadow-sm">
+        <MessageCircle size={18} fill="currentColor" className="stroke-none" />
+      </button>
+      <button onClick={handleIG} className="bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white p-2 rounded-full transition-transform hover:scale-110 shadow-sm">
+        <Instagram size={18} />
+      </button>
+    </div>
+  );
+};
+
+const Lightbox = ({ photo, onClose, isAdmin, onEdit, onDelete }) => {
+  if (!photo) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <button 
+        onClick={onClose}
+        className="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors z-50"
+      >
+        <X size={32} />
+      </button>
+
+      {/* Admin Actions in Lightbox */}
+      {isAdmin && (
+        <div className="absolute top-4 left-4 flex gap-2 z-50">
+            <button 
+                onClick={(e) => { e.stopPropagation(); onEdit(photo); }}
+                className="bg-blue-600/80 hover:bg-blue-600 text-white px-3 py-1.5 rounded-full flex items-center gap-2 text-sm backdrop-blur-md"
+            >
+                <Edit size={14} /> 編輯
+            </button>
+            <button 
+                onClick={(e) => { e.stopPropagation(); onDelete(photo.id); onClose(); }}
+                className="bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded-full flex items-center gap-2 text-sm backdrop-blur-md"
+            >
+                <Trash2 size={14} /> 刪除
+            </button>
+        </div>
+      )}
+
+      <div 
+        className="relative max-w-full max-h-[80vh] flex items-center justify-center group"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img 
+          src={photo.url} 
+          alt={photo.tags.join(', ')} 
+          className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-sm"
+        />
+        
+        <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/10">
+           <button 
+             onClick={(e) => downloadWithWatermark(photo.url, photo.id, e)}
+             className="text-white hover:text-indigo-300 transition-colors flex flex-col items-center gap-1"
+           >
+             <Download size={20} />
+             <span className="text-[10px]">下載</span>
+           </button>
+           <div className="w-px h-8 bg-white/20 mx-2"></div>
+           <ShareButtons photo={photo} />
+        </div>
+      </div>
+
+      <div className="mt-4 text-white/80 text-center" onClick={(e) => e.stopPropagation()}>
+         <p className="text-white/60 text-xs font-mono mb-1">
+            {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso}
+        </p>
+        <div className="flex items-center justify-center gap-4 text-sm font-medium">
+            <span className="flex items-center gap-1"><Clock size={14}/> {photo.date}</span>
+            <span className="flex items-center gap-1"><MapPin size={14}/> {photo.location.city}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PhotoCard = ({ photo, onExpand, isAdmin, onEdit, onDelete }) => {
+  return (
+    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full border border-gray-100 relative">
+      
+      {/* Admin Overlay Actions */}
+      {isAdmin && (
+        <div className="absolute top-2 left-2 z-20 flex gap-2">
+            <button 
+                onClick={(e) => { e.stopPropagation(); onEdit(photo); }}
+                className="bg-blue-500 text-white p-2 rounded-full shadow-md hover:bg-blue-600 transition-colors"
+                title="編輯照片"
+            >
+                <Edit size={14} />
+            </button>
+            <button 
+                onClick={(e) => { e.stopPropagation(); onDelete(photo.id); }}
+                className="bg-red-500 text-white p-2 rounded-full shadow-md hover:bg-red-600 transition-colors"
+                title="刪除照片"
+            >
+                <Trash2 size={14} />
+            </button>
+        </div>
+      )}
+
+      {/* Image Container */}
+      <div 
+        className="relative aspect-[4/3] overflow-hidden bg-gray-100 cursor-zoom-in"
+        onClick={() => onExpand(photo)}
+      >
+        <img 
+          src={photo.url} 
+          alt={photo.tags.join(', ')} 
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          onError={(e) => {e.target.src = "https://images.unsplash.com/photo-1623039405147-9477948aa73a?q=80&w=2070&auto=format&fit=crop";}}
+        />
+        
+        {/* Share Buttons */}
+        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2 z-10">
+          <ShareButtons photo={photo} className="flex-col !gap-2" />
+        </div>
+
+        {/* Center Enlarge Icon */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-black/10">
+            <div className="bg-black/50 text-white p-3 rounded-full backdrop-blur-sm">
+                <Maximize2 size={24} />
+            </div>
+        </div>
+        
+        <div className="absolute bottom-3 left-3 pointer-events-none">
+          <span className="bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+            <Clock size={12} /> {photo.date}
+          </span>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-5 flex flex-col flex-grow">
+        <div className="flex items-center text-gray-500 text-sm mb-3">
+          <MapPin size={14} className="mr-1 text-indigo-500" />
+          {photo.location.country} · {photo.location.city} {photo.location.spot && `· ${photo.location.spot}`}
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-4">
+          {photo.tags.map(tag => (
+            <span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full font-medium">
+              #{tag}
+            </span>
+          ))}
+        </div>
+
+        <div className="space-y-3 mb-4 flex-grow">
+          {photo.thoughts_shooting && (
+            <div className="bg-gray-50 p-3 rounded-lg border-l-2 border-orange-300">
+              <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1">
+                <Camera size={12} /> 拍攝當下
+              </div>
+              <p className="text-gray-700 text-sm italic">"{photo.thoughts_shooting}"</p>
+            </div>
+          )}
+          {photo.thoughts_viewing && (
+            <div className="bg-gray-50 p-3 rounded-lg border-l-2 border-indigo-300">
+               <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1">
+                <Eye size={12} /> 欣賞隨筆
+              </div>
+              <p className="text-gray-700 text-sm italic">"{photo.thoughts_viewing}"</p>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 border-t pt-3 mt-auto text-center">
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] uppercase text-gray-400 font-bold">快門</span>
+              <span className="text-xs text-gray-700 font-mono">{photo.exif.shutter || '--'}</span>
+            </div>
+            <div className="flex flex-col items-center border-l border-r border-gray-100">
+              <span className="text-[10px] uppercase text-gray-400 font-bold">光圈</span>
+              <span className="text-xs text-gray-700 font-mono">{photo.exif.aperture || '--'}</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] uppercase text-gray-400 font-bold">ISO</span>
+              <span className="text-xs text-gray-700 font-mono">{photo.exif.iso || '--'}</span>
+            </div>
+        </div>
+        
+        <div className="border-t border-dashed border-gray-200 mt-3 pt-2 flex justify-between items-center">
+            <span className="text-[10px] text-gray-400">CC BY 4.0 姓名標示</span>
+            <span className="text-[10px] font-bold text-gray-300 select-none">Linkc</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PhotoForm = ({ onSave, onCancel, initialData, isSaving }) => {
+  const isEditMode = !!initialData;
+  const [formData, setFormData] = useState(initialData || {
+    url: '',
+    tags: '',
+    thoughts_shooting: '',
+    thoughts_viewing: '',
+    exif: { shutter: '', aperture: 'f/', iso: '', date: new Date().toISOString().split('T')[0] },
+    location: { country: '', city: '', spot: '' }
+  });
+
+  useEffect(() => {
+    if (initialData && Array.isArray(initialData.tags)) {
+        setFormData(prev => ({
+            ...prev,
+            tags: initialData.tags.join(', ')
+        }));
+    }
+  }, [initialData]);
+
+  const handleChange = (section, field, value) => {
+    if (section) {
+      setFormData(prev => ({
+        ...prev,
+        [section]: { ...prev[section], [field]: value }
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const processedData = {
+      ...formData,
+      tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+      date: formData.exif.date,
+      // For DB compatibility, we handle ID and Timestamp in the parent
+    };
+    onSave(processedData);
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-300">
+      <div className="flex justify-between items-center mb-6 border-b pb-4">
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          {isEditMode ? <Edit className="text-blue-600" /> : <Upload className="text-indigo-600" />} 
+          {isEditMode ? '修改照片資訊' : '分享新照片'}
+        </h2>
+        <button onClick={onCancel} className="text-gray-400 hover:text-gray-600">
+          <X size={24} />
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">照片連結 (URL)</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <ImageIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              required
+              type="url"
+              placeholder="https://example.com/image.jpg"
+              className="block w-full pl-10 border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5 border"
+              value={formData.url}
+              onChange={(e) => handleChange(null, 'url', e.target.value)}
+            />
+          </div>
+          {!isEditMode && (
+              <p className="text-xs text-gray-500">
+                * 針對 Google Photo：請在照片上按右鍵選擇「複製圖片位址」(Copy Image Address) 以取得有效連結。
+              </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <label className="block text-sm font-bold text-gray-800 mb-1">標籤 (Tags)</label>
+              <input
+                type="text"
+                placeholder="風景, 台灣, 街拍 (以逗號分隔)"
+                className="block w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5 border"
+                value={formData.tags}
+                onChange={(e) => handleChange(null, 'tags', e.target.value)}
+              />
+            </div>
+            
+            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+              <label className="block text-sm font-bold text-gray-800 mb-1">拍攝時的感受</label>
+              <textarea
+                rows="3"
+                placeholder="按下快門那一刻，你在想什麼？"
+                className="block w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5 border resize-none"
+                value={formData.thoughts_shooting}
+                onChange={(e) => handleChange(null, 'thoughts_shooting', e.target.value)}
+              />
+            </div>
+
+             <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+              <label className="block text-sm font-bold text-gray-800 mb-1">欣賞時的感受</label>
+              <textarea
+                rows="3"
+                placeholder="現在看這張照片，有什麼新的體悟？"
+                className="block w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5 border resize-none"
+                value={formData.thoughts_viewing}
+                onChange={(e) => handleChange(null, 'thoughts_viewing', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-6 bg-gray-50 p-6 rounded-xl border border-gray-200 opacity-90">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">拍攝參數 & 地點 (也可修改)</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500">快門速度</label>
+                <input
+                  type="text"
+                  placeholder="1/200"
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                  value={formData.exif.shutter}
+                  onChange={(e) => handleChange('exif', 'shutter', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500">光圈</label>
+                <input
+                  type="text"
+                  placeholder="f/2.8"
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                  value={formData.exif.aperture}
+                  onChange={(e) => handleChange('exif', 'aperture', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500">ISO</label>
+                <input
+                  type="text"
+                  placeholder="400"
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                  value={formData.exif.iso}
+                  onChange={(e) => handleChange('exif', 'iso', e.target.value)}
+                />
+              </div>
+               <div>
+                <label className="block text-xs font-medium text-gray-500">拍攝日期</label>
+                <input
+                  type="date"
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                  value={formData.exif.date}
+                  onChange={(e) => handleChange('exif', 'date', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                 <div>
+                  <label className="block text-xs font-medium text-gray-500">國家</label>
+                  <input
+                    type="text"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                    value={formData.location.country}
+                    onChange={(e) => handleChange('location', 'country', e.target.value)}
+                  />
+                </div>
+                 <div>
+                  <label className="block text-xs font-medium text-gray-500">城市</label>
+                  <input
+                    type="text"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                    value={formData.location.city}
+                    onChange={(e) => handleChange('location', 'city', e.target.value)}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-500">地名/景點</label>
+                  <input
+                    type="text"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border"
+                    value={formData.location.spot}
+                    onChange={(e) => handleChange('location', 'spot', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-6">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSaving}
+            className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            取消
+          </button>
+          <button
+            type="submit"
+            disabled={isSaving}
+            className={`px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white shadow-lg hover:shadow-xl transition-all flex items-center gap-2 ${isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-600 hover:bg-indigo-700'} disabled:opacity-50`}
+          >
+            {isSaving && <RefreshCw className="animate-spin" size={16} />}
+            {isEditMode ? '儲存修改' : '發佈照片'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+const AdminLogin = ({ onLogin, onCancel }) => {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (password === '590123') {
+      onLogin();
+    } else {
+      setError(true);
+      setPassword('');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full animate-in zoom-in-95 duration-200">
+            <div className="text-center mb-6">
+                <div className="mx-auto bg-gray-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                    <Lock className="text-gray-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">管理員登入</h3>
+                <p className="text-gray-500 text-sm">請輸入密碼以啟用編輯/刪除權限</p>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <input 
+                    type="password" 
+                    placeholder="輸入密碼"
+                    className="w-full text-center tracking-widest border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={password}
+                    onChange={(e) => {setPassword(e.target.value); setError(false);}}
+                    autoFocus
+                />
+                {error && <p className="text-red-500 text-xs text-center">密碼錯誤，請重試。</p>}
+                
+                <div className="flex gap-3">
+                    <button type="button" onClick={onCancel} className="flex-1 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        取消
+                    </button>
+                    <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-md">
+                        解鎖
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+  );
+};
+
+// -----------------------------------------------------------------------------
+// Main App
+// -----------------------------------------------------------------------------
+
+export default function App() {
+  const [view, setView] = useState('gallery');
+  const [photos, setPhotos] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTag, setActiveTag] = useState(null);
+  
+  // Feature States
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [editingPhoto, setEditingPhoto] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // 1. Auth Setup (Anonymous)
+  useEffect(() => {
+    const initAuth = async () => {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+             await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+             await signInAnonymously(auth);
+        }
+    };
+    initAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Data Fetching (Firestore Public Collection)
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Use specific path for public data
+    const q = query(
+        collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME), 
+        orderBy('timestamp', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, 
+      (snapshot) => {
+        const loadedPhotos = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        setPhotos(loadedPhotos);
+      },
+      (error) => {
+          console.error("Data fetch error:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  // CRUD Operations
+  const handleSavePhoto = async (photoData) => {
+    if (!currentUser) return;
+    setIsSaving(true);
+
+    try {
+        const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
+
+        if (editingPhoto) {
+            // Update
+            const docRef = doc(collectionRef, photoData.id);
+            await updateDoc(docRef, {
+                ...photoData,
+                // keep original timestamp usually, or update if desired
+            });
+            setEditingPhoto(null);
+        } else {
+            // Create
+            await addDoc(collectionRef, {
+                ...photoData,
+                timestamp: Date.now() // Use numeric timestamp for easier sorting/filtering without complex objects
+            });
+        }
+        setView('gallery');
+    } catch (e) {
+        console.error("Save error:", e);
+        alert("儲存失敗，請稍後再試。");
+    } finally {
+        setIsSaving(false);
+    }
+  };
+
+  const handleDeletePhoto = async (id) => {
+      if (!currentUser) return;
+      if(window.confirm('確定要永久刪除這張照片嗎？此動作將同步刪除資料庫中的紀錄。')) {
+          try {
+             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, id));
+          } catch(e) {
+             console.error("Delete error:", e);
+             alert("刪除失敗");
+          }
+      }
+  };
+
+  const startEdit = (photo) => {
+      setEditingPhoto(photo);
+      setView('upload');
+      if (selectedPhoto) setSelectedPhoto(null);
+  };
+
+  // Filter Logic
+  const allTags = [...new Set(photos.flatMap(p => p.tags))];
+
+  const filteredPhotos = photos.filter(photo => {
+    const matchesSearch = 
+      (photo.location.city || '').includes(searchQuery) ||
+      (photo.location.country || '').includes(searchQuery) ||
+      (photo.location.spot || '').includes(searchQuery) ||
+      (photo.thoughts_shooting || '').includes(searchQuery) ||
+      (photo.thoughts_viewing || '').includes(searchQuery) ||
+      (photo.tags || []).some(t => t.includes(searchQuery));
+    
+    const matchesTag = activeTag ? (photo.tags || []).includes(activeTag) : true;
+
+    return matchesSearch && matchesTag;
+  });
+
+  return (
+    <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+      <Header 
+        setView={(v) => { setView(v); setEditingPhoto(null); }} 
+        isAdmin={isAdmin} 
+        onLoginClick={() => setShowLogin(true)}
+        onLogout={() => { setIsAdmin(false); alert("已登出管理模式"); }}
+      />
+      
+      {showLogin && (
+          <AdminLogin 
+            onLogin={() => { setIsAdmin(true); setShowLogin(false); }}
+            onCancel={() => setShowLogin(false)}
+          />
+      )}
+      
+      {selectedPhoto && (
+        <Lightbox 
+            photo={selectedPhoto} 
+            onClose={() => setSelectedPhoto(null)} 
+            isAdmin={isAdmin}
+            onEdit={startEdit}
+            onDelete={handleDeletePhoto}
+        />
+      )}
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {view === 'gallery' ? (
+          <>
+            <div className="flex flex-col md:flex-row gap-6 mb-8">
+              <div className="relative flex-grow max-w-xl">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="搜尋城市、地點、感受或關鍵字..."
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm transition-all"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="flex-1 flex flex-wrap gap-2 items-center">
+                <span className="text-sm font-bold text-gray-400 mr-2 flex items-center gap-1">
+                  <Tag size={14} /> 分類:
+                </span>
+                <button
+                  onClick={() => setActiveTag(null)}
+                  className={`px-3 py-1 rounded-full text-sm transition-colors ${!activeTag ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-200'}`}
+                >
+                  全部
+                </button>
+                {allTags.map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => setActiveTag(tag === activeTag ? null : tag)}
+                    className={`px-3 py-1 rounded-full text-sm transition-colors ${tag === activeTag ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200'}`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {filteredPhotos.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredPhotos.map(photo => (
+                  <PhotoCard 
+                    key={photo.id} 
+                    photo={photo} 
+                    onExpand={setSelectedPhoto} 
+                    isAdmin={isAdmin}
+                    onEdit={startEdit}
+                    onDelete={handleDeletePhoto}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-dashed border-gray-300">
+                <Cloud className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+                <h3 className="text-lg font-medium text-gray-900">資料庫是空的</h3>
+                <p className="text-gray-500">這是一個全新的雲端相簿，上傳第一張照片吧！</p>
+                <button 
+                  onClick={() => setView('upload')}
+                  className="mt-4 text-indigo-600 hover:text-indigo-800 font-medium"
+                >
+                  上傳新照片 &rarr;
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <PhotoForm 
+            onSave={handleSavePhoto} 
+            onCancel={() => { setView('gallery'); setEditingPhoto(null); }} 
+            initialData={editingPhoto}
+            isSaving={isSaving}
+          />
+        )}
+      </main>
+      
+      <footer className="bg-white border-t border-gray-200 mt-12 py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
+          <p>© {new Date().getFullYear()} Linkc Photo Space.</p>
+          <p className="mt-1">Content Creative Commons Attribution (CC BY).</p>
+        </div>
+      </footer>
+    </div>
+  );
+}
