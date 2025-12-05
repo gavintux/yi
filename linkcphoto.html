@@ -41,7 +41,8 @@
             Camera, MapPin, Clock, Search, Upload, Download, Tag, Eye, X, 
             Image as ImageIcon, Maximize2, Share2, Facebook, Instagram, 
             MessageCircle, Copy, Check, Lock, Unlock, Edit, Trash2, LogOut, 
-            Cloud, RefreshCw, AlertTriangle, Info, Save, Link as LinkIcon, FileUp, Sparkles, Map as MapIcon, Aperture, Disc
+            Cloud, RefreshCw, AlertTriangle, Info, Save, Link as LinkIcon, FileUp, Sparkles, Map as MapIcon, Aperture, Disc,
+            ArrowDownWideNarrow, ArrowUpNarrowWide, Filter
         } from 'https://esm.sh/lucide-react@0.294.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -53,7 +54,7 @@
         // 設定區
         // -----------------------------------------------------------------------------
         
-        const firebaseConfig = {
+        const firebaseConfig ={
             apiKey: "AIzaSyDwXsplXePeD1wU1GG4BwQBR6iSMd3_5nY",
             authDomain: "linkcphoto.firebaseapp.com",
             projectId: "linkcphoto",
@@ -160,15 +161,14 @@
                         resolve(true);
                     } catch (err) {
                         console.warn("Canvas Tainted (CORS 限制)，轉為下載原圖。", err);
-                        alert("因瀏覽器安全性限制 (CORS)，無法合成浮水印。\n\n系統將為您下載原始圖片。");
+                        // 降級處理
                         downloadOriginal(imageUrl, filename);
-                        resolve(false);
+                        resolve(false); // 雖然失敗，但已處理降級，回傳 false 讓呼叫者知道沒產生浮水印
                     }
                 };
                 
                 img.onerror = () => {
                     console.warn("圖片載入失敗 (CORS 限制)，轉為下載原圖。");
-                    alert("因圖片來源限制，無法載入浮水印畫布。\n\n系統將為您下載原始圖片。");
                     downloadOriginal(imageUrl, filename);
                     resolve(false);
                 };
@@ -236,17 +236,30 @@
         );
 
         const ShareButtons = ({ photo }) => {
-            const shareText = `${photo.thoughts_shooting || '分享一張照片'} #Linkc`;
+            const shareText = `${photo.thoughts_shooting || '分享一張照片'} \n\n#Linkc ${photo.tags.map(t=>'#'+t).join(' ')}`;
+            
             const handleIG = async (e) => {
                 e.stopPropagation();
+                
+                // 1. 先複製文字
                 copyToClipboard(shareText);
-                await downloadWithWatermark(photo.url, photo.id, e);
+                
+                // 2. 嘗試下載
+                const success = await downloadWithWatermark(photo.url, photo.id, e);
+                
+                // 3. 顯示訊息
+                if (success) {
+                    alert("已複製貼文內容並下載照片 (含浮水印)！\n\n請開啟 Instagram 選擇照片並貼上文字。");
+                } else {
+                    alert("已複製貼文內容！\n\n因瀏覽器限制，無法自動下載合成浮水印的照片。\n系統已為您開啟原圖，請長按儲存後，再至 Instagram 發佈。");
+                }
             };
+
             return (
                 <div className="flex items-center gap-2">
                     <button onClick={(e) => {e.stopPropagation(); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(photo.url)}`, '_blank')}} className="bg-blue-600 text-white p-2 rounded-full hover:scale-110 transition-transform"><Facebook size={18} /></button>
                     <button onClick={(e) => {e.stopPropagation(); window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(photo.url)}`, '_blank')}} className="bg-green-500 text-white p-2 rounded-full hover:scale-110 transition-transform"><MessageCircle size={18} /></button>
-                    <button onClick={handleIG} className="bg-pink-600 text-white p-2 rounded-full hover:scale-110 transition-transform"><Instagram size={18} /></button>
+                    <button onClick={handleIG} className="bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white p-2 rounded-full hover:scale-110 transition-transform" title="分享到 Instagram"><Instagram size={18} /></button>
                 </div>
             );
         };
@@ -280,7 +293,6 @@
                             <span className="flex items-center gap-1"><Clock size={14}/> {photo.date ? photo.date.replace('T', ' ') : ''}</span>
                             <span className="flex items-center gap-1"><MapPin size={14}/> {photo.location.city}</span>
                         </div>
-                        {/* 燈箱中的相機鏡頭資訊 */}
                         {(photo.exif.camera || photo.exif.lens) && (
                             <div className="flex items-center justify-center gap-3 text-xs text-white/70 mb-1">
                                 {photo.exif.camera && <span className="flex items-center gap-1"><Camera size={12}/> {photo.exif.camera}</span>}
@@ -344,7 +356,6 @@
                         )}
                     </div>
 
-                    {/* 相機與鏡頭資訊 (新增) */}
                     {(photo.exif.camera || photo.exif.lens) && (
                         <div className="flex flex-col gap-1 mb-3 text-xs text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
                             {photo.exif.camera && <div className="flex items-center gap-1 font-medium"><Camera size={12} className="text-gray-400"/> {photo.exif.camera}</div>}
@@ -389,7 +400,7 @@
                 tags: '', 
                 thoughts_shooting: '', 
                 thoughts_viewing: '', 
-                exif: { shutter: '', aperture: 'f/', iso: '', date: getNowString(), camera: '', lens: '' }, // 新增 camera, lens
+                exif: { shutter: '', aperture: 'f/', iso: '', date: getNowString(), camera: '', lens: '' }, 
                 location: { country: '', city: '', spot: '' } 
             });
             const [status, setStatus] = useState('');
@@ -412,18 +423,15 @@
                         const extractedISO = EXIF.getTag(this, "ISOSpeedRatings");
                         const extractedDate = EXIF.getTag(this, "DateTimeOriginal");
                         
-                        // 相機與鏡頭資訊
                         const make = EXIF.getTag(this, "Make");
                         const model = EXIF.getTag(this, "Model");
                         const lensModel = EXIF.getTag(this, "LensModel");
 
-                        // GPS Extraction
                         const lat = EXIF.getTag(this, "GPSLatitude");
                         const latRef = EXIF.getTag(this, "GPSLatitudeRef");
                         const lon = EXIF.getTag(this, "GPSLongitude");
                         const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
 
-                        // Format EXIF Data
                         let formattedShutter = "";
                         if (extractedShutter) {
                             if (extractedShutter < 1) {
@@ -445,7 +453,6 @@
                             }
                         }
 
-                        // 組合相機名稱 (處理 Make 與 Model 重複的問題)
                         let formattedCamera = "";
                         if (make && model) {
                             if (model.toLowerCase().includes(make.toLowerCase())) {
@@ -457,7 +464,6 @@
                             formattedCamera = model || make || "";
                         }
 
-                        // Prepare updates
                         let locationUpdate = { ...formData.location };
                         let extraStatus = "";
 
@@ -487,8 +493,8 @@
                                 aperture: formattedAperture || prev.exif.aperture,
                                 iso: extractedISO ? extractedISO.toString() : prev.exif.iso,
                                 date: formattedDate || prev.exif.date,
-                                camera: formattedCamera || prev.exif.camera, // 新增
-                                lens: lensModel || prev.exif.lens // 新增
+                                camera: formattedCamera || prev.exif.camera,
+                                lens: lensModel || prev.exif.lens
                             },
                             location: locationUpdate
                         }));
@@ -590,7 +596,6 @@
                                     拍攝參數 {exifStatus && <span className="text-xs text-green-500 font-normal normal-case">({exifStatus})</span>}
                                 </h3>
                                 
-                                {/* 相機與鏡頭輸入欄位 (新增) */}
                                 <div className="grid grid-cols-1 gap-4 mb-4">
                                     <div><label className="block text-xs font-medium text-gray-500">相機型號</label><input type="text" placeholder="例如：Sony A7III" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} /></div>
                                     <div><label className="block text-xs font-medium text-gray-500">鏡頭資訊</label><input type="text" placeholder="例如：FE 24-105mm F4 G" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /></div>
@@ -636,6 +641,7 @@
             const [photos, setPhotos] = useState([]);
             const [searchQuery, setSearchQuery] = useState('');
             const [activeTag, setActiveTag] = useState(null);
+            const [sortOrder, setSortOrder] = useState('newest'); // 'newest' | 'oldest'
             
             const [selectedPhoto, setSelectedPhoto] = useState(null);
             const [isAdmin, setIsAdmin] = useState(false);
@@ -654,6 +660,8 @@
 
             useEffect(() => {
                 if (!currentUser || !db) return;
+                // Query all photos first (client-side sorting is easier for complex logic, or use simple query)
+                // Using simple order for initial fetch
                 const q = query(collection(db, COLLECTION_NAME), orderBy('timestamp', 'desc'));
                 onSnapshot(q, (snapshot) => { setPhotos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); });
             }, [currentUser]);
@@ -686,10 +694,75 @@
             if (authError) return <AuthError message={authError} />;
 
             const allTags = [...new Set(photos.flatMap(p => p.tags))];
+
+            // Advanced Search Logic
             const filteredPhotos = photos.filter(photo => {
-                const matchesSearch = JSON.stringify(photo).toLowerCase().includes(searchQuery.toLowerCase());
-                const matchesTag = activeTag ? (photo.tags || []).includes(activeTag) : true;
-                return matchesSearch && matchesTag;
+                // 1. Tag Filter (if clicked from tag cloud)
+                if (activeTag && !(photo.tags || []).includes(activeTag)) {
+                    return false;
+                }
+
+                // 2. Search Query Parser (AND, OR, NOT)
+                if (!searchQuery.trim()) return true;
+
+                const query = searchQuery.toLowerCase();
+                const photoString = JSON.stringify(photo).toLowerCase(); // Simple full-text search base
+
+                // Tokens separated by spaces
+                const tokens = query.split(/\s+/);
+                
+                // Logic:
+                // Default is AND.
+                // "OR" keyword makes next term OR.
+                // "-" prefix is NOT.
+                
+                // We'll evaluate expression left-to-right loosely.
+                let isMatch = true;
+                let nextIsOr = false;
+
+                for (let i = 0; i < tokens.length; i++) {
+                    let token = tokens[i];
+                    if (token === 'or') {
+                        nextIsOr = true;
+                        continue;
+                    }
+
+                    let isNot = false;
+                    if (token.startsWith('-') && token.length > 1) {
+                        isNot = true;
+                        token = token.substring(1);
+                    }
+
+                    // Check match for this token
+                    const tokenMatch = photoString.includes(token);
+                    const conditionMet = isNot ? !tokenMatch : tokenMatch;
+
+                    if (i === 0) {
+                        isMatch = conditionMet;
+                    } else {
+                        if (nextIsOr) {
+                            isMatch = isMatch || conditionMet;
+                            nextIsOr = false;
+                        } else {
+                            isMatch = isMatch && conditionMet;
+                        }
+                    }
+                }
+                return isMatch;
+            });
+
+            // Sorting Logic
+            const sortedPhotos = [...filteredPhotos].sort((a, b) => {
+                if (sortOrder === 'newest') {
+                    // Sort by shooting date (exif.date) if available, else timestamp (upload time)
+                    const dateA = a.exif?.date || a.timestamp;
+                    const dateB = b.exif?.date || b.timestamp;
+                    return dateA < dateB ? 1 : -1;
+                } else {
+                    const dateA = a.exif?.date || a.timestamp;
+                    const dateB = b.exif?.date || b.timestamp;
+                    return dateA > dateB ? 1 : -1;
+                }
             });
 
             return (
@@ -701,14 +774,54 @@
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {view === 'gallery' ? (
                     <>
-                        <div className="flex flex-col md:flex-row gap-6 mb-8">
-                            <div className="relative flex-grow max-w-xl"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-gray-400" /></div><input type="text" placeholder="搜尋..." className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
-                            <div className="flex-1 flex flex-wrap gap-2 items-center"><span className="text-sm font-bold text-gray-400 mr-2 flex items-center gap-1"><Tag size={14} /> 分類:</span><button onClick={() => setActiveTag(null)} className={`px-3 py-1 rounded-full text-sm ${!activeTag ? 'bg-gray-800 text-white' : 'bg-white text-gray-600'}`}>全部</button>{allTags.map(tag => (<button key={tag} onClick={() => setActiveTag(tag === activeTag ? null : tag)} className={`px-3 py-1 rounded-full text-sm ${tag === activeTag ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 border'}`}>{tag}</button>))}</div>
+                        {/* Search and Filter Controls */}
+                        <div className="flex flex-col gap-4 mb-8">
+                            <div className="flex flex-col md:flex-row gap-4">
+                                {/* Search Bar */}
+                                <div className="relative flex-grow">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-gray-400" /></div>
+                                    <input 
+                                        type="text" 
+                                        placeholder="搜尋... (支援: 台北 宜蘭 OR 花蓮 -夜景 #風景)" 
+                                        className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" 
+                                        value={searchQuery} 
+                                        onChange={(e) => setSearchQuery(e.target.value)} 
+                                    />
+                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <Filter className="h-4 w-4 text-gray-300" />
+                                    </div>
+                                </div>
+                                
+                                {/* Sort Button */}
+                                <button 
+                                    onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 shadow-sm min-w-[140px] transition-all"
+                                >
+                                    {sortOrder === 'newest' ? <ArrowDownWideNarrow size={18} /> : <ArrowUpNarrowWide size={18} />}
+                                    <span>{sortOrder === 'newest' ? '最新在上' : '最舊在上'}</span>
+                                </button>
+                            </div>
+
+                            {/* Tag Cloud */}
+                            <div className="flex flex-wrap gap-2 items-center">
+                                <span className="text-sm font-bold text-gray-400 mr-2 flex items-center gap-1"><Tag size={14} /> 分類:</span>
+                                <button onClick={() => setActiveTag(null)} className={`px-3 py-1 rounded-full text-sm transition-colors ${!activeTag ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-200'}`}>全部</button>
+                                {allTags.map(tag => (
+                                    <button 
+                                        key={tag} 
+                                        onClick={() => setActiveTag(tag === activeTag ? null : tag)} 
+                                        className={`px-3 py-1 rounded-full text-sm transition-colors ${tag === activeTag ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200'}`}
+                                    >
+                                        {tag}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        {filteredPhotos.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">{filteredPhotos.map(photo => (<PhotoCard key={photo.id} photo={photo} onExpand={setSelectedPhoto} isAdmin={isAdmin} onEdit={startEdit} onDelete={handleDeletePhoto} />))}</div>
+
+                        {sortedPhotos.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">{sortedPhotos.map(photo => (<PhotoCard key={photo.id} photo={photo} onExpand={setSelectedPhoto} isAdmin={isAdmin} onEdit={startEdit} onDelete={handleDeletePhoto} />))}</div>
                         ) : (
-                        <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-dashed border-gray-300"><Cloud className="mx-auto h-12 w-12 text-gray-300 mb-3" /><h3 className="text-lg font-medium text-gray-900">資料庫是空的</h3><button onClick={() => setView('upload')} className="mt-4 text-indigo-600 hover:text-indigo-800 font-medium">上傳第一張照片 &rarr;</button></div>
+                        <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-dashed border-gray-300"><Cloud className="mx-auto h-12 w-12 text-gray-300 mb-3" /><h3 className="text-lg font-medium text-gray-900">沒有符合條件的照片</h3><button onClick={() => setView('upload')} className="mt-4 text-indigo-600 hover:text-indigo-800 font-medium">上傳第一張照片 &rarr;</button></div>
                         )}
                     </>
                     ) : (
