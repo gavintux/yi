@@ -38,7 +38,7 @@
             Camera, MapPin, Clock, Search, Upload, Download, Tag, Eye, X, 
             Image as ImageIcon, Maximize2, Share2, Facebook, Instagram, 
             MessageCircle, Copy, Check, Lock, Unlock, Edit, Trash2, LogOut, 
-            Cloud, RefreshCw, AlertTriangle, Info, Save, Link as LinkIcon
+            Cloud, RefreshCw, AlertTriangle, Info, Save, Link as LinkIcon, FileUp
         } from 'https://esm.sh/lucide-react@0.294.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -80,27 +80,6 @@
         // -----------------------------------------------------------------------------
         // Helper Functions
         // -----------------------------------------------------------------------------
-
-        // 代理下載並上傳到 Firebase Storage (核心功能)
-        const processAndUploadImage = async (googleUrl) => {
-            // 1. 使用 Proxy 繞過 CORS 抓取圖片 Blob
-            // 使用 images.weserv.nl 做為中轉，它能幫我們把 Google 圖片抓下來
-            const cleanUrl = googleUrl.replace(/^https?:\/\//, '');
-            const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(cleanUrl)}&output=jpg&q=95`;
-
-            const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error("無法抓取圖片，請確認連結是否公開有效");
-            const blob = await response.blob();
-
-            // 2. 上傳到 Firebase Storage
-            const filename = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
-            const storageRef = ref(storage, filename);
-            
-            await uploadBytes(storageRef, blob);
-            const downloadURL = await getDownloadURL(storageRef);
-            
-            return downloadURL; // 回傳永久有效的 Firebase 連結
-        };
 
         const downloadWithWatermark = async (imageUrl, filename, e) => {
             if(e) e.stopPropagation();
@@ -292,67 +271,103 @@
             const isEditMode = !!initialData;
             const [formData, setFormData] = useState(initialData || { url: '', tags: '', thoughts_shooting: '', thoughts_viewing: '', exif: { shutter: '', aperture: 'f/', iso: '', date: new Date().toISOString().split('T')[0] }, location: { country: '', city: '', spot: '' } });
             const [status, setStatus] = useState(''); // 'fetching', 'uploading', 'error', ''
+            const [uploadFile, setUploadFile] = useState(null); // 新增：檔案上傳狀態
 
             useEffect(() => { if (initialData && Array.isArray(initialData.tags)) { setFormData(prev => ({ ...prev, tags: initialData.tags.join(', ') })); } }, [initialData]);
             
             const handleChange = (section, field, value) => { if (section) { setFormData(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } })); } else { setFormData(prev => ({ ...prev, [field]: value })); } };
             
+            const handleFileChange = (e) => {
+                if (e.target.files[0]) {
+                    setUploadFile(e.target.files[0]);
+                }
+            };
+
             const handleSubmit = async (e) => { 
                 e.preventDefault();
+                setStatus('uploading');
                 
-                // 自動轉存邏輯
                 let finalUrl = formData.url;
-                
-                // 如果是新照片且不是已經上傳到 Firebase 的連結，就嘗試轉存
-                const isFirebaseUrl = formData.url.includes('firebasestorage.googleapis.com');
-                
-                if (!isEditMode && !isFirebaseUrl && formData.url.startsWith('http')) {
-                    try {
-                        setStatus('fetching');
-                        // 嘗試轉存
-                        finalUrl = await processAndUploadImage(formData.url);
-                        setStatus('success');
-                    } catch (err) {
-                        console.error("轉存失敗", err);
-                        // 如果是 Google Photo 連結，轉存失敗就擋下來，因為連結會過期
-                        if (formData.url.includes('googleusercontent')) {
-                             alert("轉存失敗：無法備份這張 Google Photo。\n請確認連結是否正確，並確認 Firebase Storage 已啟用。\n\n(錯誤: " + err.message + ")");
-                             setStatus('');
-                             return; 
-                        }
-                        // 其他圖片如果轉存失敗，詢問是否繼續用原連結
-                        if (!confirm("自動備份失敗，是否直接使用原始連結？(注意：原始連結可能會過期或破圖)")) {
-                            setStatus('');
-                            return;
-                        }
-                    }
-                }
 
-                const processedData = { 
-                    ...formData, 
-                    url: finalUrl, // 使用轉存後的新連結
-                    tags: formData.tags.split(',').map(t => t.trim()).filter(t => t), 
-                    date: formData.exif.date 
-                }; 
-                onSave(processedData); 
+                try {
+                    // 如果有選擇檔案，優先處理檔案上傳
+                    if (uploadFile) {
+                        const filename = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${uploadFile.name}`;
+                        const storageRef = ref(storage, filename);
+                        await uploadBytes(storageRef, uploadFile);
+                        finalUrl = await getDownloadURL(storageRef);
+                    } else if (formData.url) {
+                         // 如果是輸入網址，檢查是否為 Google Photos
+                        if (formData.url.includes('googleusercontent') || formData.url.includes('photos.app.goo.gl')) {
+                            if (!confirm("警告：使用 Google Photos 連結極高機率會因為時效性而破圖。\n\n強烈建議您將照片下載後，使用「上傳檔案」功能。\n\n您確定要繼續使用連結嗎？")) {
+                                setStatus('');
+                                return;
+                            }
+                        }
+                    } else {
+                        alert("請選擇一張照片檔案上傳，或輸入圖片連結。");
+                        setStatus('');
+                        return;
+                    }
+
+                    const processedData = { 
+                        ...formData, 
+                        url: finalUrl,
+                        tags: formData.tags.split(',').map(t => t.trim()).filter(t => t), 
+                        date: formData.exif.date 
+                    }; 
+                    onSave(processedData); 
+
+                } catch (err) {
+                    console.error("上傳失敗", err);
+                    alert("上傳失敗: " + err.message + "\n\n請確認您的 Firebase Storage 是否已啟用 (Test Mode)。");
+                    setStatus('');
+                }
             };
 
             return (
                 <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-300">
                     <div className="flex justify-between items-center mb-6 border-b pb-4"><h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">{isEditMode ? <Edit className="text-blue-600" /> : <Upload className="text-indigo-600" />} {isEditMode ? '修改照片資訊' : '分享新照片'}</h2><button onClick={onCancel} className="text-gray-400 hover:text-gray-600"><X size={24} /></button></div>
                     
-                    {status === 'fetching' && (
+                    {status === 'uploading' && (
                         <div className="mb-4 bg-blue-50 text-blue-700 p-4 rounded-lg flex items-center gap-2 animate-pulse">
                             <RefreshCw className="spinner" size={20} />
-                            <span>正在自動轉存圖片至雲端，確保永久保存...</span>
+                            <span>正在上傳照片至雲端，請稍候...</span>
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-8">
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium text-gray-700">照片連結 (輸入後系統會自動轉存備份)</label>
-                            <div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LinkIcon className="h-5 w-5 text-gray-400" /></div><input required type="url" placeholder="貼上 Google Photo 圖片連結 (lh3...)" className="block w-full pl-10 border-gray-300 rounded-lg p-2.5 border" value={formData.url} onChange={(e) => handleChange(null, 'url', e.target.value)} disabled={status === 'fetching'} /></div>
-                            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Cloud size={12}/> 系統將自動把這張照片上傳到您的資料庫，解決連結過期問題。</p>
+                        {/* 圖片來源選擇區 */}
+                        <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <label className="block text-sm font-bold text-gray-700 mb-2">步驟 1：選擇照片來源</label>
+                            
+                            {/* 檔案上傳 (推薦) */}
+                            <div className="relative">
+                                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload" disabled={status === 'uploading'} />
+                                <label htmlFor="file-upload" className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${uploadFile ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}>
+                                    {uploadFile ? (
+                                        <>
+                                            <Check className="w-8 h-8 text-green-500 mb-2" />
+                                            <span className="text-sm font-medium text-green-600">已選擇：{uploadFile.name}</span>
+                                            <span className="text-xs text-green-500 mt-1">(將會上傳至您的雲端)</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FileUp className="w-8 h-8 text-gray-400 mb-2" />
+                                            <span className="text-sm font-medium text-gray-600">點擊上傳檔案 (推薦)</span>
+                                            <span className="text-xs text-gray-500 mt-1">支援 Google Photos 下載後的照片，永久保存</span>
+                                        </>
+                                    )}
+                                </label>
+                            </div>
+
+                            <div className="text-center text-gray-400 text-xs">- 或 -</div>
+
+                            {/* 網址輸入 (備用) */}
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LinkIcon className="h-4 w-4 text-gray-400" /></div>
+                                <input type="url" placeholder="輸入圖片連結 (不推薦 Google Photos 連結)" className="block w-full pl-9 border-gray-300 rounded-lg p-2 text-sm border" value={formData.url} onChange={(e) => { handleChange(null, 'url', e.target.value); setUploadFile(null); }} disabled={uploadFile || status === 'uploading'} />
+                            </div>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -376,10 +391,10 @@
                             </div>
                         </div>
                         <div className="flex justify-end gap-3 pt-6">
-                            <button type="button" onClick={onCancel} disabled={isSaving || status === 'fetching'} className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">取消</button>
-                            <button type="submit" disabled={isSaving || status === 'fetching'} className={`px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white shadow-lg hover:shadow-xl transition-all flex items-center gap-2 ${isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-600 hover:bg-indigo-700'} disabled:opacity-50`}>
-                                {(isSaving || status === 'fetching') && <RefreshCw className="animate-spin" size={16} />} 
-                                {status === 'fetching' ? '轉存中...' : (isEditMode ? '儲存修改' : '發佈照片')}
+                            <button type="button" onClick={onCancel} disabled={isSaving || status === 'uploading'} className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">取消</button>
+                            <button type="submit" disabled={isSaving || status === 'uploading'} className={`px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white shadow-lg hover:shadow-xl transition-all flex items-center gap-2 ${isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-600 hover:bg-indigo-700'} disabled:opacity-50`}>
+                                {(isSaving || status === 'uploading') && <RefreshCw className="animate-spin" size={16} />} 
+                                {status === 'uploading' ? '上傳中...' : (isEditMode ? '儲存修改' : '發佈照片')}
                             </button>
                         </div>
                     </form>
