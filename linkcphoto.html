@@ -81,15 +81,87 @@
         const COLLECTION_NAME = 'linkc_photos_v1';
 
         // -----------------------------------------------------------------------------
-        // Helper Functions
+        // Helper Functions (強力解析版)
         // -----------------------------------------------------------------------------
 
+        // 暴力搜索所有標籤來找鏡頭名稱
+        const findLensNameInAllTags = (allTags) => {
+            // 1. 優先檢查標準標籤
+            if (allTags.LensModel && typeof allTags.LensModel === 'string' && allTags.LensModel.trim() !== '') return allTags.LensModel;
+            if (allTags.Lens && typeof allTags.Lens === 'string' && allTags.Lens.trim() !== '') return allTags.Lens;
+            if (allTags.LensID && typeof allTags.LensID === 'string' && allTags.LensID.trim() !== '') return allTags.LensID;
+
+            // 2. 搜尋任何包含 "Lens" 且值為字串的標籤 (排除 LensInfo 數值)
+            for (const key in allTags) {
+                const val = allTags[key];
+                if (key.includes("Lens") && typeof val === 'string' && val.length > 2) {
+                    // 排除一些無效字串
+                    if (val.toLowerCase().includes("unknown")) continue;
+                    return val;
+                }
+            }
+
+            // 3. 最後嘗試解析 LensInfo (數值規格)
+            if (allTags.LensInfo) {
+                return parseLensInfo(allTags.LensInfo);
+            }
+
+            return "";
+        };
+
+        const parseLensInfo = (lensInfo) => {
+            if (!lensInfo || lensInfo.length < 2) return null;
+            
+            // 處理不同的 LensInfo 格式
+            const minFocal = lensInfo[0] ? Number(lensInfo[0]) : 0;
+            const maxFocal = lensInfo[1] ? Number(lensInfo[1]) : 0;
+            const minF = lensInfo[2] ? Number(lensInfo[2]) : 0;
+            const maxF = lensInfo[3] ? Number(lensInfo[3]) : 0;
+
+            if (minFocal === 0) return null;
+
+            let focalStr = "";
+            if (minFocal === maxFocal) {
+                focalStr = `${minFocal}mm`;
+            } else {
+                focalStr = `${minFocal}-${maxFocal}mm`;
+            }
+
+            let apertureStr = "";
+            if (minF > 0) {
+                if (minF === maxF || maxF === 0) {
+                    apertureStr = `f/${minF}`;
+                } else {
+                    apertureStr = `f/${minF}-${maxF}`;
+                }
+            }
+
+            return `${focalStr} ${apertureStr}`;
+        };
+
         const convertDMSToDD = (dms, ref) => {
-            if (!dms || dms.length < 3) return null;
-            let dd = dms[0] + dms[1] / 60 + dms[2] / 3600;
+            if (!dms) return null;
+            
+            // 強力轉換：處理各種奇怪的 Exif 資料結構 (Array, Object, Number)
+            const getVal = (item) => {
+                if (typeof item === 'number') return item;
+                if (item && typeof item.valueOf === 'function') return item.valueOf(); // 處理 Number 物件
+                if (item && item.numerator && item.denominator) return item.numerator / item.denominator; // 處理分數物件
+                return 0;
+            };
+
+            const d = getVal(dms[0]);
+            const m = getVal(dms[1]);
+            const s = getVal(dms[2]);
+
+            let dd = d + m / 60 + s / 3600;
+            
             if (ref === "S" || ref === "W") {
                 dd = dd * -1;
             }
+            
+            // 基本驗證
+            if (isNaN(dd) || (dd === 0 && d === 0 && m === 0)) return null;
             return dd;
         };
 
@@ -162,7 +234,7 @@
                     } catch (err) {
                         console.warn("Canvas Tainted (CORS 限制)，轉為下載原圖。", err);
                         downloadOriginal(imageUrl, filename);
-                        resolve(false);
+                        resolve(false); 
                     }
                 };
                 
@@ -293,7 +365,7 @@
                             </div>
                         )}
                         <p className="text-white/60 text-xs font-mono">
-                            {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso}
+                            {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso} {photo.exif.focalLength ? `· ${photo.exif.focalLength}` : ''}
                         </p>
                     </div>
                 </div>
@@ -356,18 +428,22 @@
                         </div>
                     )}
 
-                    <div className="grid grid-cols-3 gap-2 border-t pt-3 mt-auto text-center">
+                    <div className="grid grid-cols-4 gap-1 border-t pt-3 mt-auto text-center">
                         <div className="flex flex-col items-center">
                             <span className="text-[10px] uppercase text-gray-400 font-bold">快門</span>
                             <span className="text-xs text-gray-700 font-mono">{photo.exif.shutter || '--'}</span>
                         </div>
-                        <div className="flex flex-col items-center border-l border-r border-gray-100">
+                        <div className="flex flex-col items-center border-l border-gray-100">
                             <span className="text-[10px] uppercase text-gray-400 font-bold">光圈</span>
                             <span className="text-xs text-gray-700 font-mono">{photo.exif.aperture || '--'}</span>
                         </div>
-                        <div className="flex flex-col items-center">
+                        <div className="flex flex-col items-center border-l border-gray-100">
                             <span className="text-[10px] uppercase text-gray-400 font-bold">ISO</span>
                             <span className="text-xs text-gray-700 font-mono">{photo.exif.iso || '--'}</span>
+                        </div>
+                        <div className="flex flex-col items-center border-l border-gray-100">
+                            <span className="text-[10px] uppercase text-gray-400 font-bold">焦段</span>
+                            <span className="text-xs text-gray-700 font-mono">{photo.exif.focalLength || '--'}</span>
                         </div>
                     </div>
                     
@@ -393,7 +469,7 @@
                 tags: '', 
                 thoughts_shooting: '', 
                 thoughts_viewing: '', 
-                exif: { shutter: '', aperture: 'f/', iso: '', date: getNowString(), camera: '', lens: '' }, 
+                exif: { shutter: '', aperture: 'f/', iso: '', date: getNowString(), camera: '', lens: '', focalLength: '' }, 
                 location: { country: '', city: '', spot: '' } 
             });
             const [status, setStatus] = useState('');
@@ -411,22 +487,37 @@
                     setExifStatus('分析中...');
                     
                     EXIF.getData(file, async function() {
+                        // 1. 基本資訊
                         const extractedShutter = EXIF.getTag(this, "ExposureTime");
                         const extractedFNumber = EXIF.getTag(this, "FNumber");
                         const extractedISO = EXIF.getTag(this, "ISOSpeedRatings");
                         const extractedDate = EXIF.getTag(this, "DateTimeOriginal");
+                        const extractedFocalLength = EXIF.getTag(this, "FocalLength");
                         
                         const make = EXIF.getTag(this, "Make");
                         const model = EXIF.getTag(this, "Model");
                         
-                        // 修正：多重標籤檢查
-                        const lensModel = EXIF.getTag(this, "LensModel") || EXIF.getTag(this, "Lens") || EXIF.getTag(this, "LensInfo") || EXIF.getTag(this, "UndefinedTag:0xA434");
+                        // 2. 暴力抓取鏡頭資訊
+                        const allTags = EXIF.getAllTags(this);
+                        let lensModel = findLensNameInAllTags(allTags);
+                        
+                        // 3. 清理鏡頭名稱
+                        if (lensModel && typeof lensModel === 'string') {
+                            lensModel = lensModel.replace(/\0/g, '').trim();
+                            // 如果 LensMake (如果有的話) 已經在名稱裡，就不重複加
+                            const lensMake = EXIF.getTag(this, "LensMake");
+                            if (lensMake && !lensModel.toLowerCase().includes(lensMake.toLowerCase())) {
+                                lensModel = `${lensMake} ${lensModel}`;
+                            }
+                        }
 
+                        // 4. GPS (包含 TG-6 修正)
                         const lat = EXIF.getTag(this, "GPSLatitude");
                         const latRef = EXIF.getTag(this, "GPSLatitudeRef");
                         const lon = EXIF.getTag(this, "GPSLongitude");
                         const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
 
+                        // 5. 格式化數值
                         let formattedShutter = "";
                         if (extractedShutter) {
                             if (extractedShutter < 1) {
@@ -436,6 +527,7 @@
                             }
                         }
                         const formattedAperture = extractedFNumber ? "f/" + extractedFNumber : "";
+                        
                         let formattedDate = "";
                         if (extractedDate) {
                             const parts = extractedDate.split(" ");
@@ -458,13 +550,22 @@
                         } else {
                             formattedCamera = model || make || "";
                         }
+                        if (formattedCamera) formattedCamera = formattedCamera.replace(/\0/g, '').trim();
 
+                        let formattedFocalLength = "";
+                        if (extractedFocalLength) {
+                            formattedFocalLength = `${Number(extractedFocalLength)}mm`;
+                        }
+
+                        // 6. GPS 與地址解析
                         let locationUpdate = { ...formData.location };
                         let extraStatus = "";
 
-                        if (lat && lon && latRef && lonRef) {
-                            const decimalLat = convertDMSToDD(lat, latRef);
-                            const decimalLon = convertDMSToDD(lon, lonRef);
+                        // 修正：容錯處理，若無 Ref 預設 N/E
+                        if (lat && lon) {
+                            const decimalLat = convertDMSToDD(lat, latRef || 'N');
+                            const decimalLon = convertDMSToDD(lon, lonRef || 'E');
+                            
                             if (decimalLat && decimalLon) {
                                 setExifStatus('正在解析 GPS 地址...');
                                 const address = await reverseGeocode(decimalLat, decimalLon);
@@ -489,7 +590,8 @@
                                 iso: extractedISO ? extractedISO.toString() : prev.exif.iso,
                                 date: formattedDate || prev.exif.date,
                                 camera: formattedCamera || prev.exif.camera,
-                                lens: lensModel || prev.exif.lens
+                                lens: lensModel || prev.exif.lens,
+                                focalLength: formattedFocalLength || prev.exif.focalLength
                             },
                             location: locationUpdate
                         }));
@@ -600,7 +702,8 @@
                                     <div><label className="block text-xs font-medium text-gray-500">快門</label><input type="text" placeholder="1/200" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /></div>
                                     <div><label className="block text-xs font-medium text-gray-500">光圈</label><input type="text" placeholder="f/2.8" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /></div>
                                     <div><label className="block text-xs font-medium text-gray-500">ISO</label><input type="text" placeholder="400" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /></div>
-                                    <div><label className="block text-xs font-medium text-gray-500">日期與時間</label><input type="datetime-local" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /></div>
+                                    <div><label className="block text-xs font-medium text-gray-500">焦段</label><input type="text" placeholder="50mm" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.focalLength} onChange={(e) => handleChange('exif', 'focalLength', e.target.value)} /></div>
+                                    <div className="col-span-2"><label className="block text-xs font-medium text-gray-500">日期與時間</label><input type="datetime-local" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /></div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
                                     <div><label className="block text-xs font-medium text-gray-500">國家 {formData.location.country && <MapIcon size={12} className="inline text-green-500"/>}</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.country} onChange={(e) => handleChange('location', 'country', e.target.value)} /></div>
