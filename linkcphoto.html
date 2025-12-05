@@ -83,7 +83,7 @@
             }
         }
 
-        const appId = 'linkc_standalone_app'; // 自訂的 App ID
+        // 簡化路徑，直接使用根目錄 Collection
         const COLLECTION_NAME = 'linkc_photos_v1';
 
         // -----------------------------------------------------------------------------
@@ -416,7 +416,8 @@
             // 2. Data Fetching
             useEffect(() => {
                 if (!currentUser || !db) return;
-                const q = query(collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME), orderBy('timestamp', 'desc'));
+                // 改用根目錄 Collection
+                const q = query(collection(db, COLLECTION_NAME), orderBy('timestamp', 'desc'));
                 const unsubscribe = onSnapshot(q, (snapshot) => {
                     const loadedPhotos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     setPhotos(loadedPhotos);
@@ -431,7 +432,8 @@
                 if (!currentUser) return;
                 setIsSaving(true);
                 try {
-                    const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
+                    // 改用根目錄 Collection
+                    const collectionRef = collection(db, COLLECTION_NAME);
                     if (editingPhoto) {
                         const docRef = doc(collectionRef, photoData.id);
                         await updateDoc(docRef, { ...photoData });
@@ -440,13 +442,26 @@
                         await addDoc(collectionRef, { ...photoData, timestamp: Date.now() });
                     }
                     setView('gallery');
-                } catch (e) { console.error("Save error:", e); alert("儲存失敗，請稍後再試。"); } finally { setIsSaving(false); }
+                } catch (e) { 
+                    console.error("Save error:", e); 
+                    // 顯示詳細錯誤訊息
+                    alert("儲存失敗: " + e.message); 
+                } finally { 
+                    setIsSaving(false); 
+                }
             };
 
             const handleDeletePhoto = async (id) => {
                 if (!currentUser) return;
                 if(window.confirm('確定要永久刪除這張照片嗎？此動作將同步刪除資料庫中的紀錄。')) {
-                    try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, id)); } catch(e) { console.error("Delete error:", e); alert("刪除失敗"); }
+                    try { 
+                        // 改用根目錄 Collection
+                        await deleteDoc(doc(db, COLLECTION_NAME, id)); 
+                    } catch(e) { 
+                        console.error("Delete error:", e); 
+                        // 顯示詳細錯誤訊息
+                        alert("刪除失敗: " + e.message); 
+                    }
                 }
             };
 
