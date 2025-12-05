@@ -11,7 +11,7 @@
     <!-- 2. 載入 Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- 3. 載入 Exif-js (新增：用於讀取照片資訊) -->
+    <!-- 3. 載入 Exif-js -->
     <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
 
     <!-- 4. CSS -->
@@ -41,7 +41,7 @@
             Camera, MapPin, Clock, Search, Upload, Download, Tag, Eye, X, 
             Image as ImageIcon, Maximize2, Share2, Facebook, Instagram, 
             MessageCircle, Copy, Check, Lock, Unlock, Edit, Trash2, LogOut, 
-            Cloud, RefreshCw, AlertTriangle, Info, Save, Link as LinkIcon, FileUp, Sparkles
+            Cloud, RefreshCw, AlertTriangle, Info, Save, Link as LinkIcon, FileUp, Sparkles, Map as MapIcon
         } from 'https://esm.sh/lucide-react@0.294.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -82,6 +82,29 @@
         // -----------------------------------------------------------------------------
         // Helper Functions
         // -----------------------------------------------------------------------------
+
+        // GPS 轉換函式 (DMS to Decimal)
+        const convertDMSToDD = (dms, ref) => {
+            if (!dms || dms.length < 3) return null;
+            let dd = dms[0] + dms[1] / 60 + dms[2] / 3600;
+            if (ref === "S" || ref === "W") {
+                dd = dd * -1;
+            }
+            return dd;
+        };
+
+        // 反向地理編碼 (使用 OpenStreetMap Nominatim)
+        const reverseGeocode = async (lat, lon) => {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`);
+                if (!response.ok) return null;
+                const data = await response.json();
+                return data.address;
+            } catch (error) {
+                console.error("Geocoding failed", error);
+                return null;
+            }
+        };
 
         const downloadOriginal = async (imageUrl, filename) => {
             try {
@@ -340,7 +363,7 @@
             const [formData, setFormData] = useState(initialData || { url: '', tags: '', thoughts_shooting: '', thoughts_viewing: '', exif: { shutter: '', aperture: 'f/', iso: '', date: new Date().toISOString().split('T')[0] }, location: { country: '', city: '', spot: '' } });
             const [status, setStatus] = useState('');
             const [uploadFile, setUploadFile] = useState(null);
-            const [exifStatus, setExifStatus] = useState(''); // EXIF status
+            const [exifStatus, setExifStatus] = useState(''); 
 
             useEffect(() => { if (initialData && Array.isArray(initialData.tags)) { setFormData(prev => ({ ...prev, tags: initialData.tags.join(', ') })); } }, [initialData]);
             
@@ -352,14 +375,19 @@
                     setUploadFile(file);
                     setExifStatus('分析中...');
                     
-                    // 自動抓取 EXIF
-                    EXIF.getData(file, function() {
+                    EXIF.getData(file, async function() {
                         const extractedShutter = EXIF.getTag(this, "ExposureTime");
                         const extractedFNumber = EXIF.getTag(this, "FNumber");
                         const extractedISO = EXIF.getTag(this, "ISOSpeedRatings");
                         const extractedDate = EXIF.getTag(this, "DateTimeOriginal");
+                        
+                        // GPS Extraction
+                        const lat = EXIF.getTag(this, "GPSLatitude");
+                        const latRef = EXIF.getTag(this, "GPSLatitudeRef");
+                        const lon = EXIF.getTag(this, "GPSLongitude");
+                        const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
 
-                        // 格式化快門 (例如 0.008 -> 1/125)
+                        // Format EXIF Data
                         let formattedShutter = "";
                         if (extractedShutter) {
                             if (extractedShutter < 1) {
@@ -368,15 +396,36 @@
                                 formattedShutter = extractedShutter.toString();
                             }
                         }
-
-                        // 格式化光圈
                         const formattedAperture = extractedFNumber ? "f/" + extractedFNumber : "";
-                        
-                        // 格式化日期 (YYYY:MM:DD HH:MM:SS -> YYYY-MM-DD)
                         let formattedDate = "";
                         if (extractedDate) {
-                            const datePart = extractedDate.split(" ")[0]; // Get YYYY:MM:DD
+                            const datePart = extractedDate.split(" ")[0]; 
                             formattedDate = datePart.replace(/:/g, "-");
+                        }
+
+                        // Prepare updates
+                        let locationUpdate = { ...formData.location };
+                        let extraStatus = "";
+
+                        // Handle GPS Logic
+                        if (lat && lon && latRef && lonRef) {
+                            const decimalLat = convertDMSToDD(lat, latRef);
+                            const decimalLon = convertDMSToDD(lon, lonRef);
+                            
+                            if (decimalLat && decimalLon) {
+                                setExifStatus('正在解析 GPS 地址...');
+                                const address = await reverseGeocode(decimalLat, decimalLon);
+                                if (address) {
+                                    locationUpdate = {
+                                        country: address.country || "",
+                                        city: address.city || address.county || address.town || address.state || "",
+                                        spot: address.suburb || address.village || address.road || address.pedestrian || ""
+                                    };
+                                    extraStatus = " + GPS 定位成功 📍";
+                                } else {
+                                    extraStatus = " (GPS 解析失敗)";
+                                }
+                            }
                         }
 
                         setFormData(prev => ({
@@ -386,9 +435,10 @@
                                 aperture: formattedAperture || prev.exif.aperture,
                                 iso: extractedISO ? extractedISO.toString() : prev.exif.iso,
                                 date: formattedDate || prev.exif.date
-                            }
+                            },
+                            location: locationUpdate
                         }));
-                        setExifStatus('已自動填入 EXIF 資訊 ✨');
+                        setExifStatus(`已自動填入資訊${extraStatus} ✨`);
                     });
                 }
             };
@@ -461,7 +511,7 @@
                                         <>
                                             <FileUp className="w-8 h-8 text-gray-400 mb-2" />
                                             <span className="text-sm font-medium text-gray-600">點擊上傳檔案 (推薦)</span>
-                                            <span className="text-xs text-gray-500 mt-1">自動讀取 EXIF 資訊，永久保存</span>
+                                            <span className="text-xs text-gray-500 mt-1">自動讀取 EXIF 與 GPS 資訊，永久保存</span>
                                         </>
                                     )}
                                 </label>
@@ -492,7 +542,7 @@
                                     <div><label className="block text-xs font-medium text-gray-500">日期</label><input type="date" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /></div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
-                                    <div><label className="block text-xs font-medium text-gray-500">國家</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.country} onChange={(e) => handleChange('location', 'country', e.target.value)} /></div>
+                                    <div><label className="block text-xs font-medium text-gray-500">國家 {formData.location.country && <MapIcon size={12} className="inline text-green-500"/>}</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.country} onChange={(e) => handleChange('location', 'country', e.target.value)} /></div>
                                     <div><label className="block text-xs font-medium text-gray-500">城市</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.city} onChange={(e) => handleChange('location', 'city', e.target.value)} /></div>
                                     <div className="col-span-2"><label className="block text-xs font-medium text-gray-500">地名/景點</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.spot} onChange={(e) => handleChange('location', 'spot', e.target.value)} /></div>
                                 </div>
