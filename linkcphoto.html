@@ -28,7 +28,6 @@
         }
         .error-title { color: #dc2626; font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem; }
         .error-list { text-align: left; list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; font-size: 0.9rem; }
-        .config-code { background: #f3f4f6; padding: 0.5rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.8rem; overflow-x: auto; margin-bottom: 1rem; }
     </style>
 </head>
 <body>
@@ -38,14 +37,13 @@
 
     <!-- 4. 主要程式邏輯 (Type=text/babel) -->
     <script type="text/babel" data-type="module">
-        // 使用 ES Modules 透過網路載入 React, Icons 和 Firebase
         import React, { useState, useEffect, useRef } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
             Camera, MapPin, Clock, Search, Upload, Download, Tag, Eye, X, 
             Image as ImageIcon, Maximize2, Share2, Facebook, Instagram, 
             MessageCircle, Copy, Check, Lock, Unlock, Edit, Trash2, LogOut, 
-            Cloud, RefreshCw, AlertTriangle
+            Cloud, RefreshCw, AlertTriangle, Info
         } from 'https://esm.sh/lucide-react@0.294.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -56,8 +54,6 @@
         // 設定區：請填入您的 Firebase 資訊
         // -----------------------------------------------------------------------------
         
-        // 🔴 請將下方的物件替換成您自己的 Firebase Config
-        // 您可以在 Firebase Console -> Project Settings -> General -> Your apps 下方找到
         const firebaseConfig = {
             apiKey: "AIzaSyDwXsplXePeD1wU1GG4BwQBR6iSMd3_5nY",
             authDomain: "linkcphoto.firebaseapp.com",
@@ -68,10 +64,8 @@
             measurementId: "G-902H2EHVFF"
             };
 
-        // 檢查 Config 是否已填寫
         const isConfigConfigured = !firebaseConfig.apiKey.includes("您的API_KEY");
 
-        // 初始化 Firebase
         let app, auth, db;
         if (isConfigConfigured) {
             try {
@@ -83,101 +77,93 @@
             }
         }
 
-        // 簡化路徑，直接使用根目錄 Collection
         const COLLECTION_NAME = 'linkc_photos_v1';
 
         // -----------------------------------------------------------------------------
         // Components
         // -----------------------------------------------------------------------------
 
-        // Config Error Component
         const ConfigError = () => (
             <div className="error-container bg-gray-50">
                 <div className="error-box">
                     <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
                     <h3 className="error-title">尚未設定 Firebase</h3>
-                    <p className="text-gray-600 mb-4">
-                        為了讓此網頁在您的伺服器上運作，您需要填入自己的 Firebase 設定。
-                    </p>
-                    <ol className="error-list text-gray-600">
-                        <li>使用文字編輯器打開 <b>index.html</b></li>
-                        <li>搜尋 <code>const firebaseConfig</code></li>
-                        <li>將內容替換為您在 Firebase Console 取得的設定</li>
-                    </ol>
-                    <div className="text-xs text-gray-400 mt-4">
-                        提示：請前往 Firebase Console &gt; Project Settings &gt; General &gt; Your apps
-                    </div>
+                    <p className="text-gray-600 mb-4">請編輯 index.html 並填入您的 Firebase Config。</p>
                 </div>
             </div>
         );
 
-        // Auth Error Component
         const AuthError = ({ message }) => (
             <div className="error-container bg-gray-50">
                 <div className="error-box border-red-200">
                     <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
                     <h3 className="error-title">連線失敗 (Auth Error)</h3>
                     <p className="text-gray-800 font-mono text-xs bg-red-50 p-2 rounded mb-4 break-all">{message}</p>
-                    <p className="text-gray-600 mb-2 font-bold">可能的原因與解決方法：</p>
-                    <ul className="error-list text-gray-600">
-                        <li><b>firebaseConfig 錯誤：</b>請確認 API Key 與 Project ID 是否正確複製。</li>
-                        <li><b>未啟用匿名登入：</b>請至 Firebase Console &gt; Authentication &gt; Sign-in method，開啟 <b>Anonymous</b>。</li>
-                        <li><b>網域未授權：</b>若您放在 Apache/網頁伺服器上，請至 Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains，將您的網域加入白名單。</li>
-                    </ul>
-                    <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-                        重新整理
-                    </button>
+                    <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">重新整理</button>
                 </div>
             </div>
         );
 
-        // ... (Utility functions remain same) ...
+        // 下載功能 (含降級處理)
         const downloadWithWatermark = async (imageUrl, filename, e) => {
             if(e) e.stopPropagation();
             
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-            
-            img.crossOrigin = "anonymous";
-            img.src = imageUrl;
+            // 嘗試建立 Canvas 浮水印
+            const attemptCanvasDownload = () => {
+                return new Promise((resolve, reject) => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    
+                    // 嘗試跨域請求
+                    img.crossOrigin = "anonymous";
+                    img.src = imageUrl;
 
-            return new Promise((resolve, reject) => {
-                img.onload = () => {
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-                const fontSize = Math.max(20, img.width * 0.03); 
-                ctx.font = `bold ${fontSize}px sans-serif`;
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.textAlign = 'right';
-                ctx.textBaseline = 'bottom';
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-                ctx.shadowBlur = 4;
-                ctx.shadowOffsetX = 2;
-                ctx.shadowOffsetY = 2;
-                const padding = fontSize;
-                ctx.fillText('Linkc', canvas.width - padding, canvas.height - padding);
-                try {
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                    const link = document.createElement('a');
-                    link.download = `Linkc_${filename}.jpg`;
-                    link.href = dataUrl;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    resolve(true);
-                } catch (err) {
-                    alert("無法下載此圖片（可能是原始圖片伺服器限制了跨域存取）。");
-                    console.error(err);
-                    resolve(false);
+                    img.onload = () => {
+                        try {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            ctx.drawImage(img, 0, 0);
+                            
+                            // 浮水印樣式
+                            const fontSize = Math.max(20, img.width * 0.03); 
+                            ctx.font = `bold ${fontSize}px sans-serif`;
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                            ctx.textAlign = 'right';
+                            ctx.textBaseline = 'bottom';
+                            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                            ctx.shadowBlur = 4;
+                            ctx.shadowOffsetX = 2;
+                            ctx.shadowOffsetY = 2;
+                            const padding = fontSize;
+                            ctx.fillText('Linkc', canvas.width - padding, canvas.height - padding);
+
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                            const link = document.createElement('a');
+                            link.download = `Linkc_${filename}.jpg`;
+                            link.href = dataUrl;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            resolve(true);
+                        } catch (err) {
+                            // Canvas Tainted (CORS 失敗)
+                            reject(err);
+                        }
+                    };
+                    img.onerror = (err) => reject(err);
+                });
+            };
+
+            try {
+                await attemptCanvasDownload();
+            } catch (err) {
+                console.warn("無法製作浮水印 (通常是 Google Photo CORS 限制)，改為直接開啟原圖。", err);
+                // 降級處理：直接在新視窗開啟圖片，讓使用者另存
+                if (confirm("由於此照片的來源限制 (如 Google Photo)，無法自動合成浮水印。\n\n是否直接下載原始圖片？")) {
+                    window.open(imageUrl, '_blank');
                 }
-                };
-                img.onerror = () => {
-                alert("圖片載入失敗。");
-                resolve(false);
-                };
-            });
+            }
         };
 
         const copyToClipboard = (text) => {
@@ -196,30 +182,19 @@
         const Header = ({ setView, isAdmin, onLoginClick, onLogout }) => (
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                <div 
-                    className="flex items-center cursor-pointer gap-2" 
-                    onClick={() => setView('gallery')}
-                >
-                    <div className="bg-indigo-600 p-2 rounded-lg">
-                    <Camera className="w-6 h-6 text-white" />
-                    </div>
+                <div className="flex items-center cursor-pointer gap-2" onClick={() => setView('gallery')}>
+                    <div className="bg-indigo-600 p-2 rounded-lg"><Camera className="w-6 h-6 text-white" /></div>
                     <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Linkc <span className="text-indigo-600 font-light">Gallery</span></h1>
                     {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2">ADMIN</span>}
                 </div>
-                
                 <div className="flex items-center gap-3">
                     {isAdmin ? (
-                        <button onClick={onLogout} className="p-2 text-gray-500 hover:text-red-600 transition-colors" title="登出管理模式">
-                            <LogOut size={20} />
-                        </button>
+                        <button onClick={onLogout} className="p-2 text-gray-500 hover:text-red-600 transition-colors" title="登出管理模式"><LogOut size={20} /></button>
                     ) : (
-                        <button onClick={onLoginClick} className="p-2 text-gray-400 hover:text-indigo-600 transition-colors" title="管理員登入">
-                            <Lock size={20} />
-                        </button>
+                        <button onClick={onLoginClick} className="p-2 text-gray-400 hover:text-indigo-600 transition-colors" title="管理員登入"><Lock size={20} /></button>
                     )}
                     <button onClick={() => setView('upload')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full transition-all shadow-md hover:shadow-lg">
-                        <Upload size={18} />
-                        <span className="hidden sm:inline">新增照片</span>
+                        <Upload size={18} /><span className="hidden sm:inline">新增照片</span>
                     </button>
                 </div>
                 </div>
@@ -227,7 +202,6 @@
         );
 
         const ShareButtons = ({ photo, className = "" }) => {
-            const [showCopied, setShowCopied] = useState(false);
             const shareText = `${photo.thoughts_shooting || '分享一張很棒的照片！'} \n\n#Linkc #${photo.tags.join(' #')}`;
             const shareUrl = photo.url;
             const handleFB = (e) => { e.stopPropagation(); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`, '_blank'); };
@@ -235,10 +209,8 @@
             const handleIG = async (e) => {
                 e.stopPropagation();
                 copyToClipboard(shareText);
-                setShowCopied(true);
-                setTimeout(() => setShowCopied(false), 2000);
                 await downloadWithWatermark(photo.url, photo.id, e);
-                alert("Instagram 不支援網頁直接發文。\n\n已為您：\n1. 複製貼文內容\n2. 下載照片\n\n請直接開啟 Instagram 發佈！");
+                alert("Instagram 不支援網頁直接發文。\n\n已複製貼文內容並嘗試下載照片。\n\n(若未下載，請手動儲存照片)");
             };
             return (
                 <div className={`flex items-center gap-2 ${className}`}>
@@ -261,7 +233,8 @@
                     </div>
                 )}
                 <div className="relative max-w-full max-h-[80vh] flex items-center justify-center group" onClick={(e) => e.stopPropagation()}>
-                    <img src={photo.url} alt={photo.tags.join(', ')} className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-sm" />
+                    {/* 這裡加入了 referrerPolicy="no-referrer" 來解決 Google Photo 破圖問題 */}
+                    <img src={photo.url} alt={photo.tags.join(', ')} referrerPolicy="no-referrer" className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-sm" />
                     <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/10">
                     <button onClick={(e) => downloadWithWatermark(photo.url, photo.id, e)} className="text-white hover:text-indigo-300 transition-colors flex flex-col items-center gap-1"><Download size={20} /><span className="text-[10px]">下載</span></button>
                     <div className="w-px h-8 bg-white/20 mx-2"></div>
@@ -286,7 +259,8 @@
                     </div>
                 )}
                 <div className="relative aspect-[4/3] overflow-hidden bg-gray-100 cursor-zoom-in" onClick={() => onExpand(photo)}>
-                    <img src={photo.url} alt={photo.tags.join(', ')} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onError={(e) => {e.target.src = "https://images.unsplash.com/photo-1623039405147-9477948aa73a?q=80&w=2070&auto=format&fit=crop";}} />
+                    {/* 這裡加入了 referrerPolicy="no-referrer" 來解決 Google Photo 破圖問題 */}
+                    <img src={photo.url} alt={photo.tags.join(', ')} referrerPolicy="no-referrer" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onError={(e) => {e.target.src = "https://images.unsplash.com/photo-1623039405147-9477948aa73a?q=80&w=2070&auto=format&fit=crop";}} />
                     <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2 z-10"><ShareButtons photo={photo} className="flex-col !gap-2" /></div>
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-black/10"><div className="bg-black/50 text-white p-3 rounded-full backdrop-blur-sm"><Maximize2 size={24} /></div></div>
                     <div className="absolute bottom-3 left-3 pointer-events-none"><span className="bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md flex items-center gap-1"><Clock size={12} /> {photo.date}</span></div>
@@ -312,17 +286,34 @@
         const PhotoForm = ({ onSave, onCancel, initialData, isSaving }) => {
             const isEditMode = !!initialData;
             const [formData, setFormData] = useState(initialData || { url: '', tags: '', thoughts_shooting: '', thoughts_viewing: '', exif: { shutter: '', aperture: 'f/', iso: '', date: new Date().toISOString().split('T')[0] }, location: { country: '', city: '', spot: '' } });
+            
+            // 檢查是否誤貼分享連結
+            const isShareLink = formData.url.includes('photos.app.goo.gl');
+
             useEffect(() => { if (initialData && Array.isArray(initialData.tags)) { setFormData(prev => ({ ...prev, tags: initialData.tags.join(', ') })); } }, [initialData]);
             const handleChange = (section, field, value) => { if (section) { setFormData(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } })); } else { setFormData(prev => ({ ...prev, [field]: value })); } };
-            const handleSubmit = (e) => { e.preventDefault(); const processedData = { ...formData, tags: formData.tags.split(',').map(t => t.trim()).filter(t => t), date: formData.exif.date, }; onSave(processedData); };
+            const handleSubmit = (e) => { 
+                e.preventDefault(); 
+                if(isShareLink) {
+                    alert("請使用「圖片位址」，而非分享連結。\n\n請在照片上按右鍵 -> 複製圖片位址");
+                    return;
+                }
+                const processedData = { ...formData, tags: formData.tags.split(',').map(t => t.trim()).filter(t => t), date: formData.exif.date, }; 
+                onSave(processedData); 
+            };
             return (
                 <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-300">
                 <div className="flex justify-between items-center mb-6 border-b pb-4"><h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">{isEditMode ? <Edit className="text-blue-600" /> : <Upload className="text-indigo-600" />} {isEditMode ? '修改照片資訊' : '分享新照片'}</h2><button onClick={onCancel} className="text-gray-400 hover:text-gray-600"><X size={24} /></button></div>
                 <form onSubmit={handleSubmit} className="space-y-8">
                     <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">照片連結 (URL)</label>
-                    <div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><ImageIcon className="h-5 w-5 text-gray-400" /></div><input required type="url" placeholder="https://example.com/image.jpg" className="block w-full pl-10 border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5 border" value={formData.url} onChange={(e) => handleChange(null, 'url', e.target.value)} /></div>
-                    {!isEditMode && (<p className="text-xs text-gray-500">* 針對 Google Photo：請在照片上按右鍵選擇「複製圖片位址」(Copy Image Address) 以取得有效連結。</p>)}
+                    <div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><ImageIcon className="h-5 w-5 text-gray-400" /></div><input required type="url" placeholder="https://lh3.googleusercontent.com/..." className={`block w-full pl-10 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5 ${isShareLink ? 'border-red-300 bg-red-50' : 'border-gray-300'}`} value={formData.url} onChange={(e) => handleChange(null, 'url', e.target.value)} /></div>
+                    
+                    {isShareLink ? (
+                        <p className="text-xs text-red-600 font-bold mt-1 flex items-center gap-1"><AlertTriangle size={12}/> 這看起來是分享連結，無法直接顯示。請在照片上按右鍵選擇「複製圖片位址」。</p>
+                    ) : (
+                        <p className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Info size={12}/> 針對 Google Photo：請確保使用「複製圖片位址」取得的長連結。</p>
+                    )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-6">
@@ -372,10 +363,6 @@
             );
         };
 
-        // -----------------------------------------------------------------------------
-        // Main App
-        // -----------------------------------------------------------------------------
-
         function App() {
             const [view, setView] = useState('gallery');
             const [photos, setPhotos] = useState([]);
@@ -388,51 +375,32 @@
             const [editingPhoto, setEditingPhoto] = useState(null);
             const [isSaving, setIsSaving] = useState(false);
             const [currentUser, setCurrentUser] = useState(null);
-            
-            // New States for Error Handling
             const [authError, setAuthError] = useState(null);
 
-            // 1. Auth Setup (Anonymous) with Error Handling
             useEffect(() => {
-                if (!isConfigConfigured) return; // Don't try auth if config is missing
-
+                if (!isConfigConfigured) return; 
                 const initAuth = async () => {
-                    try {
-                        await signInAnonymously(auth);
-                    } catch (err) {
-                        console.error("Auth failed:", err);
-                        setAuthError(err.message);
-                    }
+                    try { await signInAnonymously(auth); } catch (err) { console.error("Auth failed:", err); setAuthError(err.message); }
                 };
                 initAuth();
-                
-                const unsubscribe = onAuthStateChanged(auth, (user) => {
-                    setCurrentUser(user);
-                    if(user) setAuthError(null); // Clear error on success
-                });
+                const unsubscribe = onAuthStateChanged(auth, (user) => { setCurrentUser(user); if(user) setAuthError(null); });
                 return () => unsubscribe();
             }, []);
 
-            // 2. Data Fetching
             useEffect(() => {
                 if (!currentUser || !db) return;
-                // 改用根目錄 Collection
                 const q = query(collection(db, COLLECTION_NAME), orderBy('timestamp', 'desc'));
                 const unsubscribe = onSnapshot(q, (snapshot) => {
                     const loadedPhotos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     setPhotos(loadedPhotos);
-                }, (error) => {
-                    console.error("Data fetch error:", error);
-                });
+                }, (error) => { console.error("Data fetch error:", error); });
                 return () => unsubscribe();
             }, [currentUser]);
 
-            // CRUD Operations
             const handleSavePhoto = async (photoData) => {
                 if (!currentUser) return;
                 setIsSaving(true);
                 try {
-                    // 改用根目錄 Collection
                     const collectionRef = collection(db, COLLECTION_NAME);
                     if (editingPhoto) {
                         const docRef = doc(collectionRef, photoData.id);
@@ -444,7 +412,6 @@
                     setView('gallery');
                 } catch (e) { 
                     console.error("Save error:", e); 
-                    // 顯示詳細錯誤訊息
                     alert("儲存失敗: " + e.message); 
                 } finally { 
                     setIsSaving(false); 
@@ -454,24 +421,15 @@
             const handleDeletePhoto = async (id) => {
                 if (!currentUser) return;
                 if(window.confirm('確定要永久刪除這張照片嗎？此動作將同步刪除資料庫中的紀錄。')) {
-                    try { 
-                        // 改用根目錄 Collection
-                        await deleteDoc(doc(db, COLLECTION_NAME, id)); 
-                    } catch(e) { 
-                        console.error("Delete error:", e); 
-                        // 顯示詳細錯誤訊息
-                        alert("刪除失敗: " + e.message); 
-                    }
+                    try { await deleteDoc(doc(db, COLLECTION_NAME, id)); } catch(e) { console.error("Delete error:", e); alert("刪除失敗: " + e.message); }
                 }
             };
 
             const startEdit = (photo) => { setEditingPhoto(photo); setView('upload'); if (selectedPhoto) setSelectedPhoto(null); };
 
-            // Render Logic for Errors
             if (!isConfigConfigured) return <ConfigError />;
             if (authError) return <AuthError message={authError} />;
 
-            // Filter Logic
             const allTags = [...new Set(photos.flatMap(p => p.tags))];
             const filteredPhotos = photos.filter(photo => {
                 const matchesSearch = (photo.location.city || '').includes(searchQuery) || (photo.location.country || '').includes(searchQuery) || (photo.location.spot || '').includes(searchQuery) || (photo.thoughts_shooting || '').includes(searchQuery) || (photo.thoughts_viewing || '').includes(searchQuery) || (photo.tags || []).some(t => t.includes(searchQuery));
