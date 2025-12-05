@@ -44,7 +44,6 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-        // 新增 Storage 模組
         import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
         // -----------------------------------------------------------------------------
@@ -81,12 +80,34 @@
         // Helper Functions
         // -----------------------------------------------------------------------------
 
+        // 下載原始圖片 (當浮水印失敗時的備案)
+        const downloadOriginal = async (imageUrl, filename) => {
+            try {
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `Linkc_${filename}_original.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error("原始圖片下載也失敗", err);
+                // 最後手段：直接開新視窗
+                window.open(imageUrl, '_blank');
+            }
+        };
+
         const downloadWithWatermark = async (imageUrl, filename, e) => {
             if(e) e.stopPropagation();
             
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             const img = new Image();
+            
+            // 關鍵：嘗試跨域請求，這是製作浮水印必須的
             img.crossOrigin = "anonymous";
             img.src = imageUrl;
 
@@ -97,7 +118,7 @@
                         canvas.height = img.height;
                         ctx.drawImage(img, 0, 0);
 
-                        // Watermark
+                        // Watermark Style
                         const fontSize = Math.max(20, img.width * 0.03); 
                         ctx.font = `bold ${fontSize}px sans-serif`;
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
@@ -118,14 +139,18 @@
                         document.body.removeChild(link);
                         resolve(true);
                     } catch (err) {
-                        console.error(err);
-                        alert("浮水印製作失敗，改為下載原圖。");
-                        window.open(imageUrl, '_blank');
+                        console.warn("Canvas Tainted (CORS 限制)，轉為下載原圖。", err);
+                        alert("因瀏覽器安全性限制 (CORS)，無法合成浮水印。\n\n系統將為您下載原始圖片。");
+                        downloadOriginal(imageUrl, filename);
                         resolve(false);
                     }
                 };
+                
+                // 如果一開始載入就失敗 (通常是因為 Server 不支援 crossOrigin="anonymous")
                 img.onerror = () => {
-                    alert("圖片載入失敗，無法下載。");
+                    console.warn("圖片載入失敗 (CORS 限制)，轉為下載原圖。");
+                    alert("因圖片來源限制，無法載入浮水印畫布。\n\n系統將為您下載原始圖片。");
+                    downloadOriginal(imageUrl, filename);
                     resolve(false);
                 };
             });
@@ -197,7 +222,6 @@
                 e.stopPropagation();
                 copyToClipboard(shareText);
                 await downloadWithWatermark(photo.url, photo.id, e);
-                alert("已複製文字並下載照片，請至 IG 發佈。");
             };
             return (
                 <div className="flex items-center gap-2">
@@ -232,17 +256,21 @@
                         </div>
                     </div>
                     
-                    <div className="mt-4 text-white/80 text-center">
-                        <p className="text-white/60 text-xs font-mono mb-1">{photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso}</p>
-                        <div className="flex items-center justify-center gap-4 text-sm font-medium">
+                    {/* Lightbox Info */}
+                    <div className="mt-4 text-white/80 text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-4 text-sm font-medium mb-1">
                             <span className="flex items-center gap-1"><Clock size={14}/> {photo.date}</span>
                             <span className="flex items-center gap-1"><MapPin size={14}/> {photo.location.city}</span>
                         </div>
+                        <p className="text-white/60 text-xs font-mono">
+                            {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso}
+                        </p>
                     </div>
                 </div>
             );
         };
 
+        // 恢復後的 PhotoCard：包含完整資訊
         const PhotoCard = ({ photo, onExpand, isAdmin, onEdit, onDelete }) => (
             <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full border border-gray-100 relative">
                 {isAdmin && (
@@ -256,13 +284,59 @@
                     <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2 z-10"><ShareButtons photo={photo} /></div>
                     <div className="absolute bottom-3 left-3 pointer-events-none"><span className="bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md flex items-center gap-1"><Clock size={12} /> {photo.date}</span></div>
                 </div>
+                
                 <div className="p-5 flex flex-col flex-grow">
-                    <div className="flex items-center text-gray-500 text-sm mb-3"><MapPin size={14} className="mr-1 text-indigo-500" />{photo.location.country} · {photo.location.city}</div>
-                    <div className="flex flex-wrap gap-2 mb-4">{photo.tags.map(tag => (<span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full font-medium">#{tag}</span>))}</div>
-                    <div className="space-y-3 mb-4 flex-grow">
-                        {photo.thoughts_shooting && <div className="bg-gray-50 p-3 rounded-lg border-l-2 border-orange-300"><p className="text-gray-700 text-sm italic">"{photo.thoughts_shooting}"</p></div>}
+                    <div className="flex items-center text-gray-500 text-sm mb-3">
+                        <MapPin size={14} className="mr-1 text-indigo-500" />
+                        {photo.location.country} · {photo.location.city} {photo.location.spot && `· ${photo.location.spot}`}
                     </div>
-                    <div className="border-t border-dashed border-gray-200 mt-3 pt-2 flex justify-between items-center"><span className="text-[10px] text-gray-400">CC BY 4.0 姓名標示</span><span className="text-[10px] font-bold text-gray-300 select-none">Linkc</span></div>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {photo.tags.map(tag => (
+                            <span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full font-medium">#{tag}</span>
+                        ))}
+                    </div>
+
+                    <div className="space-y-3 mb-4 flex-grow">
+                        {photo.thoughts_shooting && (
+                            <div className="bg-gray-50 p-3 rounded-lg border-l-2 border-orange-300">
+                                <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1">
+                                    <Camera size={12} /> 拍攝當下
+                                </div>
+                                <p className="text-gray-700 text-sm italic">"{photo.thoughts_shooting}"</p>
+                            </div>
+                        )}
+                        {/* 這裡補回了欣賞感受 */}
+                        {photo.thoughts_viewing && (
+                            <div className="bg-gray-50 p-3 rounded-lg border-l-2 border-indigo-300">
+                                <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1">
+                                    <Eye size={12} /> 欣賞隨筆
+                                </div>
+                                <p className="text-gray-700 text-sm italic">"{photo.thoughts_viewing}"</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 這裡補回了 EXIF Grid */}
+                    <div className="grid grid-cols-3 gap-2 border-t pt-3 mt-auto text-center">
+                        <div className="flex flex-col items-center">
+                            <span className="text-[10px] uppercase text-gray-400 font-bold">快門</span>
+                            <span className="text-xs text-gray-700 font-mono">{photo.exif.shutter || '--'}</span>
+                        </div>
+                        <div className="flex flex-col items-center border-l border-r border-gray-100">
+                            <span className="text-[10px] uppercase text-gray-400 font-bold">光圈</span>
+                            <span className="text-xs text-gray-700 font-mono">{photo.exif.aperture || '--'}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-[10px] uppercase text-gray-400 font-bold">ISO</span>
+                            <span className="text-xs text-gray-700 font-mono">{photo.exif.iso || '--'}</span>
+                        </div>
+                    </div>
+                    
+                    <div className="border-t border-dashed border-gray-200 mt-3 pt-2 flex justify-between items-center">
+                        <span className="text-[10px] text-gray-400">CC BY 4.0 姓名標示</span>
+                        <span className="text-[10px] font-bold text-gray-300 select-none">Linkc</span>
+                    </div>
                 </div>
             </div>
         );
@@ -271,7 +345,7 @@
             const isEditMode = !!initialData;
             const [formData, setFormData] = useState(initialData || { url: '', tags: '', thoughts_shooting: '', thoughts_viewing: '', exif: { shutter: '', aperture: 'f/', iso: '', date: new Date().toISOString().split('T')[0] }, location: { country: '', city: '', spot: '' } });
             const [status, setStatus] = useState(''); // 'fetching', 'uploading', 'error', ''
-            const [uploadFile, setUploadFile] = useState(null); // 新增：檔案上傳狀態
+            const [uploadFile, setUploadFile] = useState(null);
 
             useEffect(() => { if (initialData && Array.isArray(initialData.tags)) { setFormData(prev => ({ ...prev, tags: initialData.tags.join(', ') })); } }, [initialData]);
             
@@ -290,14 +364,12 @@
                 let finalUrl = formData.url;
 
                 try {
-                    // 如果有選擇檔案，優先處理檔案上傳
                     if (uploadFile) {
                         const filename = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${uploadFile.name}`;
                         const storageRef = ref(storage, filename);
                         await uploadBytes(storageRef, uploadFile);
                         finalUrl = await getDownloadURL(storageRef);
                     } else if (formData.url) {
-                         // 如果是輸入網址，檢查是否為 Google Photos
                         if (formData.url.includes('googleusercontent') || formData.url.includes('photos.app.goo.gl')) {
                             if (!confirm("警告：使用 Google Photos 連結極高機率會因為時效性而破圖。\n\n強烈建議您將照片下載後，使用「上傳檔案」功能。\n\n您確定要繼續使用連結嗎？")) {
                                 setStatus('');
@@ -337,11 +409,9 @@
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-8">
-                        {/* 圖片來源選擇區 */}
                         <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
                             <label className="block text-sm font-bold text-gray-700 mb-2">步驟 1：選擇照片來源</label>
                             
-                            {/* 檔案上傳 (推薦) */}
                             <div className="relative">
                                 <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload" disabled={status === 'uploading'} />
                                 <label htmlFor="file-upload" className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${uploadFile ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}>
@@ -363,7 +433,6 @@
 
                             <div className="text-center text-gray-400 text-xs">- 或 -</div>
 
-                            {/* 網址輸入 (備用) */}
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LinkIcon className="h-4 w-4 text-gray-400" /></div>
                                 <input type="url" placeholder="輸入圖片連結 (不推薦 Google Photos 連結)" className="block w-full pl-9 border-gray-300 rounded-lg p-2 text-sm border" value={formData.url} onChange={(e) => { handleChange(null, 'url', e.target.value); setUploadFile(null); }} disabled={uploadFile || status === 'uploading'} />
@@ -387,6 +456,7 @@
                                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
                                     <div><label className="block text-xs font-medium text-gray-500">國家</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.country} onChange={(e) => handleChange('location', 'country', e.target.value)} /></div>
                                     <div><label className="block text-xs font-medium text-gray-500">城市</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.city} onChange={(e) => handleChange('location', 'city', e.target.value)} /></div>
+                                    <div className="col-span-2"><label className="block text-xs font-medium text-gray-500">地名/景點</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.spot} onChange={(e) => handleChange('location', 'spot', e.target.value)} /></div>
                                 </div>
                             </div>
                         </div>
