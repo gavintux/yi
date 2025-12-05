@@ -81,44 +81,40 @@
         const COLLECTION_NAME = 'linkc_photos_v1';
 
         // -----------------------------------------------------------------------------
-        // Helper Functions (強力解析版)
+        // Helper Functions (強力解析版 v3 - 針對 Nikon/Olympus 優化)
         // -----------------------------------------------------------------------------
 
-        // 暴力搜索所有標籤來找鏡頭名稱
-        const findLensNameInAllTags = (allTags) => {
-            // 1. 優先檢查標準標籤
-            if (allTags.LensModel && typeof allTags.LensModel === 'string' && allTags.LensModel.trim() !== '') return allTags.LensModel;
-            if (allTags.Lens && typeof allTags.Lens === 'string' && allTags.Lens.trim() !== '') return allTags.Lens;
-            if (allTags.LensID && typeof allTags.LensID === 'string' && allTags.LensID.trim() !== '') return allTags.LensID;
-
-            // 2. 搜尋任何包含 "Lens" 且值為字串的標籤 (排除 LensInfo 數值)
-            for (const key in allTags) {
-                const val = allTags[key];
-                if (key.includes("Lens") && typeof val === 'string' && val.length > 2) {
-                    // 排除一些無效字串
-                    if (val.toLowerCase().includes("unknown")) continue;
-                    return val;
+        // 通用數值解析 (處理分數、字串分數、Number物件)
+        const getExifValue = (item) => {
+            if (typeof item === 'number') return item;
+            if (typeof item === 'string') {
+                // 處理 "12/1" 這種字串
+                if (item.includes('/')) {
+                    const [n, d] = item.split('/');
+                    return Number(n) / Number(d);
                 }
+                return Number(item);
             }
-
-            // 3. 最後嘗試解析 LensInfo (數值規格)
-            if (allTags.LensInfo) {
-                return parseLensInfo(allTags.LensInfo);
+            if (item && item.numerator && item.denominator && item.denominator !== 0) {
+                return item.numerator / item.denominator;
             }
-
-            return "";
+            if (item && typeof item.valueOf === 'function') {
+                const val = item.valueOf();
+                return isNaN(val) ? 0 : Number(val);
+            }
+            return 0;
         };
 
+        // 解析 LensInfo 數值陣列轉為字串
         const parseLensInfo = (lensInfo) => {
             if (!lensInfo || lensInfo.length < 2) return null;
             
-            // 處理不同的 LensInfo 格式
-            const minFocal = lensInfo[0] ? Number(lensInfo[0]) : 0;
-            const maxFocal = lensInfo[1] ? Number(lensInfo[1]) : 0;
-            const minF = lensInfo[2] ? Number(lensInfo[2]) : 0;
-            const maxF = lensInfo[3] ? Number(lensInfo[3]) : 0;
+            const minFocal = getExifValue(lensInfo[0]);
+            const maxFocal = getExifValue(lensInfo[1]);
+            const minF = getExifValue(lensInfo[2]);
+            const maxF = getExifValue(lensInfo[3]);
 
-            if (minFocal === 0) return null;
+            if (!minFocal || minFocal === 0) return null;
 
             let focalStr = "";
             if (minFocal === maxFocal) {
@@ -129,30 +125,62 @@
 
             let apertureStr = "";
             if (minF > 0) {
-                if (minF === maxF || maxF === 0) {
+                if (minF === maxF || !maxF) {
                     apertureStr = `f/${minF}`;
                 } else {
                     apertureStr = `f/${minF}-${maxF}`;
                 }
             }
 
-            return `${focalStr} ${apertureStr}`;
+            return `${focalStr} ${apertureStr}`.trim();
         };
 
+        // 暴力搜索所有標籤來找鏡頭名稱
+        const findLensNameInAllTags = (allTags) => {
+            // 1. 優先檢查標準與常見標籤
+            const candidates = [
+                allTags.LensModel, 
+                allTags.Lens, 
+                allTags.LensID,
+                allTags.LensInfo // 字串優先
+            ];
+
+            for (const c of candidates) {
+                if (c && typeof c === 'string' && c.trim().length > 0) {
+                    // 排除雜訊
+                    if(c.toLowerCase().includes("undefined")) continue;
+                    return c;
+                }
+            }
+
+            // 2. 搜尋任何包含 "Lens" 且值為字串的標籤
+            for (const key in allTags) {
+                const val = allTags[key];
+                if (key.includes("Lens") && typeof val === 'string' && val.length > 3) {
+                    if (val.toLowerCase().includes("unknown") || val.toLowerCase().includes("defined")) continue;
+                    return val;
+                }
+            }
+
+            // 3. 嘗試解析 LensInfo (如果是數值規格) - Nikon 常見情況
+            if (allTags.LensInfo) {
+                return parseLensInfo(allTags.LensInfo);
+            }
+            // 某些相機放在 UndefinedTag:0xA432 (LensInfo)
+            if (allTags['UndefinedTag:0xA432']) {
+                return parseLensInfo(allTags['UndefinedTag:0xA432']);
+            }
+
+            return "";
+        };
+
+        // GPS 座標轉換 (TG-6 優化版)
         const convertDMSToDD = (dms, ref) => {
             if (!dms) return null;
             
-            // 強力轉換：處理各種奇怪的 Exif 資料結構 (Array, Object, Number)
-            const getVal = (item) => {
-                if (typeof item === 'number') return item;
-                if (item && typeof item.valueOf === 'function') return item.valueOf(); // 處理 Number 物件
-                if (item && item.numerator && item.denominator) return item.numerator / item.denominator; // 處理分數物件
-                return 0;
-            };
-
-            const d = getVal(dms[0]);
-            const m = getVal(dms[1]);
-            const s = getVal(dms[2]);
+            const d = getExifValue(dms[0]);
+            const m = getExifValue(dms[1]);
+            const s = getExifValue(dms[2]);
 
             let dd = d + m / 60 + s / 3600;
             
@@ -160,7 +188,6 @@
                 dd = dd * -1;
             }
             
-            // 基本驗證
             if (isNaN(dd) || (dd === 0 && d === 0 && m === 0)) return null;
             return dd;
         };
@@ -287,15 +314,14 @@
         const Header = ({ setView, isAdmin, onLoginClick, onLogout }) => (
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                <div className="flex items-center cursor-pointer gap-2" onClick={() => setView('gallery')}>
-                    {/* Logo */}
-                    <img src="https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f" alt="Linkc Logo" className="h-10 w-auto mr-2" />
+                <div className="flex items-center gap-2">
+                    <a href="https://2blog.ilc.edu.tw/linkc/" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity" title="前往 Linkc Blog">
+                        <img src="https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f" alt="Linkc Logo" className="h-14 w-auto mr-2" />
+                    </a>
                     
-                    {/* 原本的相機圖示 */}
-                    <div className="bg-indigo-600 p-2 rounded-lg"><Camera className="w-6 h-6 text-white" /></div>
-                    
-                    {/* 原本的文字 */}
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight hidden sm:block">Linkc <span className="text-indigo-600 font-light">Gallery</span></h1>
+                    <div className="flex items-center cursor-pointer gap-2" onClick={() => setView('gallery')}>
+                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight hidden sm:block">Linkc <span className="text-indigo-600 font-light">Gallery</span></h1>
+                    </div>
                     
                     {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2">ADMIN</span>}
                 </div>
@@ -530,14 +556,17 @@
 
                         // 5. 格式化數值
                         let formattedShutter = "";
-                        if (extractedShutter) {
-                            if (extractedShutter < 1) {
-                                formattedShutter = "1/" + Math.round(1/extractedShutter);
+                        const shutterVal = getExifValue(extractedShutter);
+                        if (shutterVal > 0) {
+                            if (shutterVal < 1) {
+                                formattedShutter = "1/" + Math.round(1/shutterVal);
                             } else {
-                                formattedShutter = extractedShutter.toString();
+                                formattedShutter = shutterVal.toString();
                             }
                         }
-                        const formattedAperture = extractedFNumber ? "f/" + extractedFNumber : "";
+                        
+                        const apertureVal = getExifValue(extractedFNumber);
+                        const formattedAperture = apertureVal ? "f/" + apertureVal : "";
                         
                         let formattedDate = "";
                         if (extractedDate) {
@@ -564,8 +593,9 @@
                         if (formattedCamera) formattedCamera = formattedCamera.replace(/\0/g, '').trim();
 
                         let formattedFocalLength = "";
-                        if (extractedFocalLength) {
-                            formattedFocalLength = `${Number(extractedFocalLength)}mm`;
+                        const focalVal = getExifValue(extractedFocalLength);
+                        if (focalVal) {
+                            formattedFocalLength = `${focalVal}mm`;
                         }
 
                         // 6. GPS 與地址解析
@@ -747,17 +777,7 @@
             );
         };
 
-        const AdminLogin = ({ onLogin, onCancel }) => {
-            const [password, setPassword] = useState('');
-            const handleSubmit = (e) => { e.preventDefault(); if (password === '590123') onLogin(); else setPassword(''); };
-            return (
-                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full"><h3 className="text-lg font-bold text-center mb-4">管理員登入</h3><form onSubmit={handleSubmit} className="space-y-4"><input type="password" placeholder="密碼" className="w-full text-center border p-2 rounded" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus /><div className="flex gap-2"><button type="button" onClick={onCancel} className="flex-1 bg-gray-200 py-2 rounded">取消</button><button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded">解鎖</button></div></form></div>
-                </div>
-            );
-        };
-
-        function App() {
+        const App = () => {
             const [view, setView] = useState('gallery');
             const [photos, setPhotos] = useState([]);
             const [searchQuery, setSearchQuery] = useState('');
@@ -781,8 +801,6 @@
 
             useEffect(() => {
                 if (!currentUser || !db) return;
-                // Query all photos first (client-side sorting is easier for complex logic, or use simple query)
-                // Using simple order for initial fetch
                 const q = query(collection(db, COLLECTION_NAME), orderBy('timestamp', 'desc'));
                 onSnapshot(q, (snapshot) => { setPhotos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); });
             }, [currentUser]);
@@ -963,7 +981,7 @@
                 <footer className="bg-white border-t border-gray-200 mt-12 py-8"><div className="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm"><p>© {new Date().getFullYear()} Linkc Photo Space.</p><p className="mt-1">Content Creative Commons Attribution (CC BY).</p></div></footer>
                 </div>
             );
-        }
+        };
 
         const root = createRoot(document.getElementById('root'));
         root.render(<App />);
