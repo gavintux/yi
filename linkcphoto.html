@@ -54,7 +54,7 @@
         // 設定區
         // -----------------------------------------------------------------------------
         
-        const firebaseConfig ={
+        const firebaseConfig =  const firebaseConfig = {
             apiKey: "AIzaSyDwXsplXePeD1wU1GG4BwQBR6iSMd3_5nY",
             authDomain: "linkcphoto.firebaseapp.com",
             projectId: "linkcphoto",
@@ -63,7 +63,6 @@
             appId: "1:841541302440:web:a2b3dfef70a32bb345ea9d",
             measurementId: "G-902H2EHVFF"
             };
-
         const isConfigConfigured = !firebaseConfig.apiKey.includes("您的API_KEY");
 
         let app, auth, db, storage;
@@ -161,9 +160,8 @@
                         resolve(true);
                     } catch (err) {
                         console.warn("Canvas Tainted (CORS 限制)，轉為下載原圖。", err);
-                        // 降級處理
                         downloadOriginal(imageUrl, filename);
-                        resolve(false); // 雖然失敗，但已處理降級，回傳 false 讓呼叫者知道沒產生浮水印
+                        resolve(false);
                     }
                 };
                 
@@ -240,14 +238,8 @@
             
             const handleIG = async (e) => {
                 e.stopPropagation();
-                
-                // 1. 先複製文字
                 copyToClipboard(shareText);
-                
-                // 2. 嘗試下載
                 const success = await downloadWithWatermark(photo.url, photo.id, e);
-                
-                // 3. 顯示訊息
                 if (success) {
                     alert("已複製貼文內容並下載照片 (含浮水印)！\n\n請開啟 Instagram 選擇照片並貼上文字。");
                 } else {
@@ -425,7 +417,9 @@
                         
                         const make = EXIF.getTag(this, "Make");
                         const model = EXIF.getTag(this, "Model");
-                        const lensModel = EXIF.getTag(this, "LensModel");
+                        
+                        // 修正：多重標籤檢查
+                        const lensModel = EXIF.getTag(this, "LensModel") || EXIF.getTag(this, "Lens") || EXIF.getTag(this, "LensInfo") || EXIF.getTag(this, "UndefinedTag:0xA434");
 
                         const lat = EXIF.getTag(this, "GPSLatitude");
                         const latRef = EXIF.getTag(this, "GPSLatitudeRef");
@@ -728,9 +722,15 @@
                     }
 
                     let isNot = false;
-                    if (token.startsWith('-') && token.length > 1) {
-                        isNot = true;
-                        token = token.substring(1);
+                    if (token.startsWith('-')) {
+                        // Check if it's just "-" or "-keyword"
+                        if (token.length > 1) {
+                            isNot = true;
+                            token = token.substring(1);
+                        } else {
+                            // ignore standalone "-" or handle as literal if desired
+                            // For now, treat standalone "-" as literal
+                        }
                     }
 
                     // Check match for this token
@@ -757,11 +757,16 @@
                     // Sort by shooting date (exif.date) if available, else timestamp (upload time)
                     const dateA = a.exif?.date || a.timestamp;
                     const dateB = b.exif?.date || b.timestamp;
-                    return dateA < dateB ? 1 : -1;
+                    // String comparison works for ISO dates
+                    if (dateA < dateB) return 1;
+                    if (dateA > dateB) return -1;
+                    return 0;
                 } else {
                     const dateA = a.exif?.date || a.timestamp;
                     const dateB = b.exif?.date || b.timestamp;
-                    return dateA > dateB ? 1 : -1;
+                    if (dateA > dateB) return 1;
+                    if (dateA < dateB) return -1;
+                    return 0;
                 }
             });
 
