@@ -10,8 +10,11 @@
     
     <!-- 2. 載入 Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 3. 載入 Exif-js (新增：用於讀取照片資訊) -->
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
 
-    <!-- 3. CSS -->
+    <!-- 4. CSS -->
     <style>
         body { margin: 0; font-family: sans-serif; background-color: #f9fafb; }
         .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; color: #4f46e5; font-weight: bold; }
@@ -30,7 +33,7 @@
         <div class="loading-screen">正在啟動 Linkc Photo Space...</div>
     </div>
 
-    <!-- 4. React App -->
+    <!-- 5. React App -->
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect, useRef } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
@@ -38,7 +41,7 @@
             Camera, MapPin, Clock, Search, Upload, Download, Tag, Eye, X, 
             Image as ImageIcon, Maximize2, Share2, Facebook, Instagram, 
             MessageCircle, Copy, Check, Lock, Unlock, Edit, Trash2, LogOut, 
-            Cloud, RefreshCw, AlertTriangle, Info, Save, Link as LinkIcon, FileUp
+            Cloud, RefreshCw, AlertTriangle, Info, Save, Link as LinkIcon, FileUp, Sparkles
         } from 'https://esm.sh/lucide-react@0.294.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -80,7 +83,6 @@
         // Helper Functions
         // -----------------------------------------------------------------------------
 
-        // 下載原始圖片 (當浮水印失敗時的備案)
         const downloadOriginal = async (imageUrl, filename) => {
             try {
                 const response = await fetch(imageUrl);
@@ -95,7 +97,6 @@
                 window.URL.revokeObjectURL(url);
             } catch (err) {
                 console.error("原始圖片下載也失敗", err);
-                // 最後手段：直接開新視窗
                 window.open(imageUrl, '_blank');
             }
         };
@@ -107,7 +108,6 @@
             const ctx = canvas.getContext('2d');
             const img = new Image();
             
-            // 關鍵：嘗試跨域請求，這是製作浮水印必須的
             img.crossOrigin = "anonymous";
             img.src = imageUrl;
 
@@ -118,7 +118,6 @@
                         canvas.height = img.height;
                         ctx.drawImage(img, 0, 0);
 
-                        // Watermark Style
                         const fontSize = Math.max(20, img.width * 0.03); 
                         ctx.font = `bold ${fontSize}px sans-serif`;
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
@@ -146,7 +145,6 @@
                     }
                 };
                 
-                // 如果一開始載入就失敗 (通常是因為 Server 不支援 crossOrigin="anonymous")
                 img.onerror = () => {
                     console.warn("圖片載入失敗 (CORS 限制)，轉為下載原圖。");
                     alert("因圖片來源限制，無法載入浮水印畫布。\n\n系統將為您下載原始圖片。");
@@ -256,7 +254,6 @@
                         </div>
                     </div>
                     
-                    {/* Lightbox Info */}
                     <div className="mt-4 text-white/80 text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-4 text-sm font-medium mb-1">
                             <span className="flex items-center gap-1"><Clock size={14}/> {photo.date}</span>
@@ -270,7 +267,6 @@
             );
         };
 
-        // 恢復後的 PhotoCard：包含完整資訊
         const PhotoCard = ({ photo, onExpand, isAdmin, onEdit, onDelete }) => (
             <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full border border-gray-100 relative">
                 {isAdmin && (
@@ -306,7 +302,6 @@
                                 <p className="text-gray-700 text-sm italic">"{photo.thoughts_shooting}"</p>
                             </div>
                         )}
-                        {/* 這裡補回了欣賞感受 */}
                         {photo.thoughts_viewing && (
                             <div className="bg-gray-50 p-3 rounded-lg border-l-2 border-indigo-300">
                                 <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1">
@@ -317,7 +312,6 @@
                         )}
                     </div>
 
-                    {/* 這裡補回了 EXIF Grid */}
                     <div className="grid grid-cols-3 gap-2 border-t pt-3 mt-auto text-center">
                         <div className="flex flex-col items-center">
                             <span className="text-[10px] uppercase text-gray-400 font-bold">快門</span>
@@ -344,16 +338,58 @@
         const PhotoForm = ({ onSave, onCancel, initialData, isSaving }) => {
             const isEditMode = !!initialData;
             const [formData, setFormData] = useState(initialData || { url: '', tags: '', thoughts_shooting: '', thoughts_viewing: '', exif: { shutter: '', aperture: 'f/', iso: '', date: new Date().toISOString().split('T')[0] }, location: { country: '', city: '', spot: '' } });
-            const [status, setStatus] = useState(''); // 'fetching', 'uploading', 'error', ''
+            const [status, setStatus] = useState('');
             const [uploadFile, setUploadFile] = useState(null);
+            const [exifStatus, setExifStatus] = useState(''); // EXIF status
 
             useEffect(() => { if (initialData && Array.isArray(initialData.tags)) { setFormData(prev => ({ ...prev, tags: initialData.tags.join(', ') })); } }, [initialData]);
             
             const handleChange = (section, field, value) => { if (section) { setFormData(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } })); } else { setFormData(prev => ({ ...prev, [field]: value })); } };
             
             const handleFileChange = (e) => {
-                if (e.target.files[0]) {
-                    setUploadFile(e.target.files[0]);
+                const file = e.target.files[0];
+                if (file) {
+                    setUploadFile(file);
+                    setExifStatus('分析中...');
+                    
+                    // 自動抓取 EXIF
+                    EXIF.getData(file, function() {
+                        const extractedShutter = EXIF.getTag(this, "ExposureTime");
+                        const extractedFNumber = EXIF.getTag(this, "FNumber");
+                        const extractedISO = EXIF.getTag(this, "ISOSpeedRatings");
+                        const extractedDate = EXIF.getTag(this, "DateTimeOriginal");
+
+                        // 格式化快門 (例如 0.008 -> 1/125)
+                        let formattedShutter = "";
+                        if (extractedShutter) {
+                            if (extractedShutter < 1) {
+                                formattedShutter = "1/" + Math.round(1/extractedShutter);
+                            } else {
+                                formattedShutter = extractedShutter.toString();
+                            }
+                        }
+
+                        // 格式化光圈
+                        const formattedAperture = extractedFNumber ? "f/" + extractedFNumber : "";
+                        
+                        // 格式化日期 (YYYY:MM:DD HH:MM:SS -> YYYY-MM-DD)
+                        let formattedDate = "";
+                        if (extractedDate) {
+                            const datePart = extractedDate.split(" ")[0]; // Get YYYY:MM:DD
+                            formattedDate = datePart.replace(/:/g, "-");
+                        }
+
+                        setFormData(prev => ({
+                            ...prev,
+                            exif: {
+                                shutter: formattedShutter || prev.exif.shutter,
+                                aperture: formattedAperture || prev.exif.aperture,
+                                iso: extractedISO ? extractedISO.toString() : prev.exif.iso,
+                                date: formattedDate || prev.exif.date
+                            }
+                        }));
+                        setExifStatus('已自動填入 EXIF 資訊 ✨');
+                    });
                 }
             };
 
@@ -419,13 +455,13 @@
                                         <>
                                             <Check className="w-8 h-8 text-green-500 mb-2" />
                                             <span className="text-sm font-medium text-green-600">已選擇：{uploadFile.name}</span>
-                                            <span className="text-xs text-green-500 mt-1">(將會上傳至您的雲端)</span>
+                                            {exifStatus && <span className="text-xs text-blue-500 mt-1 flex items-center gap-1"><Sparkles size={10}/> {exifStatus}</span>}
                                         </>
                                     ) : (
                                         <>
                                             <FileUp className="w-8 h-8 text-gray-400 mb-2" />
                                             <span className="text-sm font-medium text-gray-600">點擊上傳檔案 (推薦)</span>
-                                            <span className="text-xs text-gray-500 mt-1">支援 Google Photos 下載後的照片，永久保存</span>
+                                            <span className="text-xs text-gray-500 mt-1">自動讀取 EXIF 資訊，永久保存</span>
                                         </>
                                     )}
                                 </label>
@@ -435,7 +471,7 @@
 
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LinkIcon className="h-4 w-4 text-gray-400" /></div>
-                                <input type="url" placeholder="輸入圖片連結 (不推薦 Google Photos 連結)" className="block w-full pl-9 border-gray-300 rounded-lg p-2 text-sm border" value={formData.url} onChange={(e) => { handleChange(null, 'url', e.target.value); setUploadFile(null); }} disabled={uploadFile || status === 'uploading'} />
+                                <input type="url" placeholder="輸入圖片連結 (不推薦 Google Photos 連結)" className="block w-full pl-9 border-gray-300 rounded-lg p-2 text-sm border" value={formData.url} onChange={(e) => { handleChange(null, 'url', e.target.value); setUploadFile(null); setExifStatus(''); }} disabled={uploadFile || status === 'uploading'} />
                             </div>
                         </div>
                         
@@ -446,7 +482,9 @@
                                 <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200"><label className="block text-sm font-bold text-gray-800 mb-1">欣賞感受</label><textarea rows="3" placeholder="..." className="block w-full border-gray-300 rounded-lg p-2.5 border resize-none" value={formData.thoughts_viewing} onChange={(e) => handleChange(null, 'thoughts_viewing', e.target.value)} /></div>
                             </div>
                             <div className="space-y-6 bg-gray-50 p-6 rounded-xl border border-gray-200">
-                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">拍攝參數</h3>
+                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                    拍攝參數 {exifStatus && <span className="text-xs text-green-500 font-normal normal-case">({exifStatus})</span>}
+                                </h3>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div><label className="block text-xs font-medium text-gray-500">快門</label><input type="text" placeholder="1/200" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /></div>
                                     <div><label className="block text-xs font-medium text-gray-500">光圈</label><input type="text" placeholder="f/2.8" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /></div>
