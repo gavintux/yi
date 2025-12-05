@@ -288,8 +288,15 @@
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                 <div className="flex items-center cursor-pointer gap-2" onClick={() => setView('gallery')}>
+                    {/* Logo */}
+                    <img src="https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f" alt="Linkc Logo" className="h-10 w-auto mr-2" />
+                    
+                    {/* 原本的相機圖示 */}
                     <div className="bg-indigo-600 p-2 rounded-lg"><Camera className="w-6 h-6 text-white" /></div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Linkc <span className="text-indigo-600 font-light">Gallery</span></h1>
+                    
+                    {/* 原本的文字 */}
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight hidden sm:block">Linkc <span className="text-indigo-600 font-light">Gallery</span></h1>
+                    
                     {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2">ADMIN</span>}
                 </div>
                 <div className="flex items-center gap-3">
