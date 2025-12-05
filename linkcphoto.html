@@ -54,7 +54,7 @@
         // 設定區
         // -----------------------------------------------------------------------------
         
-        const firebaseConfig =  const firebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyDwXsplXePeD1wU1GG4BwQBR6iSMd3_5nY",
             authDomain: "linkcphoto.firebaseapp.com",
             projectId: "linkcphoto",
@@ -62,8 +62,9 @@
             messagingSenderId: "841541302440",
             appId: "1:841541302440:web:a2b3dfef70a32bb345ea9d",
             measurementId: "G-902H2EHVFF"
-            };
-        const isConfigConfigured = !firebaseConfig.apiKey.includes("1:841541302440:web:a2b3dfef70a32bb345ea9d");
+        };
+
+        const isConfigConfigured = !firebaseConfig.apiKey.includes("您的API_KEY");
 
         let app, auth, db, storage;
         if (isConfigConfigured) {
