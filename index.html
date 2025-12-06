@@ -1,286 +1,398 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  TreeDeciduous, 
-  Mountain, 
-  Tent, 
-  Bike, 
-  Brain, 
-  Code, 
-  Leaf, 
-  ExternalLink, 
-  Facebook, 
-  Mail, 
-  Camera, 
-  Map, 
-  BookOpen, 
-  User, 
-  Activity 
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>林光章 (Zen) - 數位森林入口</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX compilation in browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* 自定義捲軸樣式，配合森林主題 */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F3F6F1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #A7C4A0;
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4C7C56;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="bg-[#FDFCF8]">
+    <div id="root"></div>
 
-const Portfolio = () => {
-  const [scrolled, setScrolled] = useState(false);
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+        // --- Icons Components (SVG) ---
+        // 為了在單一 HTML 運作，將 Lucide icons 轉換為 SVG 元件
+        const IconBase = ({ children, className, size = 24, ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className} 
+                {...props}
+            >
+                {children}
+            </svg>
+        );
 
-  const links = [
-    {
-      title: "Yi 工具平台",
-      desc: "個人化數位工具整合",
-      url: "https://gavintux.github.io/yi/yi.html",
-      icon: <Code className="w-6 h-6" />,
-      color: "bg-emerald-100 text-emerald-700"
-    },
-    {
-      title: "思維導圖 (Mindomo)",
-      desc: "結構化思考與規劃",
-      url: "https://gavintux.github.io/yi/linkcmindomo.html",
-      icon: <Brain className="w-6 h-6" />,
-      color: "bg-amber-100 text-amber-700"
-    },
-    {
-      title: "影像部落格",
-      desc: "生活紀錄與攝影",
-      url: "https://gavintux.github.io/yi/linkcphoto.html",
-      icon: <Camera className="w-6 h-6" />,
-      color: "bg-sky-100 text-sky-700"
-    },
-    {
-      title: "數位花園",
-      desc: "Zen 的知識庫 (Digital Garden)",
-      url: "https://zendg.netlify.app/",
-      icon: <TreeDeciduous className="w-6 h-6" />,
-      color: "bg-lime-100 text-lime-700"
-    },
-    {
-      title: "關於我",
-      desc: "詳細自我介紹與理念",
-      url: "https://2blog.ilc.edu.tw/linkc/2020/03/22/about-me/",
-      icon: <User className="w-6 h-6" />,
-      color: "bg-stone-100 text-stone-700"
-    },
-    {
-      title: "人體圖",
-      desc: "自我探索與分析",
-      url: "https://2blog.ilc.edu.tw/linkc/%e4%ba%ba%e9%ab%94%e5%9c%96/",
-      icon: <Activity className="w-6 h-6" />,
-      color: "bg-rose-100 text-rose-700"
-    }
-  ];
+        const Leaf = (props) => (
+            <IconBase {...props}>
+                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+            </IconBase>
+        );
+        const TreeDeciduous = (props) => (
+            <IconBase {...props}>
+                <path d="M8 19h8a4 4 0 0 0 3.8-2.8 4 4 0 0 0-1.6-4.5c.2-.7.2-1.5 0-2.2a4 4 0 0 0-3.3-2.8 4 4 0 0 0-4.8 2.3 4 4 0 0 0-3.4 2.8A4 4 0 0 0 3 19Z"/><path d="m12 19 2 3"/>
+            </IconBase>
+        );
+        const Mountain = (props) => (
+            <IconBase {...props}>
+                <path d="m8 3 4 8 5-5 5 15H2L8 3z"/>
+            </IconBase>
+        );
+        const Tent = (props) => (
+            <IconBase {...props}>
+                <path d="M19 20 10 4 1 20"/><path d="m12.8 14-2.4-9.5L8 12.3"/><path d="M21 20H3"/>
+            </IconBase>
+        );
+        const Bike = (props) => (
+            <IconBase {...props}>
+                <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
+            </IconBase>
+        );
+        const Brain = (props) => (
+            <IconBase {...props}>
+                <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/>
+            </IconBase>
+        );
+        const Code = (props) => (
+            <IconBase {...props}>
+                <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+            </IconBase>
+        );
+        const ExternalLink = (props) => (
+            <IconBase {...props}>
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </IconBase>
+        );
+        const Facebook = (props) => (
+            <IconBase {...props}>
+                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+            </IconBase>
+        );
+        const Mail = (props) => (
+            <IconBase {...props}>
+                <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            </IconBase>
+        );
+        const Camera = (props) => (
+            <IconBase {...props}>
+                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>
+            </IconBase>
+        );
+        const User = (props) => (
+            <IconBase {...props}>
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </IconBase>
+        );
+        const Activity = (props) => (
+            <IconBase {...props}>
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </IconBase>
+        );
 
-  const experiences = [
-    { year: "2021-現在", role: "宜蘭縣南澳國小 校長", loc: "現任" },
-    { year: "2016-2020", role: "宜蘭縣湖山國小 校長", loc: "經歷" },
-    { year: "2009-2016", role: "宜蘭縣玉田國小 校長", loc: "經歷" },
-    { year: "2003-2009", role: "宜蘭縣梗枋國小 主任/教師", loc: "經歷" }
-  ];
+        // --- Main Component ---
+        const Portfolio = () => {
+            const [scrolled, setScrolled] = useState(false);
 
-  const hobbies = [
-    { name: "登山", icon: <Mountain size={18} /> },
-    { name: "童軍", icon: <Tent size={18} /> },
-    { name: "單車", icon: <Bike size={18} /> },
-    { name: "自由軟體", icon: <Code size={18} /> },
-  ];
+            useEffect(() => {
+                const handleScroll = () => {
+                    setScrolled(window.scrollY > 50);
+                };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
 
-  return (
-    <div className="min-h-screen bg-[#FDFCF8] text-stone-800 font-sans selection:bg-green-200">
-      
-      {/* Navigation */}
-      <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
-        <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
-          <div className="flex items-center gap-2 font-bold text-xl tracking-tight text-green-900">
-            <Leaf className="text-green-600" />
-            <span>Zen's Portal</span>
-          </div>
-          <div className="hidden md:flex items-center gap-8 text-stone-600 font-medium">
-            <a href="#about" className="hover:text-green-700 transition-colors">關於校長</a>
-            <a href="#garden" className="hover:text-green-700 transition-colors">數位花園</a>
-            <a href="#tools" className="hover:text-green-700 transition-colors">工具平台</a>
-            <a href="https://www.facebook.com/gavintux" target="_blank" rel="noreferrer" className="text-blue-600 hover:scale-110 transition-transform">
-              <Facebook size={24} />
-            </a>
-          </div>
-        </div>
-      </nav>
+            const links = [
+                {
+                    title: "Yi 工具平台",
+                    desc: "個人化數位工具整合",
+                    url: "https://gavintux.github.io/yi/yi.html",
+                    icon: <Code className="w-6 h-6" />,
+                    color: "bg-emerald-100 text-emerald-700"
+                },
+                {
+                    title: "思維導圖 (Mindomo)",
+                    desc: "結構化思考與規劃",
+                    url: "https://gavintux.github.io/yi/linkcmindomo.html",
+                    icon: <Brain className="w-6 h-6" />,
+                    color: "bg-amber-100 text-amber-700"
+                },
+                {
+                    title: "影像部落格",
+                    desc: "生活紀錄與攝影",
+                    url: "https://gavintux.github.io/yi/linkcphoto.html",
+                    icon: <Camera className="w-6 h-6" />,
+                    color: "bg-sky-100 text-sky-700"
+                },
+                {
+                    title: "數位花園",
+                    desc: "Zen 的知識庫 (Digital Garden)",
+                    url: "https://zendg.netlify.app/",
+                    icon: <TreeDeciduous className="w-6 h-6" />,
+                    color: "bg-lime-100 text-lime-700"
+                },
+                {
+                    title: "關於我",
+                    desc: "詳細自我介紹與理念",
+                    url: "https://2blog.ilc.edu.tw/linkc/2020/03/22/about-me/",
+                    icon: <User className="w-6 h-6" />,
+                    color: "bg-stone-100 text-stone-700"
+                },
+                {
+                    title: "人體圖",
+                    desc: "自我探索與分析",
+                    url: "https://2blog.ilc.edu.tw/linkc/%e4%ba%ba%e9%ab%94%e5%9c%96/",
+                    icon: <Activity className="w-6 h-6" />,
+                    color: "bg-rose-100 text-rose-700"
+                }
+            ];
 
-      {/* Hero Section */}
-      <header className="relative pt-32 pb-20 px-6 overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full z-0 opacity-10 pointer-events-none">
-           {/* Abstract Nature Shapes */}
-           <div className="absolute top-[-10%] right-[-5%] w-96 h-96 rounded-full bg-green-400 blur-3xl"></div>
-           <div className="absolute bottom-[10%] left-[-10%] w-72 h-72 rounded-full bg-amber-300 blur-3xl"></div>
-        </div>
+            const experiences = [
+                { year: "2021-現在", role: "宜蘭縣南澳國小 校長", loc: "現任" },
+                { year: "2016-2020", role: "宜蘭縣湖山國小 校長", loc: "經歷" },
+                { year: "2009-2016", role: "宜蘭縣玉田國小 校長", loc: "經歷" },
+                { year: "2003-2009", role: "宜蘭縣梗枋國小 主任/教師", loc: "經歷" }
+            ];
 
-        <div className="max-w-4xl mx-auto relative z-10 text-center">
-          <div className="inline-block px-4 py-1.5 rounded-full bg-green-100 text-green-800 text-sm font-semibold mb-6 tracking-wide">
-            教育．科技．自然．童軍
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold text-green-950 mb-6 tracking-tight">
-            林光章 (Zen)
-          </h1>
-          <p className="text-xl md:text-2xl text-stone-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-            一位熱愛自然的教育家，在山林與程式碼之間，
-            <br className="hidden md:block"/>
-            尋找全腦學習與未來教育的平衡點。
-          </p>
-          
-          <div className="flex flex-wrap justify-center gap-4">
-            <a href="#tools" className="px-8 py-3 bg-green-700 text-white rounded-full font-medium hover:bg-green-800 transition-colors shadow-lg shadow-green-700/20 flex items-center gap-2">
-              <Code size={18} />
-              探索工具
-            </a>
-            <a href="https://zendg.netlify.app/" target="_blank" rel="noreferrer" className="px-8 py-3 bg-white border border-stone-200 text-stone-700 rounded-full font-medium hover:bg-stone-50 transition-colors flex items-center gap-2">
-              <TreeDeciduous size={18} />
-              進入數位花園
-            </a>
-          </div>
-        </div>
-      </header>
+            const hobbies = [
+                { name: "登山", icon: <Mountain size={18} /> },
+                { name: "童軍", icon: <Tent size={18} /> },
+                { name: "單車", icon: <Bike size={18} /> },
+                { name: "自由軟體", icon: <Code size={18} /> },
+            ];
 
-      {/* About Section (Based on PDF) */}
-      <section id="about" className="py-20 px-6 bg-white relative">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
-          
-          {/* Left: Bio & Philosophy */}
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-3xl font-bold text-green-900 mb-4 flex items-center gap-2">
-                <User className="text-green-600" />
-                關於校長
-              </h2>
-              <p className="text-stone-600 leading-relaxed text-lg">
-                綽號「阿昌」或「誇張」(Zen)，現任宜蘭縣南澳國小校長。
-                致力於推動自由軟體與人機互動教育，同時也是一位資深童軍與戶外愛好者。
-                未來的願景是隱居山林，專注於舒寫與全腦學習法的推廣。
-              </p>
-            </div>
+            return (
+                <div className="min-h-screen text-stone-800 font-sans selection:bg-green-200">
+                
+                {/* Navigation */}
+                <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
+                    <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
+                    <div className="flex items-center gap-2 font-bold text-xl tracking-tight text-green-900 cursor-pointer" onClick={() => window.scrollTo(0,0)}>
+                        <Leaf className="text-green-600" />
+                        <span>Zen's Portal</span>
+                    </div>
+                    <div className="hidden md:flex items-center gap-8 text-stone-600 font-medium">
+                        <a href="#about" className="hover:text-green-700 transition-colors">關於校長</a>
+                        <a href="#garden" className="hover:text-green-700 transition-colors">數位花園</a>
+                        <a href="#tools" className="hover:text-green-700 transition-colors">工具平台</a>
+                        <a href="https://www.facebook.com/gavintux" target="_blank" rel="noreferrer" className="text-blue-600 hover:scale-110 transition-transform">
+                        <Facebook size={24} />
+                        </a>
+                    </div>
+                    </div>
+                </nav>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100">
-                <h3 className="font-bold text-stone-800 mb-2">興趣與休閒</h3>
-                <div className="flex flex-wrap gap-2">
-                  {hobbies.map((h, i) => (
-                    <span key={i} className="px-3 py-1 bg-white border border-stone-200 rounded-full text-sm text-stone-600 flex items-center gap-1 shadow-sm">
-                      {h.icon}
-                      {h.name}
-                    </span>
-                  ))}
-                  <span className="px-3 py-1 bg-white border border-stone-200 rounded-full text-sm text-stone-600 shadow-sm">慢漫跑</span>
-                  <span className="px-3 py-1 bg-white border border-stone-200 rounded-full text-sm text-stone-600 shadow-sm">網球</span>
+                {/* Hero Section */}
+                <header className="relative pt-32 pb-20 px-6 overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-full z-0 opacity-10 pointer-events-none">
+                    {/* Abstract Nature Shapes */}
+                    <div className="absolute top-[-10%] right-[-5%] w-96 h-96 rounded-full bg-green-400 blur-3xl"></div>
+                    <div className="absolute bottom-[10%] left-[-10%] w-72 h-72 rounded-full bg-amber-300 blur-3xl"></div>
+                    </div>
+
+                    <div className="max-w-4xl mx-auto relative z-10 text-center">
+                    <div className="inline-block px-4 py-1.5 rounded-full bg-green-100 text-green-800 text-sm font-semibold mb-6 tracking-wide">
+                        教育．科技．自然．童軍
+                    </div>
+                    <h1 className="text-5xl md:text-7xl font-bold text-green-950 mb-6 tracking-tight">
+                        林光章 (Zen)
+                    </h1>
+                    <p className="text-xl md:text-2xl text-stone-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+                        一位熱愛自然的教育家，在山林與程式碼之間，
+                        <br className="hidden md:block"/>
+                        尋找全腦學習與未來教育的平衡點。
+                    </p>
+                    
+                    <div className="flex flex-wrap justify-center gap-4">
+                        <a href="#tools" className="px-8 py-3 bg-green-700 text-white rounded-full font-medium hover:bg-green-800 transition-colors shadow-lg shadow-green-700/20 flex items-center gap-2">
+                        <Code size={18} />
+                        探索工具
+                        </a>
+                        <a href="https://zendg.netlify.app/" target="_blank" rel="noreferrer" className="px-8 py-3 bg-white border border-stone-200 text-stone-700 rounded-full font-medium hover:bg-stone-50 transition-colors flex items-center gap-2">
+                        <TreeDeciduous size={18} />
+                        進入數位花園
+                        </a>
+                    </div>
+                    </div>
+                </header>
+
+                {/* About Section */}
+                <section id="about" className="py-20 px-6 bg-white relative">
+                    <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+                    
+                    {/* Left: Bio & Philosophy */}
+                    <div className="space-y-8">
+                        <div>
+                        <h2 className="text-3xl font-bold text-green-900 mb-4 flex items-center gap-2">
+                            <User className="text-green-600" />
+                            關於校長
+                        </h2>
+                        <p className="text-stone-600 leading-relaxed text-lg">
+                            綽號「阿昌」或「誇張」(Zen)，現任宜蘭縣南澳國小校長。
+                            致力於推動自由軟體與人機互動教育，同時也是一位資深童軍與戶外愛好者。
+                            未來的願景是隱居山林，專注於舒寫與全腦學習法的推廣。
+                        </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100">
+                            <h3 className="font-bold text-stone-800 mb-2">興趣與休閒</h3>
+                            <div className="flex flex-wrap gap-2">
+                            {hobbies.map((h, i) => (
+                                <span key={i} className="px-3 py-1 bg-white border border-stone-200 rounded-full text-sm text-stone-600 flex items-center gap-1 shadow-sm">
+                                {h.icon}
+                                {h.name}
+                                </span>
+                            ))}
+                            <span className="px-3 py-1 bg-white border border-stone-200 rounded-full text-sm text-stone-600 shadow-sm">慢漫跑</span>
+                            <span className="px-3 py-1 bg-white border border-stone-200 rounded-full text-sm text-stone-600 shadow-sm">網球</span>
+                            </div>
+                        </div>
+                        <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100">
+                            <h3 className="font-bold text-stone-800 mb-2">社會服務</h3>
+                            <ul className="text-sm text-stone-600 space-y-1">
+                            <li>• 中華民國開放系統協會 理事</li>
+                            <li>• 宜蘭縣童軍會 監事</li>
+                            <li>• 教育部教育百科 委員</li>
+                            </ul>
+                        </div>
+                        </div>
+                    </div>
+
+                    {/* Right: Timeline */}
+                    <div className="bg-[#F3F6F1] p-8 rounded-3xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-10 opacity-10">
+                        <Leaf size={120} className="text-green-800" />
+                        </div>
+                        <h3 className="text-xl font-bold text-green-900 mb-6 border-b border-green-200 pb-2">歷程足跡</h3>
+                        <div className="space-y-6 relative z-10">
+                        {experiences.map((exp, idx) => (
+                            <div key={idx} className="flex gap-4 group">
+                            <div className="w-24 flex-shrink-0 text-right pt-1">
+                                <span className="text-sm font-bold text-green-700 block">{exp.year}</span>
+                                <span className="text-xs text-stone-500 uppercase tracking-wider">{exp.loc}</span>
+                            </div>
+                            <div className="relative pl-6 border-l-2 border-green-200 pb-2 group-last:pb-0">
+                                <div className="absolute left-[-5px] top-[6px] w-2.5 h-2.5 rounded-full bg-white border-2 border-green-500 group-hover:bg-green-500 transition-colors"></div>
+                                <h4 className="font-bold text-stone-800 text-lg">{exp.role}</h4>
+                            </div>
+                            </div>
+                        ))}
+                        </div>
+                    </div>
+
+                    </div>
+                </section>
+
+                {/* Tools & Links Section */}
+                <section id="tools" className="py-20 px-6 bg-[#FDFCF8]">
+                    <div className="max-w-6xl mx-auto">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl font-bold text-green-900 mb-4">數位生態系</h2>
+                        <p className="text-stone-600 max-w-2xl mx-auto">
+                        這裡是我整合教育、科技與個人思考的數位入口。
+                        </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {links.map((link, idx) => (
+                        <a 
+                            key={idx} 
+                            href={link.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group p-6 bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+                        >
+                            <div className="flex items-start justify-between mb-4">
+                            <div className={`p-3 rounded-xl ${link.color}`}>
+                                {link.icon}
+                            </div>
+                            <ExternalLink className="text-stone-300 group-hover:text-stone-500 transition-colors" size={20} />
+                            </div>
+                            <h3 className="text-xl font-bold text-stone-800 mb-2 group-hover:text-green-700 transition-colors">
+                            {link.title}
+                            </h3>
+                            <p className="text-stone-500 text-sm leading-relaxed mb-4 flex-grow">
+                            {link.desc}
+                            </p>
+                            <div className="text-xs font-medium text-stone-400 uppercase tracking-wide group-hover:text-green-600 transition-colors flex items-center gap-1">
+                            前往瀏覽 <span className="text-lg leading-none">→</span>
+                            </div>
+                        </a>
+                        ))}
+                    </div>
+                    </div>
+                </section>
+
+                {/* Footer / Contact */}
+                <footer id="garden" className="bg-green-900 text-green-50 py-16 px-6">
+                    <div className="max-w-4xl mx-auto text-center">
+                    <div className="flex justify-center items-center gap-3 mb-8">
+                        <Tent size={32} className="text-green-300" />
+                        <span className="text-2xl font-bold tracking-tight">林光章 (Zen)</span>
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row justify-center items-center gap-6 md:gap-12 mb-12">
+                        <a href="mailto:gavintux@gmail.com" className="flex items-center gap-2 hover:text-white transition-colors opacity-80 hover:opacity-100">
+                        <Mail size={20} />
+                        gavintux@gmail.com
+                        </a>
+                        <a href="mailto:zen@naes.ilc.edu.tw" className="flex items-center gap-2 hover:text-white transition-colors opacity-80 hover:opacity-100">
+                        <Mail size={20} />
+                        zen@naes.ilc.edu.tw
+                        </a>
+                        <a href="https://www.facebook.com/gavintux" target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-white transition-colors opacity-80 hover:opacity-100">
+                        <Facebook size={20} />
+                        Facebook
+                        </a>
+                    </div>
+
+                    <div className="border-t border-green-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-green-300/60">
+                        <p>© {new Date().getFullYear()} Zen Lin. All rights reserved.</p>
+                        <p className="mt-2 md:mt-0">Education • Open Source • Nature</p>
+                    </div>
+                    </div>
+                </footer>
                 </div>
-              </div>
-              <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100">
-                <h3 className="font-bold text-stone-800 mb-2">社會服務</h3>
-                <ul className="text-sm text-stone-600 space-y-1">
-                  <li>• 中華民國開放系統協會 理事</li>
-                  <li>• 宜蘭縣童軍會 監事</li>
-                  <li>• 教育部教育百科 委員</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+            );
+        };
 
-          {/* Right: Timeline */}
-          <div className="bg-[#F3F6F1] p-8 rounded-3xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-10 opacity-10">
-              <Leaf size={120} className="text-green-800" />
-            </div>
-            <h3 className="text-xl font-bold text-green-900 mb-6 border-b border-green-200 pb-2">歷程足跡</h3>
-            <div className="space-y-6 relative z-10">
-              {experiences.map((exp, idx) => (
-                <div key={idx} className="flex gap-4 group">
-                  <div className="w-24 flex-shrink-0 text-right pt-1">
-                    <span className="text-sm font-bold text-green-700 block">{exp.year}</span>
-                    <span className="text-xs text-stone-500 uppercase tracking-wider">{exp.loc}</span>
-                  </div>
-                  <div className="relative pl-6 border-l-2 border-green-200 pb-2 group-last:pb-0">
-                    <div className="absolute left-[-5px] top-[6px] w-2.5 h-2.5 rounded-full bg-white border-2 border-green-500 group-hover:bg-green-500 transition-colors"></div>
-                    <h4 className="font-bold text-stone-800 text-lg">{exp.role}</h4>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* Tools & Links Section */}
-      <section id="tools" className="py-20 px-6 bg-[#FDFCF8]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-green-900 mb-4">數位生態系</h2>
-            <p className="text-stone-600 max-w-2xl mx-auto">
-              這裡是我整合教育、科技與個人思考的數位入口。
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {links.map((link, idx) => (
-              <a 
-                key={idx} 
-                href={link.url}
-                target="_blank"
-                rel="noreferrer"
-                className="group p-6 bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-xl ${link.color}`}>
-                    {link.icon}
-                  </div>
-                  <ExternalLink className="text-stone-300 group-hover:text-stone-500 transition-colors" size={20} />
-                </div>
-                <h3 className="text-xl font-bold text-stone-800 mb-2 group-hover:text-green-700 transition-colors">
-                  {link.title}
-                </h3>
-                <p className="text-stone-500 text-sm leading-relaxed mb-4 flex-grow">
-                  {link.desc}
-                </p>
-                <div className="text-xs font-medium text-stone-400 uppercase tracking-wide group-hover:text-green-600 transition-colors flex items-center gap-1">
-                  前往瀏覽 <span className="text-lg leading-none">→</span>
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Footer / Contact */}
-      <footer className="bg-green-900 text-green-50 py-16 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="flex justify-center items-center gap-3 mb-8">
-            <Tent size={32} className="text-green-300" />
-            <span className="text-2xl font-bold tracking-tight">林光章 (Zen)</span>
-          </div>
-          
-          <div className="flex flex-col md:flex-row justify-center items-center gap-6 md:gap-12 mb-12">
-            <a href="mailto:gavintux@gmail.com" className="flex items-center gap-2 hover:text-white transition-colors opacity-80 hover:opacity-100">
-              <Mail size={20} />
-              gavintux@gmail.com
-            </a>
-            <a href="mailto:zen@naes.ilc.edu.tw" className="flex items-center gap-2 hover:text-white transition-colors opacity-80 hover:opacity-100">
-              <Mail size={20} />
-              zen@naes.ilc.edu.tw
-            </a>
-            <a href="https://www.facebook.com/gavintux" target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-white transition-colors opacity-80 hover:opacity-100">
-              <Facebook size={20} />
-              Facebook
-            </a>
-          </div>
-
-          <div className="border-t border-green-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-green-300/60">
-            <p>© {new Date().getFullYear()} Zen Lin. All rights reserved.</p>
-            <p className="mt-2 md:mt-0">Education • Open Source • Nature</p>
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
-};
-
-export default Portfolio;
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<Portfolio />);
+    </script>
+</body>
+</html>
