@@ -88,7 +88,6 @@
         const getExifValue = (item) => {
             if (typeof item === 'number') return item;
             if (typeof item === 'string') {
-                // 處理 "12/1" 這種字串
                 if (item.includes('/')) {
                     const [n, d] = item.split('/');
                     return Number(n) / Number(d);
@@ -137,23 +136,20 @@
 
         // 暴力搜索所有標籤來找鏡頭名稱
         const findLensNameInAllTags = (allTags) => {
-            // 1. 優先檢查標準與常見標籤
             const candidates = [
                 allTags.LensModel, 
                 allTags.Lens, 
                 allTags.LensID,
-                allTags.LensInfo // 字串優先
+                allTags.LensInfo 
             ];
 
             for (const c of candidates) {
                 if (c && typeof c === 'string' && c.trim().length > 0) {
-                    // 排除雜訊
                     if(c.toLowerCase().includes("undefined")) continue;
                     return c;
                 }
             }
 
-            // 2. 搜尋任何包含 "Lens" 且值為字串的標籤
             for (const key in allTags) {
                 const val = allTags[key];
                 if (key.includes("Lens") && typeof val === 'string' && val.length > 3) {
@@ -162,11 +158,9 @@
                 }
             }
 
-            // 3. 嘗試解析 LensInfo (如果是數值規格) - Nikon 常見情況
             if (allTags.LensInfo) {
                 return parseLensInfo(allTags.LensInfo);
             }
-            // 某些相機放在 UndefinedTag:0xA432 (LensInfo)
             if (allTags['UndefinedTag:0xA432']) {
                 return parseLensInfo(allTags['UndefinedTag:0xA432']);
             }
@@ -777,7 +771,17 @@
             );
         };
 
-        const App = () => {
+        const AdminLogin = ({ onLogin, onCancel }) => {
+            const [password, setPassword] = useState('');
+            const handleSubmit = (e) => { e.preventDefault(); if (password === '590123') onLogin(); else setPassword(''); };
+            return (
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full"><h3 className="text-lg font-bold text-center mb-4">管理員登入</h3><form onSubmit={handleSubmit} className="space-y-4"><input type="password" placeholder="密碼" className="w-full text-center border p-2 rounded" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus /><div className="flex gap-2"><button type="button" onClick={onCancel} className="flex-1 bg-gray-200 py-2 rounded">取消</button><button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded">解鎖</button></div></form></div>
+                </div>
+            );
+        };
+
+        function App() {
             const [view, setView] = useState('gallery');
             const [photos, setPhotos] = useState([]);
             const [searchQuery, setSearchQuery] = useState('');
@@ -836,26 +840,13 @@
 
             // Advanced Search Logic
             const filteredPhotos = photos.filter(photo => {
-                // 1. Tag Filter (if clicked from tag cloud)
-                if (activeTag && !(photo.tags || []).includes(activeTag)) {
-                    return false;
-                }
-
-                // 2. Search Query Parser (AND, OR, NOT)
+                if (activeTag && !(photo.tags || []).includes(activeTag)) return false;
                 if (!searchQuery.trim()) return true;
 
                 const query = searchQuery.toLowerCase();
-                const photoString = JSON.stringify(photo).toLowerCase(); // Simple full-text search base
-
-                // Tokens separated by spaces
+                const photoString = JSON.stringify(photo).toLowerCase(); 
                 const tokens = query.split(/\s+/);
                 
-                // Logic:
-                // Default is AND.
-                // "OR" keyword makes next term OR.
-                // "-" prefix is NOT.
-                
-                // We'll evaluate expression left-to-right loosely.
                 let isMatch = true;
                 let nextIsOr = false;
 
@@ -868,17 +859,12 @@
 
                     let isNot = false;
                     if (token.startsWith('-')) {
-                        // Check if it's just "-" or "-keyword"
                         if (token.length > 1) {
                             isNot = true;
                             token = token.substring(1);
-                        } else {
-                            // ignore standalone "-" or handle as literal if desired
-                            // For now, treat standalone "-" as literal
                         }
                     }
 
-                    // Check match for this token
                     const tokenMatch = photoString.includes(token);
                     const conditionMet = isNot ? !tokenMatch : tokenMatch;
 
@@ -896,13 +882,10 @@
                 return isMatch;
             });
 
-            // Sorting Logic
             const sortedPhotos = [...filteredPhotos].sort((a, b) => {
                 if (sortOrder === 'newest') {
-                    // Sort by shooting date (exif.date) if available, else timestamp (upload time)
                     const dateA = a.exif?.date || a.timestamp;
                     const dateB = b.exif?.date || b.timestamp;
-                    // String comparison works for ISO dates
                     if (dateA < dateB) return 1;
                     if (dateA > dateB) return -1;
                     return 0;
@@ -924,10 +907,8 @@
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {view === 'gallery' ? (
                     <>
-                        {/* Search and Filter Controls */}
                         <div className="flex flex-col gap-4 mb-8">
                             <div className="flex flex-col md:flex-row gap-4">
-                                {/* Search Bar */}
                                 <div className="relative flex-grow">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-gray-400" /></div>
                                     <input 
@@ -941,8 +922,6 @@
                                         <Filter className="h-4 w-4 text-gray-300" />
                                     </div>
                                 </div>
-                                
-                                {/* Sort Button */}
                                 <button 
                                     onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
                                     className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 shadow-sm min-w-[140px] transition-all"
@@ -951,8 +930,6 @@
                                     <span>{sortOrder === 'newest' ? '最新在上' : '最舊在上'}</span>
                                 </button>
                             </div>
-
-                            {/* Tag Cloud */}
                             <div className="flex flex-wrap gap-2 items-center">
                                 <span className="text-sm font-bold text-gray-400 mr-2 flex items-center gap-1"><Tag size={14} /> 分類:</span>
                                 <button onClick={() => setActiveTag(null)} className={`px-3 py-1 rounded-full text-sm transition-colors ${!activeTag ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-200'}`}>全部</button>
