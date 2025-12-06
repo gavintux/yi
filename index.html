@@ -30,15 +30,13 @@
         html {
             scroll-behavior: smooth;
         }
-        /* 添加發光效果 */
-        .glow-crown {
-            filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.8));
-            animation: pulse-glow 2s infinite;
+        /* 章魚浮動動畫 */
+        .octopus-float {
+            animation: float 3.5s ease-in-out infinite;
         }
-        @keyframes pulse-glow {
-            0% { filter: drop-shadow(0 0 5px rgba(250, 204, 21, 0.6)); }
-            50% { filter: drop-shadow(0 0 15px rgba(250, 204, 21, 1)); }
-            100% { filter: drop-shadow(0 0 5px rgba(250, 204, 21, 0.6)); }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
         }
     </style>
 </head>
@@ -132,11 +130,6 @@
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
             </IconBase>
         );
-        const Crown = (props) => (
-            <IconBase {...props}>
-                <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/>
-            </IconBase>
-        );
 
         // --- Main Component ---
         const Portfolio = () => {
@@ -153,7 +146,7 @@
             const links = [
                 {
                     title: "Yi 工具平台",
-                    desc: "個人化數位工具整合",
+                    desc: "易經卜卦的解卦工具",
                     url: "https://gavintux.github.io/yi/yi.html",
                     icon: <Code className="w-6 h-6" />,
                     color: "bg-emerald-100 text-emerald-700"
@@ -209,6 +202,20 @@
                 { name: "自由軟體", icon: <Code size={18} /> },
             ];
 
+            // 社會服務分類
+            const socialServicesCurrent = [
+                "宜蘭縣童軍會 監事"
+            ];
+            
+            const socialServicesPast = [
+                "中華民國開放系統協會 理事",
+                "中華民國軟體自由協會 協會理監事",
+                "中華兩岸移動暨數字學習交流協會 董事",
+                "富昌開放源碼基金會 諮詢委員",
+                "教育部教育百科 委員",
+                "中華民國童軍總會人力資源委員會 委員"
+            ];
+
             return (
                 <div className="min-h-screen text-stone-800 font-sans selection:bg-green-200">
                 
@@ -243,12 +250,19 @@
                             教育．科技．自然．童軍
                         </div>
                         
-                        {/* Avatar / Persona */}
+                        {/* Avatar / Persona - Custom Logo Image */}
                         <div className="mb-6 flex justify-center">
-                            <div className="relative inline-block">
-                                <span className="text-7xl filter drop-shadow-xl">🐙</span>
-                                <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-5xl glow-crown">👑</span>
-                                <div className="absolute top-0 right-[-20px] text-3xl animate-bounce" style={{animationDelay: '1s'}}>🌧️</div>
+                            <div className="relative inline-block w-48 h-48 octopus-float">
+                                <img 
+                                    src="https://2blog.ilc.edu.tw/linkc/wp-content/uploads/sites/141/2024/12/linkc-logo.png" 
+                                    alt="林光章 Logo" 
+                                    className="w-full h-full object-contain filter drop-shadow-xl"
+                                    onError={(e) => {
+                                        e.target.onerror = null; 
+                                        e.target.parentNode.innerHTML = '<span class="text-6xl">🐙</span>'; // Fallback if image missing
+                                    }}
+                                />
+                                <div className="absolute top-10 right-[-10px] text-4xl animate-bounce" style={{animationDelay: '1s'}}>🌧️</div>
                             </div>
                         </div>
 
@@ -260,11 +274,31 @@
                             「我是愛淋雨、頭載發光王冠的章魚」
                         </p>
 
-                        <p className="text-xl md:text-2xl text-stone-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-                            一位熱愛自然的教育家，在山林與程式碼之間，
-                            <br className="hidden md:block"/>
-                            尋找全腦學習與未來教育的平衡點。
-                        </p>
+                        <div className="bg-white/60 backdrop-blur-sm border border-stone-100 rounded-2xl p-6 mb-8 max-w-2xl mx-auto shadow-sm">
+                            <div className="flex flex-col items-center">
+                                {/* "我愛玩" - Colored */}
+                                <span className="text-4xl font-bold mb-2">
+                                    <span className="text-blue-600">我</span>
+                                    <span className="text-red-600">愛</span>
+                                    <span className="text-green-600">玩</span>
+                                </span>
+                                
+                                <span className="text-sm text-stone-500 uppercase tracking-widest mb-3">Core Philosophy</span>
+                                
+                                <p className="text-xl text-stone-700 font-medium">
+                                    這是我經營學校的<span className="font-bold text-stone-900">核心</span>思維，也是我的人生觀。
+                                </p>
+                                
+                                <div className="w-16 h-1 bg-green-400 rounded-full my-3"></div>
+                                
+                                {/* Slogan - Colored according to request */}
+                                <p className="text-lg font-medium">
+                                    從<span className="text-red-600 font-bold text-xl">愛</span>出發 · 
+                                    探訪<span className="text-black font-bold text-xl">自</span><span className="text-blue-600 font-bold text-xl">我</span> · 
+                                    <span className="text-green-600 font-bold text-xl">玩</span>創未來
+                                </p>
+                            </div>
+                        </div>
                         
                         <div className="flex flex-wrap justify-center gap-4">
                             <a href="#tools" className="px-8 py-3 bg-green-700 text-white rounded-full font-medium hover:bg-green-800 transition-colors shadow-lg shadow-green-700/20 flex items-center gap-2">
@@ -281,54 +315,86 @@
 
                 {/* About Section */}
                 <section id="about" className="py-20 px-6 bg-white relative">
-                    <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+                    <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-start">
                     
                     {/* Left: Bio & Philosophy */}
                     <div className="space-y-8">
                         <div>
-                        <h2 className="text-3xl font-bold text-green-900 mb-4 flex items-center gap-2">
-                            <User className="text-green-600" />
-                            關於校長
-                        </h2>
-                        <p className="text-stone-600 leading-relaxed text-lg">
-                            綽號「阿昌」或「誇張」(Zen)，現任宜蘭縣南澳國小校長。
-                            致力於推動自由軟體與人機互動教育，同時也是一位資深童軍與戶外愛好者。
-                            未來的願景是隱居山林，專注於舒寫與全腦學習法的推廣。
-                        </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100">
-                            <h3 className="font-bold text-stone-800 mb-2">興趣與休閒</h3>
-                            <div className="flex flex-wrap gap-2">
-                            {hobbies.map((h, i) => (
-                                <span key={i} className="px-3 py-1 bg-white border border-stone-200 rounded-full text-sm text-stone-600 flex items-center gap-1 shadow-sm">
-                                {h.icon}
-                                {h.name}
-                                </span>
-                            ))}
-                            <span className="px-3 py-1 bg-white border border-stone-200 rounded-full text-sm text-stone-600 shadow-sm">慢漫跑</span>
-                            <span className="px-3 py-1 bg-white border border-stone-200 rounded-full text-sm text-stone-600 shadow-sm">網球</span>
+                            <h2 className="text-3xl font-bold text-green-900 mb-4 flex items-center gap-2">
+                                <User className="text-green-600" />
+                                關於校長
+                            </h2>
+                            <p className="text-stone-600 leading-relaxed text-lg mb-4">
+                                致力於推動自由軟體與人機互動教育，同時也是一位資深童軍與戶外愛好者。
+                                未來的願景是隱居山林，專注於舒寫與全腦學習法的推廣。
+                            </p>
+                            
+                            {/* Nicknames Explanation */}
+                            <div className="bg-[#FDFCF8] border-l-4 border-green-400 p-4 rounded-r-lg">
+                                <h4 className="font-bold text-green-800 mb-2 text-sm uppercase">關於綽號的由來</h4>
+                                <ul className="space-y-3 text-stone-600">
+                                    <li className="flex items-start gap-2">
+                                        <div className="min-w-[4rem]">
+                                            <span className="font-bold text-stone-800">阿昌：</span>
+                                            <span className="block text-xs text-stone-400 font-medium">(閩南語)</span>
+                                        </div>
+                                        <span>是我小時候，家人及鄰居對我的暱稱，請用閩南語發音，充滿了親切感。</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <div className="min-w-[4rem]">
+                                            <span className="font-bold text-stone-800">誇張：</span>
+                                            <span className="block text-xs text-stone-400 font-medium">(Zen)</span>
+                                        </div>
+                                        <span>是由我的名字「林光章」的諧音「你誇張」而來，這是小朋友們幫我取的有趣名字。</span>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
-                        <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100">
-                            <h3 className="font-bold text-stone-800 mb-2">社會服務</h3>
-                            <ul className="text-sm text-stone-600 space-y-1">
-                            <li>• 中華民國開放系統協會 理事</li>
-                            <li>• 宜蘭縣童軍會 監事</li>
-                            <li>• 教育部教育百科 委員</li>
-                            </ul>
-                        </div>
+
+                        <div className="grid gap-4">
+                            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100">
+                                <h3 className="font-bold text-stone-800 mb-3 flex items-center gap-2">
+                                    <Tent size={18} className="text-green-600"/> 社會服務
+                                </h3>
+                                
+                                <div className="mb-3">
+                                    <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800 mb-1">現任</span>
+                                    <ul className="text-sm text-stone-700 font-medium ml-1">
+                                        {socialServicesCurrent.map((item, i) => <li key={i}>• {item}</li>)}
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-stone-200 text-stone-600 mb-1">歷任 / 曾任</span>
+                                    <ul className="text-sm text-stone-500 space-y-1 ml-1">
+                                        {socialServicesPast.map((item, i) => <li key={i}>• {item}</li>)}
+                                    </ul>
+                                </div>
+                            </div>
+                        
+                            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100">
+                                <h3 className="font-bold text-stone-800 mb-2">興趣與休閒</h3>
+                                <div className="flex flex-wrap gap-2">
+                                {hobbies.map((h, i) => (
+                                    <span key={i} className="px-3 py-1 bg-white border border-stone-200 rounded-full text-sm text-stone-600 flex items-center gap-1 shadow-sm">
+                                    {h.icon}
+                                    {h.name}
+                                    </span>
+                                ))}
+                                <span className="px-3 py-1 bg-white border border-stone-200 rounded-full text-sm text-stone-600 shadow-sm">慢漫跑</span>
+                                <span className="px-3 py-1 bg-white border border-stone-200 rounded-full text-sm text-stone-600 shadow-sm">網球</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     {/* Right: Timeline */}
-                    <div className="bg-[#F3F6F1] p-8 rounded-3xl relative overflow-hidden">
+                    <div className="bg-[#F3F6F1] p-8 rounded-3xl relative overflow-hidden h-full">
                         <div className="absolute top-0 right-0 p-10 opacity-10">
                         <Leaf size={120} className="text-green-800" />
                         </div>
                         <h3 className="text-xl font-bold text-green-900 mb-6 border-b border-green-200 pb-2">歷程足跡</h3>
-                        <div className="space-y-6 relative z-10">
+                        <div className="space-y-8 relative z-10">
                         {experiences.map((exp, idx) => (
                             <div key={idx} className="flex gap-4 group">
                             <div className="w-24 flex-shrink-0 text-right pt-1">
@@ -396,9 +462,9 @@
                     </div>
                     
                     <div className="flex flex-col md:flex-row justify-center items-center gap-6 md:gap-12 mb-12">
-                        <a href="mailto:gavintux@gmail.com" className="flex items-center gap-2 hover:text-white transition-colors opacity-80 hover:opacity-100">
+                        <a href="mailto:linkczen@gmail.com" className="flex items-center gap-2 hover:text-white transition-colors opacity-80 hover:opacity-100">
                         <Mail size={20} />
-                        gavintux@gmail.com
+                        linkczen@gmail.com
                         </a>
                         <a href="mailto:zen@naes.ilc.edu.tw" className="flex items-center gap-2 hover:text-white transition-colors opacity-80 hover:opacity-100">
                         <Mail size={20} />
