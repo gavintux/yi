@@ -30,6 +30,16 @@
         html {
             scroll-behavior: smooth;
         }
+        /* 添加發光效果 */
+        .glow-crown {
+            filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.8));
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0% { filter: drop-shadow(0 0 5px rgba(250, 204, 21, 0.6)); }
+            50% { filter: drop-shadow(0 0 15px rgba(250, 204, 21, 1)); }
+            100% { filter: drop-shadow(0 0 5px rgba(250, 204, 21, 0.6)); }
+        }
     </style>
 </head>
 <body class="bg-[#FDFCF8]">
@@ -39,7 +49,6 @@
         const { useState, useEffect } = React;
 
         // --- Icons Components (SVG) ---
-        // 為了在單一 HTML 運作，將 Lucide icons 轉換為 SVG 元件
         const IconBase = ({ children, className, size = 24, ...props }) => (
             <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -123,6 +132,11 @@
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
             </IconBase>
         );
+        const Crown = (props) => (
+            <IconBase {...props}>
+                <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/>
+            </IconBase>
+        );
 
         // --- Main Component ---
         const Portfolio = () => {
@@ -185,7 +199,7 @@
                 { year: "2021-現在", role: "宜蘭縣南澳國小 校長", loc: "現任" },
                 { year: "2016-2020", role: "宜蘭縣湖山國小 校長", loc: "經歷" },
                 { year: "2009-2016", role: "宜蘭縣玉田國小 校長", loc: "經歷" },
-                { year: "2003-2009", role: "宜蘭縣梗枋國小 主任/教師", loc: "經歷" }
+                { year: "2003-2009", role: "宜蘭縣梗枋國小 校長", loc: "經歷" }
             ];
 
             const hobbies = [
@@ -219,34 +233,49 @@
                 {/* Hero Section */}
                 <header className="relative pt-32 pb-20 px-6 overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-full z-0 opacity-10 pointer-events-none">
-                    {/* Abstract Nature Shapes */}
-                    <div className="absolute top-[-10%] right-[-5%] w-96 h-96 rounded-full bg-green-400 blur-3xl"></div>
-                    <div className="absolute bottom-[10%] left-[-10%] w-72 h-72 rounded-full bg-amber-300 blur-3xl"></div>
+                        {/* Abstract Nature Shapes */}
+                        <div className="absolute top-[-10%] right-[-5%] w-96 h-96 rounded-full bg-green-400 blur-3xl"></div>
+                        <div className="absolute bottom-[10%] left-[-10%] w-72 h-72 rounded-full bg-amber-300 blur-3xl"></div>
                     </div>
 
                     <div className="max-w-4xl mx-auto relative z-10 text-center">
-                    <div className="inline-block px-4 py-1.5 rounded-full bg-green-100 text-green-800 text-sm font-semibold mb-6 tracking-wide">
-                        教育．科技．自然．童軍
-                    </div>
-                    <h1 className="text-5xl md:text-7xl font-bold text-green-950 mb-6 tracking-tight">
-                        林光章 (Zen)
-                    </h1>
-                    <p className="text-xl md:text-2xl text-stone-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-                        一位熱愛自然的教育家，在山林與程式碼之間，
-                        <br className="hidden md:block"/>
-                        尋找全腦學習與未來教育的平衡點。
-                    </p>
-                    
-                    <div className="flex flex-wrap justify-center gap-4">
-                        <a href="#tools" className="px-8 py-3 bg-green-700 text-white rounded-full font-medium hover:bg-green-800 transition-colors shadow-lg shadow-green-700/20 flex items-center gap-2">
-                        <Code size={18} />
-                        探索工具
-                        </a>
-                        <a href="https://zendg.netlify.app/" target="_blank" rel="noreferrer" className="px-8 py-3 bg-white border border-stone-200 text-stone-700 rounded-full font-medium hover:bg-stone-50 transition-colors flex items-center gap-2">
-                        <TreeDeciduous size={18} />
-                        進入數位花園
-                        </a>
-                    </div>
+                        <div className="inline-block px-4 py-1.5 rounded-full bg-green-100 text-green-800 text-sm font-semibold mb-6 tracking-wide">
+                            教育．科技．自然．童軍
+                        </div>
+                        
+                        {/* Avatar / Persona */}
+                        <div className="mb-6 flex justify-center">
+                            <div className="relative inline-block">
+                                <span className="text-7xl filter drop-shadow-xl">🐙</span>
+                                <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-5xl glow-crown">👑</span>
+                                <div className="absolute top-0 right-[-20px] text-3xl animate-bounce" style={{animationDelay: '1s'}}>🌧️</div>
+                            </div>
+                        </div>
+
+                        <h1 className="text-5xl md:text-7xl font-bold text-green-950 mb-4 tracking-tight">
+                            林光章 (Zen)
+                        </h1>
+                        
+                        <p className="text-lg md:text-xl text-green-700 font-bold mb-6 italic">
+                            「我是愛淋雨、頭載發光王冠的章魚」
+                        </p>
+
+                        <p className="text-xl md:text-2xl text-stone-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+                            一位熱愛自然的教育家，在山林與程式碼之間，
+                            <br className="hidden md:block"/>
+                            尋找全腦學習與未來教育的平衡點。
+                        </p>
+                        
+                        <div className="flex flex-wrap justify-center gap-4">
+                            <a href="#tools" className="px-8 py-3 bg-green-700 text-white rounded-full font-medium hover:bg-green-800 transition-colors shadow-lg shadow-green-700/20 flex items-center gap-2">
+                            <Code size={18} />
+                            探索工具
+                            </a>
+                            <a href="https://zendg.netlify.app/" target="_blank" rel="noreferrer" className="px-8 py-3 bg-white border border-stone-200 text-stone-700 rounded-full font-medium hover:bg-stone-50 transition-colors flex items-center gap-2">
+                            <TreeDeciduous size={18} />
+                            進入數位花園
+                            </a>
+                        </div>
                     </div>
                 </header>
 
