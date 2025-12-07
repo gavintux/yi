@@ -291,7 +291,7 @@
                 <div className="flex items-center gap-2">
                     {/* Logo 連結至部落格 */}
                     <a href="https://2blog.ilc.edu.tw/linkc/" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity" title="前往 Linkc Blog">
-                        <img src="https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f" alt="Linkc Logo" className="h-20 w-auto mr-2" />
+                        <img src="https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f" alt="Linkc Logo" className="h-[72px] w-auto mr-2" />
                     </a>
                     
                     <div className="flex items-center cursor-pointer gap-2" onClick={() => setView('gallery')}>
@@ -716,12 +716,15 @@
         };
 
         function App() {
-            const [view, setView] = useState('gallery');
+            const [view, setView] = useState('gallery'); // 'gallery', 'calendar', 'upload'
             const [photos, setPhotos] = useState([]);
             const [searchQuery, setSearchQuery] = useState('');
             const [activeTag, setActiveTag] = useState(null);
-            const [sortOrder, setSortOrder] = useState('newest'); 
-            const [dateFilter, setDateFilter] = useState(null); 
+            const [sortOrder, setSortOrder] = useState('newest'); // 'newest' | 'oldest'
+            
+            // New Filter for Calendar
+            const [dateFilter, setDateFilter] = useState(null); // 'YYYY-MM-DD'
+            const [isTagsExpanded, setIsTagsExpanded] = useState(false);
             
             const [selectedPhoto, setSelectedPhoto] = useState(null);
             const [isAdmin, setIsAdmin] = useState(false);
@@ -730,7 +733,6 @@
             const [isSaving, setIsSaving] = useState(false);
             const [currentUser, setCurrentUser] = useState(null);
             const [authError, setAuthError] = useState(null);
-            const [isTagsExpanded, setIsTagsExpanded] = useState(false);
 
             useEffect(() => {
                 if (!isConfigConfigured) return; 
@@ -757,7 +759,7 @@
                         await addDoc(collectionRef, { ...photoData, timestamp: Date.now() });
                     }
                     setView('gallery');
-                    setDateFilter(null); 
+                    setDateFilter(null); // Clear filter after upload
                 } catch (e) { alert("儲存失敗: " + e.message); } finally { setIsSaving(false); }
             };
 
@@ -770,11 +772,18 @@
 
             const startEdit = (photo) => { setEditingPhoto(photo); setView('upload'); if (selectedPhoto) setSelectedPhoto(null); };
 
+            // Handle date selection from Calendar
+            const handleDateSelect = (dateStr) => {
+                // Internal handling in CalendarView now, but if we need global state:
+                // setDateFilter(dateStr); 
+                // setView('gallery');
+            };
+
             if (!isConfigConfigured) return <ConfigError />;
             if (authError) return <AuthError message={authError} />;
 
             const allTags = [...new Set(photos.flatMap(p => p.tags))];
-            
+
             // Tag Frequency Sort
             const tagCounts = photos.flatMap(p => p.tags).reduce((acc, tag) => {
                 acc[tag] = (acc[tag] || 0) + 1;
@@ -889,7 +898,7 @@
                     {view === 'calendar' ? (
                         <CalendarView 
                             photos={photos} 
-                            onSelectDate={(d) => { setDateFilter(d); setView('gallery'); }} 
+                            onSelectDate={() => {}} // Internal handling in CalendarView now
                             onExpand={setSelectedPhoto}
                             isAdmin={isAdmin}
                             onEdit={startEdit}
@@ -897,13 +906,19 @@
                         />
                     ) : view === 'gallery' ? (
                     <>
+                        {/* Date Filter Banner (Optional, mostly handled inside calendar view now) */}
                         {dateFilter && (
                             <div className="mb-6 bg-indigo-50 border border-indigo-200 rounded-lg p-4 flex justify-between items-center animate-in slide-in-from-top-2">
                                 <span className="text-indigo-700 font-medium flex items-center gap-2">
                                     <CalendarIcon size={18} />
                                     正在檢視 {dateFilter} 的照片 ({filteredPhotos.length} 張)
                                 </span>
-                                <button onClick={() => setDateFilter(null)} className="text-indigo-600 hover:text-indigo-800 text-sm font-bold flex items-center gap-1"><XCircle size={16} /> 清除篩選</button>
+                                <button 
+                                    onClick={() => setDateFilter(null)}
+                                    className="text-indigo-600 hover:text-indigo-800 text-sm font-bold flex items-center gap-1"
+                                >
+                                    <XCircle size={16} /> 清除篩選
+                                </button>
                             </div>
                         )}
 
@@ -917,11 +932,16 @@
                                         className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" 
                                         value={searchQuery} 
                                         onChange={(e) => setSearchQuery(e.target.value)} 
-                                        disabled={!!dateFilter} 
+                                        disabled={!!dateFilter} // Disable search when date filtering
                                     />
-                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><Filter className="h-4 w-4 text-gray-300" /></div>
+                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <Filter className="h-4 w-4 text-gray-300" />
+                                    </div>
                                 </div>
-                                <button onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')} className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 shadow-sm min-w-[140px] transition-all">
+                                <button 
+                                    onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 shadow-sm min-w-[140px] transition-all"
+                                >
                                     {sortOrder === 'newest' ? <ArrowDownWideNarrow size={18} /> : <ArrowUpNarrowWide size={18} />}
                                     <span>{sortOrder === 'newest' ? '最新在上' : '最舊在上'}</span>
                                 </button>
