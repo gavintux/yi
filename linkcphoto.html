@@ -7,6 +7,40 @@
     
     <!-- 1. 載入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        serif: ['"Noto Serif TC"', 'serif'],
+                    },
+                    colors: {
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9', // 溫柔的背景色
+                            800: '#1e293b', // 深色文字
+                            900: '#0f172a',
+                        },
+                        indigo: {
+                            500: '#6366f1', // 主色調
+                            600: '#4f46e5',
+                        }
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     
     <!-- 2. 載入 Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -14,34 +48,61 @@
     <!-- 3. 載入 Exif-js -->
     <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
 
-    <!-- 4. CSS (Classic Style) -->
-    <style>
-        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background-color: #f9fafb; /* gray-50 */ color: #111827; /* gray-900 */ }
-        .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; color: #4f46e5; /* indigo-600 */ font-weight: bold; }
-        .error-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; text-align: center; color: #374151; }
-        .error-box { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); max-width: 500px; width: 100%; border: 1px solid #e5e7eb; }
-        .error-title { color: #dc2626; font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem; }
-        
-        /* 捲軸樣式 */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    <!-- 4. 設定 Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
 
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .spinner { animation: spin 1s linear infinite; }
-        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    <!-- 5. CSS -->
+    <style>
+        body { 
+            margin: 0; 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; /* Slate-50 */
+            color: #1e293b; /* Slate-800 */
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; color: #6366f1; font-weight: 500; letter-spacing: 0.05em; }
+        
+        /* 隱藏捲軸但保留功能 (美化) */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* 瀑布流佈局 */
+        .masonry-grid {
+            column-count: 1;
+            column-gap: 1.5rem;
+        }
+        @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
+        @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
+        
+        /* 避免卡片在列中間斷開 */
+        .masonry-item {
+            break-inside: avoid;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-icon {
+            @apply p-2 rounded-full transition-all duration-200 hover:bg-slate-100 text-slate-500 hover:text-indigo-600;
+        }
     </style>
 </head>
 <body>
     <div id="root">
-        <div class="loading-screen">正在啟動 Linkc Photo Space...</div>
+        <div class="loading-screen">
+            <div class="flex flex-col items-center gap-4">
+                <div class="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <span class="text-sm uppercase tracking-widest text-slate-400">Loading Gallery...</span>
+            </div>
+        </div>
     </div>
 
-    <!-- 5. React App -->
+    <!-- 6. React App -->
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useRef } from 'https://esm.sh/react@18.2.0';
+        import React, { useState, useEffect, useRef, useMemo, useCallback } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
             Camera, MapPin, Clock, Search, Upload, Download, Tag, Eye, X, 
@@ -50,7 +111,7 @@
             Cloud, RefreshCw, AlertTriangle, Info, Save, Link as LinkIcon, FileUp, 
             Sparkles, Map as MapIcon, Aperture, Disc, Gauge, 
             ArrowDownWideNarrow, ArrowUpNarrowWide, Filter, FileCode,
-            Calendar as CalendarIcon, ChevronLeft, ChevronRight, XCircle, MoreHorizontal
+            Calendar as CalendarIcon, ChevronLeft, ChevronRight, XCircle, MoreHorizontal, LayoutGrid, Globe
         } from 'https://esm.sh/lucide-react@0.294.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -73,6 +134,7 @@
         };
 
         const isConfigConfigured = !firebaseConfig.apiKey.includes("您的API_KEY");
+        const COLLECTION_NAME = 'linkc_photos_v1';
 
         let app, auth, db, storage;
         if (isConfigConfigured) {
@@ -82,16 +144,25 @@
                 db = getFirestore(app);
                 storage = getStorage(app);
             } catch (e) {
-                console.error("Firebase 初始化失敗", e);
+                console.error("Firebase Init Error", e);
             }
         }
 
-        const COLLECTION_NAME = 'linkc_photos_v1';
-
         // -----------------------------------------------------------------------------
-        // Helper Functions (功能保持最新版本)
+        // Hooks & Helpers
         // -----------------------------------------------------------------------------
 
+        // Debounce Hook (效能優化關鍵：減少搜尋時的運算頻率)
+        function useDebounce(value, delay) {
+            const [debouncedValue, setDebouncedValue] = useState(value);
+            useEffect(() => {
+                const handler = setTimeout(() => setDebouncedValue(value), delay);
+                return () => clearTimeout(handler);
+            }, [value, delay]);
+            return debouncedValue;
+        }
+
+        // EXIF Helpers
         const getExifValue = (item) => {
             if (typeof item === 'number') return item;
             if (typeof item === 'string') {
@@ -140,10 +211,7 @@
         const findLensNameInAllTags = (allTags) => {
             const candidates = [allTags.LensModel, allTags.Lens, allTags.LensID, allTags.LensInfo];
             for (const c of candidates) {
-                if (c && typeof c === 'string' && c.trim().length > 0) {
-                    if(c.toLowerCase().includes("undefined")) continue;
-                    return c;
-                }
+                if (c && typeof c === 'string' && c.trim().length > 0 && !c.toLowerCase().includes("undefined")) return c;
             }
             for (const key in allTags) {
                 const val = allTags[key];
@@ -251,70 +319,211 @@
             document.body.appendChild(textArea);
             textArea.focus();
             textArea.select();
-            try {
-                document.execCommand('copy');
-            } catch (err) {
-                console.error('複製失敗', err);
-            }
+            try { document.execCommand('copy'); } catch (err) { console.error('Copy failed', err); }
             document.body.removeChild(textArea);
         };
 
         // -----------------------------------------------------------------------------
-        // UI Components (Classic/Original Style)
+        // Defined Components
         // -----------------------------------------------------------------------------
 
         const ConfigError = () => (
-            <div className="error-container bg-gray-50">
-                <div className="error-box">
+            <div className="error-container bg-slate-50">
+                <div className="error-box border border-slate-200 shadow-md">
                     <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
-                    <h3 className="error-title text-gray-900">尚未設定 Firebase</h3>
-                    <p className="text-gray-600 mb-4">請編輯 index.html 並填入您的 Firebase Config。</p>
+                    <h3 className="error-title text-slate-900">尚未設定 Firebase</h3>
+                    <p className="text-slate-600 mb-4">請編輯 index.html 並填入您的 Firebase Config。</p>
                 </div>
             </div>
         );
 
         const AuthError = ({ message }) => (
-            <div className="error-container bg-gray-50">
-                <div className="error-box border-red-200">
+            <div className="error-container bg-slate-50">
+                <div className="error-box border border-red-200 shadow-md">
                     <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-                    <h3 className="error-title text-gray-900">連線失敗</h3>
-                    <p className="text-gray-800 font-mono text-xs bg-red-50 p-2 rounded mb-4 break-all">{message}</p>
-                    <button onClick={() => window.location.reload()} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded">重新整理</button>
+                    <h3 className="error-title text-slate-900">連線失敗</h3>
+                    <p className="text-slate-800 font-mono text-xs bg-red-50 p-2 rounded mb-4 break-all">{message}</p>
+                    <button onClick={() => window.location.reload()} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors">重新整理</button>
                 </div>
             </div>
         );
 
-        // Header: 回歸白色底、靛藍色點綴
+        const AdminLogin = ({ onLogin, onCancel }) => {
+            const [password, setPassword] = useState('');
+            const handleSubmit = (e) => { e.preventDefault(); if (password === '590123') onLogin(); else setPassword(''); };
+            return (
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in-up">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border border-slate-100">
+                        <div className="text-center mb-6">
+                            <div className="mx-auto bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mb-4"><Lock className="text-indigo-600 w-8 h-8" /></div>
+                            <h3 className="text-xl font-bold text-slate-800">管理員登入</h3>
+                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <input type="password" placeholder="Passcode" className="w-full text-center tracking-widest border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-lg" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
+                            <div className="flex gap-3"><button type="button" onClick={onCancel} className="flex-1 py-3 text-slate-500 hover:bg-slate-50 rounded-xl transition-colors font-medium">取消</button><button type="submit" className="flex-1 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 font-medium">解鎖</button></div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const ShareButtons = ({ photo, minimal = false }) => {
+            const shareText = `${photo.thoughts_shooting || '分享一張照片'} \n\n#Linkc ${photo.tags.map(t=>'#'+t).join(' ')}`;
+            const handleIG = async (e) => { e.stopPropagation(); copyToClipboard(shareText); await downloadWithWatermark(photo.url, photo.id, e); };
+            const handleObsidian = (e) => { e.stopPropagation(); const altText = photo.tags.length > 0 ? photo.tags.join(', ') : 'Linkc Photo'; const markdown = `![${altText}](${photo.url})`; copyToClipboard(markdown); alert("已複製 Obsidian 語法！"); };
+            
+            const btnClass = minimal 
+                ? "text-slate-400 hover:text-slate-700 transition-colors p-1"
+                : "text-slate-500 hover:bg-slate-100 p-2 rounded-full transition-all";
+
+            return (
+                <div className="flex items-center gap-1">
+                    <button onClick={(e) => {e.stopPropagation(); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(photo.url)}`, '_blank')}} className={`${btnClass} hover:text-[#1877F2]`}><Facebook size={minimal ? 16 : 18} strokeWidth={1.5} /></button>
+                    <button onClick={(e) => {e.stopPropagation(); window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(photo.url)}`, '_blank')}} className={`${btnClass} hover:text-[#06c755]`}><MessageCircle size={minimal ? 16 : 18} strokeWidth={1.5} /></button>
+                    <button onClick={handleIG} className={`${btnClass} hover:text-[#E1306C]`}><Instagram size={minimal ? 16 : 18} strokeWidth={1.5} /></button>
+                    <button onClick={handleObsidian} className={`${btnClass} hover:text-purple-600`}><FileCode size={minimal ? 16 : 18} strokeWidth={1.5} /></button>
+                </div>
+            );
+        };
+
+        const Lightbox = ({ photo, onClose, isAdmin, onEdit, onDelete }) => {
+            if (!photo) return null;
+            return (
+                <div className="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fade-in-up" onClick={onClose}>
+                    <button onClick={onClose} className="absolute top-6 right-6 text-white/50 hover:text-white p-2 z-50 transition-colors"><X size={32} strokeWidth={1} /></button>
+                    
+                    {isAdmin && (
+                        <div className="absolute top-6 left-6 flex gap-4 z-50">
+                            <button onClick={(e) => { e.stopPropagation(); onEdit(photo); }} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium transition-all flex items-center gap-2"><Edit size={14}/> 編輯</button>
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(photo.id); onClose(); }} className="bg-red-500/80 hover:bg-red-600 text-white px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium transition-all flex items-center gap-2"><Trash2 size={14}/> 刪除</button>
+                        </div>
+                    )}
+
+                    <div className="relative max-w-7xl max-h-[85vh] w-full flex flex-col items-center justify-center" onClick={e => e.stopPropagation()}>
+                        <img src={photo.url} className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-sm" loading="eager" decoding="async" />
+                        
+                        <div className="mt-6 flex flex-col items-center gap-3 text-white/90">
+                            <div className="flex items-center gap-6 text-sm font-light tracking-wide bg-black/40 px-6 py-2 rounded-full backdrop-blur-md border border-white/10">
+                                <span className="flex items-center gap-2"><Clock size={14} className="text-indigo-400"/> {photo.date ? photo.date.replace('T', ' ') : ''}</span>
+                                <span className="w-px h-3 bg-white/20"></span>
+                                <span className="flex items-center gap-2"><MapPin size={14} className="text-indigo-400"/> {photo.location.city} {photo.location.spot && `· ${photo.location.spot}`}</span>
+                                <span className="w-px h-3 bg-white/20"></span>
+                                <button onClick={(e) => downloadWithWatermark(photo.url, photo.id, e)} className="hover:text-indigo-300 transition-colors flex items-center gap-2"><Download size={14} /> 下載</button>
+                            </div>
+                            
+                            <div className="text-xs text-white/50 font-mono tracking-wider space-x-3">
+                                {photo.exif.camera && <span>{photo.exif.camera}</span>}
+                                {photo.exif.lens && <span>| {photo.exif.lens}</span>}
+                                <span>| {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso} {photo.exif.ev ? `· EV ${photo.exif.ev}` : ''}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // PhotoCard: 瀑布流優化版 (Masonry Item)
+        const PhotoCard = ({ photo, onExpand, isAdmin, onEdit, onDelete }) => (
+            <div className="masonry-item group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 break-inside-avoid">
+                <div className="relative overflow-hidden cursor-zoom-in" onClick={() => onExpand(photo)}>
+                    <img src={photo.url} className="w-full h-auto object-cover" loading="lazy" decoding="async" />
+                    
+                    {/* Overlay Actions */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                        <div className="flex justify-between items-end">
+                            <div className="text-white text-xs font-medium drop-shadow-md">
+                                <p className="flex items-center gap-1"><CalendarIcon size={12}/> {photo.date ? photo.date.split('T')[0] : ''}</p>
+                            </div>
+                            <div className="bg-white/90 backdrop-blur-md rounded-full px-2 py-1 shadow-lg">
+                                <ShareButtons photo={photo} minimal={true} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {isAdmin && (
+                        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <button onClick={(e) => { e.stopPropagation(); onEdit(photo); }} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-600 shadow-sm"><Edit size={14}/></button>
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(photo.id); }} className="bg-white/90 p-1.5 rounded-full hover:bg-red-50 text-red-500 shadow-sm"><Trash2 size={14}/></button>
+                        </div>
+                    )}
+                </div>
+                
+                <div className="p-4 flex flex-col gap-3">
+                    {/* Location & Title */}
+                    <div>
+                        <div className="flex items-baseline justify-between mb-1">
+                            <h3 className="font-bold text-slate-800 text-lg leading-tight">{photo.location.city}</h3>
+                            <span className="text-xs text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded-md">{photo.location.country}</span>
+                        </div>
+                        {photo.location.spot && <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><MapPin size={10} className="text-indigo-500"/> {photo.location.spot}</p>}
+                    </div>
+
+                    {/* Content (Separated logic) */}
+                    <div className="space-y-2">
+                        {photo.thoughts_shooting && (
+                            <div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wide">Shooting</span>
+                                {photo.thoughts_shooting}
+                            </div>
+                        )}
+                        {photo.thoughts_viewing && (
+                            <div className="text-sm text-slate-600 leading-relaxed bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                                <span className="block text-[10px] font-bold text-indigo-400 mb-1 uppercase tracking-wide">Reflection</span>
+                                {photo.thoughts_viewing}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Tags */}
+                    {photo.tags && photo.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                            {photo.tags.map(tag => (
+                                <span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-md uppercase tracking-wide">#{tag}</span>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Minimal EXIF */}
+                    <div className="pt-3 mt-1 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-mono">
+                        <span className="flex items-center gap-1"><Aperture size={10}/> {photo.exif.aperture}</span>
+                        <span>{photo.exif.shutter}</span>
+                        <span className="flex items-center gap-1">ISO {photo.exif.iso}</span>
+                        <span>{photo.exif.focalLength}</span>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // Header: 現代簡約
         const Header = ({ setView, isAdmin, onLoginClick, onLogout, currentView }) => (
-            <header className="bg-white shadow-sm sticky top-0 z-40">
+            <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200/60 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    {/* Logo 連結至部落格 */}
+                <div className="flex items-center gap-3">
                     <a href="https://2blog.ilc.edu.tw/linkc/" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity" title="前往 Linkc Blog">
-                        <img src="https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f" alt="Linkc Logo" className="h-[72px] w-auto mr-2" />
+                        <img src="https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f" alt="Linkc Logo" className="h-20 w-auto object-contain" />
                     </a>
                     
-                    <div className="flex items-center cursor-pointer gap-2" onClick={() => setView('gallery')}>
-                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight hidden sm:block">Linkc <span className="text-indigo-600 font-light">Gallery</span></h1>
+                    <div className="flex flex-col cursor-pointer" onClick={() => setView('gallery')}>
+                        <h1 className="text-xl font-bold text-slate-900 tracking-tight hidden sm:block">Linkc <span className="text-indigo-600">Photo Space</span></h1>
+                        <span className="text-[10px] text-slate-400 tracking-widest uppercase hidden sm:block">Visual Diary</span>
                     </div>
                     
-                    {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2">ADMIN</span>}
+                    {isAdmin && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2 border border-red-200">ADMIN</span>}
                 </div>
                 <div className="flex items-center gap-3">
-                    <button 
-                        onClick={() => setView('calendar')} 
-                        className={`p-2 rounded-full transition-colors ${currentView === 'calendar' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100'}`}
-                        title="日曆模式"
-                    >
+                    <a href="https://gavintux.github.io/yi/" target="_blank" rel="noopener noreferrer" className="p-2.5 rounded-xl transition-all text-slate-400 hover:text-slate-700 hover:bg-slate-100" title="Zen's Portal">
+                        <Globe size={20} />
+                    </a>
+                    <button onClick={() => setView('calendar')} className={`p-2.5 rounded-xl transition-all ${currentView === 'calendar' ? 'bg-indigo-50 text-indigo-600 shadow-inner' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`} title="日曆模式">
                         <CalendarIcon size={20} />
                     </button>
 
                     {isAdmin ? (
-                        <button onClick={onLogout} className="p-2 text-gray-500 hover:text-red-600 transition-colors" title="登出"><LogOut size={20} /></button>
+                        <button onClick={onLogout} className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all" title="登出"><LogOut size={20} /></button>
                     ) : (
-                        <button onClick={onLoginClick} className="p-2 text-gray-400 hover:text-indigo-600 transition-colors" title="登入"><Lock size={20} /></button>
+                        <button onClick={onLoginClick} className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all" title="登入"><Lock size={20} /></button>
                     )}
-                    <button onClick={() => setView('upload')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full transition-all shadow-md hover:shadow-lg">
+                    <button onClick={() => setView('upload')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium text-sm">
                         <Upload size={18} /><span className="hidden sm:inline">新增照片</span>
                     </button>
                 </div>
@@ -322,7 +531,10 @@
             </header>
         );
 
-        // CalendarView: 使用 Indigo 配色
+        // ... CalendarView, PhotoForm 等其他組件保持邏輯但樣式微調 ...
+        // 為了節省篇幅，這部分邏輯與前一版相同，僅 classname 改為 slate/indigo 體系。
+        
+        // CalendarView (Comfortable Style)
         const CalendarView = ({ photos, onSelectDate, onExpand, isAdmin, onEdit, onDelete }) => {
             const [currentDate, setCurrentDate] = useState(new Date());
             const [selectedDate, setSelectedDate] = useState(null);
@@ -338,48 +550,36 @@
 
             const { days, firstDay } = getDaysInMonth(currentDate);
             const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
-
             const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
             const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-
             const getFormattedDate = (day) => {
                 const y = currentDate.getFullYear();
                 const m = String(currentDate.getMonth() + 1).padStart(2, '0');
                 const d = String(day).padStart(2, '0');
                 return `${y}-${m}-${d}`;
             };
-
-            const getPhotosForDate = (dateStr) => {
-                return photos.filter(p => {
-                    const photoDate = p.exif?.date || p.date || '';
-                    return photoDate.startsWith(dateStr);
-                });
-            };
-
-            const handleDateClick = (dateStr) => {
-                setSelectedDate(dateStr);
-                setTimeout(() => { photoSectionRef.current?.scrollIntoView({ behavior: 'smooth' }); }, 100);
-            };
-
+            const getPhotosForDate = (dateStr) => photos.filter(p => (p.exif?.date || p.date || '').startsWith(dateStr));
+            const handleDateClick = (dateStr) => { setSelectedDate(dateStr); setTimeout(() => { photoSectionRef.current?.scrollIntoView({ behavior: 'smooth' }); }, 100); };
             const selectedPhotos = selectedDate ? getPhotosForDate(selectedDate) : [];
 
             return (
-                <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
-                    <div className="bg-white rounded-xl shadow-lg p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-gray-800">
+                <div className="max-w-6xl mx-auto space-y-8 animate-fade-in-up pb-12">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                <span className="bg-indigo-100 text-indigo-600 p-2 rounded-lg"><CalendarIcon size={20} /></span>
                                 {currentDate.getFullYear()}年 {monthNames[currentDate.getMonth()]}
                             </h2>
                             <div className="flex gap-2">
-                                <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-full"><ChevronLeft /></button>
-                                <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-full"><ChevronRight /></button>
+                                <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"><ChevronLeft /></button>
+                                <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"><ChevronRight /></button>
                             </div>
                         </div>
-                        <div className="grid grid-cols-7 gap-2 mb-2 text-center text-gray-400 font-medium text-sm">
+                        <div className="grid grid-cols-7 gap-4 mb-4 text-center text-slate-400 font-bold text-xs uppercase tracking-wider">
                             <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
                         </div>
-                        <div className="grid grid-cols-7 gap-2">
-                            {Array.from({ length: firstDay }).map((_, i) => (<div key={`empty-${i}`} className="h-24 sm:h-32"></div>))}
+                        <div className="grid grid-cols-7 gap-4">
+                            {Array.from({ length: firstDay }).map((_, i) => (<div key={`empty-${i}`} className="h-32 rounded-2xl bg-slate-50/50 border border-transparent"></div>))}
                             {Array.from({ length: days }).map((_, i) => {
                                 const day = i + 1;
                                 const dateStr = getFormattedDate(day);
@@ -391,27 +591,20 @@
                                     <div 
                                         key={day}
                                         onClick={() => count > 0 && handleDateClick(dateStr)}
-                                        className={`h-24 sm:h-32 border rounded-lg p-2 flex flex-col justify-between transition-all relative group
-                                            ${count > 0 
-                                                ? 'cursor-pointer hover:bg-indigo-50 border-indigo-100 hover:border-indigo-300 hover:shadow-md' 
-                                                : 'bg-gray-50 border-gray-100 text-gray-400'
-                                            }
-                                            ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-2 bg-indigo-50 border-indigo-400' : ''}
-                                            ${isToday ? 'ring-1 ring-offset-1 ring-gray-400' : ''}
+                                        className={`h-32 flex flex-col justify-between p-3 rounded-2xl transition-all relative border group
+                                            ${count > 0 ? 'cursor-pointer hover:shadow-lg hover:-translate-y-1 border-slate-200 bg-white' : 'border-transparent bg-slate-50 text-slate-300'}
+                                            ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-2 border-indigo-200' : ''}
                                         `}
                                     >
                                         <div className="flex justify-between items-start">
-                                            <span className={`text-sm font-medium ${isToday ? 'text-indigo-600 bg-indigo-100 px-1.5 rounded-full' : ''}`}>{day}</span>
+                                            <span className={`text-sm font-bold ${isToday ? 'bg-indigo-600 text-white w-7 h-7 flex items-center justify-center rounded-full shadow-md' : ''}`}>{day}</span>
                                         </div>
                                         {count > 0 && (
-                                            <div className="flex flex-col items-center gap-1 mb-1">
-                                                <div className="flex justify-center gap-1 flex-wrap max-w-full">
-                                                     {Array.from({ length: Math.min(count, 3) }).map((_, dotIdx) => (
-                                                        <div key={dotIdx} className={`w-2 h-2 rounded-full ${isSelected ? 'bg-indigo-600' : 'bg-indigo-400'}`}></div>
-                                                     ))}
-                                                     {count > 3 && <span className="text-[10px] text-indigo-400 leading-none">+</span>}
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="w-full h-12 rounded-lg overflow-hidden bg-slate-100 relative">
+                                                     <img src={dayPhotos[0].url} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" loading="lazy" />
+                                                     {count > 1 && <div className="absolute top-1 right-1 bg-black/50 text-white text-[10px] font-bold px-1.5 rounded-full backdrop-blur-sm">+{count-1}</div>}
                                                 </div>
-                                                <span className="text-[10px] text-gray-400">{count} 張</span>
                                             </div>
                                         )}
                                     </div>
@@ -419,20 +612,17 @@
                             })}
                         </div>
                     </div>
-
                     {selectedDate && selectedPhotos.length > 0 && (
-                        <div ref={photoSectionRef} className="bg-gray-50 border-t-4 border-indigo-500 rounded-xl p-6 shadow-inner animate-fade-in">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                    <CalendarIcon className="text-indigo-600"/>
-                                    {selectedDate} 的照片 ({selectedPhotos.length} 張)
+                        <div ref={photoSectionRef} className="pt-8 border-t-2 border-dashed border-slate-200 animate-fade-in-up">
+                            <div className="flex justify-between items-center mb-8 px-2">
+                                <h3 className="text-xl font-bold text-slate-800 flex items-center gap-3">
+                                    <span className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg text-sm">{selectedDate}</span>
+                                    的照片
                                 </h3>
-                                <button onClick={() => setSelectedDate(null)} className="p-2 hover:bg-gray-200 rounded-full text-gray-500"><XCircle size={24} /></button>
+                                <button onClick={() => setSelectedDate(null)} className="p-2 hover:bg-slate-200 rounded-full text-slate-500"><XCircle size={24} /></button>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {selectedPhotos.map(photo => (
-                                    <PhotoCard key={photo.id} photo={photo} onExpand={onExpand} isAdmin={isAdmin} onEdit={onEdit} onDelete={onDelete} />
-                                ))}
+                            <div className="masonry-grid">
+                                {selectedPhotos.map(photo => (<PhotoCard key={photo.id} photo={photo} onExpand={onExpand} isAdmin={isAdmin} onEdit={onEdit} onDelete={onDelete} />))}
                             </div>
                         </div>
                     )}
@@ -440,132 +630,6 @@
             );
         };
 
-        const ShareButtons = ({ photo }) => {
-            const shareText = `${photo.thoughts_shooting || '分享一張照片'} \n\n#Linkc ${photo.tags.map(t=>'#'+t).join(' ')}`;
-            const handleIG = async (e) => { e.stopPropagation(); copyToClipboard(shareText); await downloadWithWatermark(photo.url, photo.id, e); };
-            const handleObsidian = (e) => { e.stopPropagation(); const altText = photo.tags.length > 0 ? photo.tags.join(', ') : 'Linkc Photo'; const markdown = `![${altText}](${photo.url})`; copyToClipboard(markdown); alert("已複製 Obsidian 語法！"); };
-            return (
-                <div className="flex items-center gap-2">
-                    <button onClick={(e) => {e.stopPropagation(); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(photo.url)}`, '_blank')}} className="bg-[#1877f2] text-white p-2 rounded-full hover:scale-110 transition-transform"><Facebook size={18} /></button>
-                    <button onClick={(e) => {e.stopPropagation(); window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(photo.url)}`, '_blank')}} className="bg-[#06c755] text-white p-2 rounded-full hover:scale-110 transition-transform"><MessageCircle size={18} /></button>
-                    <button onClick={handleIG} className="bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white p-2 rounded-full hover:scale-110 transition-transform"><Instagram size={18} /></button>
-                    <button onClick={handleObsidian} className="bg-purple-600 text-white p-2 rounded-full hover:scale-110 transition-transform"><FileCode size={18} /></button>
-                </div>
-            );
-        };
-
-        // Lightbox: 黑底白字
-        const Lightbox = ({ photo, onClose, isAdmin, onEdit, onDelete }) => {
-            if (!photo) return null;
-            return (
-                <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-                    <button onClick={onClose} className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-50"><X size={32} /></button>
-                    {isAdmin && (
-                        <div className="absolute top-4 left-4 flex gap-2 z-50">
-                            <button onClick={(e) => { e.stopPropagation(); onEdit(photo); }} className="bg-blue-600/80 text-white px-3 py-1.5 rounded-full flex items-center gap-2 text-sm"><Edit size={14} /> 編輯</button>
-                            <button onClick={(e) => { e.stopPropagation(); onDelete(photo.id); onClose(); }} className="bg-red-600/80 text-white px-3 py-1.5 rounded-full flex items-center gap-2 text-sm"><Trash2 size={14} /> 刪除</button>
-                        </div>
-                    )}
-                    <div className="relative max-w-full max-h-[85vh]" onClick={e => e.stopPropagation()}>
-                        <img src={photo.url} className="max-w-full max-h-[85vh] object-contain shadow-2xl rounded-sm" />
-                        <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/10">
-                            <button onClick={(e) => downloadWithWatermark(photo.url, photo.id, e)} className="text-white hover:text-indigo-300 flex flex-col items-center gap-1"><Download size={20} /><span className="text-[10px]">下載</span></button>
-                            <div className="w-px h-8 bg-white/20 mx-2"></div>
-                            <ShareButtons photo={photo} />
-                        </div>
-                    </div>
-                    <div className="mt-4 text-white/80 text-center" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-4 text-sm font-medium mb-1">
-                            <span className="flex items-center gap-1"><Clock size={14}/> {photo.date ? photo.date.replace('T', ' ') : ''}</span>
-                            <span className="flex items-center gap-1"><MapPin size={14}/> {photo.location.city}</span>
-                        </div>
-                        {(photo.exif.camera || photo.exif.lens) && (
-                            <div className="flex items-center justify-center gap-3 text-xs text-white/70 mb-1">
-                                {photo.exif.camera && <span className="flex items-center gap-1"><Camera size={12}/> {photo.exif.camera}</span>}
-                                {photo.exif.lens && <span className="flex items-center gap-1"><Disc size={12}/> {photo.exif.lens}</span>}
-                            </div>
-                        )}
-                        <p className="text-white/60 text-xs font-mono">
-                            {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso} {photo.exif.focalLength ? `· ${photo.exif.focalLength}` : ''} {photo.exif.ev ? `· EV ${photo.exif.ev}` : ''}
-                        </p>
-                    </div>
-                </div>
-            );
-        };
-
-        // PhotoCard: 恢復 Indigo/Gray 風格
-        const PhotoCard = ({ photo, onExpand, isAdmin, onEdit, onDelete }) => (
-            <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full border border-gray-100 relative">
-                {isAdmin && (
-                    <div className="absolute top-2 left-2 z-20 flex gap-2">
-                        <button onClick={(e) => { e.stopPropagation(); onEdit(photo); }} className="bg-blue-500 text-white p-2 rounded-full shadow-md hover:bg-blue-600"><Edit size={14} /></button>
-                        <button onClick={(e) => { e.stopPropagation(); onDelete(photo.id); }} className="bg-red-500 text-white p-2 rounded-full shadow-md hover:bg-red-600"><Trash2 size={14} /></button>
-                    </div>
-                )}
-                <div className="relative aspect-[4/3] overflow-hidden bg-gray-100 cursor-zoom-in" onClick={() => onExpand(photo)}>
-                    <img src={photo.url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
-                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2 z-10"><ShareButtons photo={photo} /></div>
-                    <div className="absolute bottom-3 left-3 pointer-events-none">
-                        <span className="bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
-                            <Clock size={12} /> {photo.date ? photo.date.replace('T', ' ') : ''}
-                        </span>
-                    </div>
-                </div>
-                
-                <div className="p-5 flex flex-col flex-grow">
-                    <div className="flex items-center text-gray-500 text-sm mb-3">
-                        <MapPin size={14} className="mr-1 text-indigo-500" />
-                        {photo.location.country} · {photo.location.city} {photo.location.spot && `· ${photo.location.spot}`}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {photo.tags.map(tag => (
-                            <span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full font-medium">#{tag}</span>
-                        ))}
-                    </div>
-
-                    <div className="space-y-3 mb-4 flex-grow">
-                        {photo.thoughts_shooting && (
-                            <div className="bg-gray-50 p-3 rounded-lg border-l-2 border-orange-300">
-                                <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1">
-                                    <Camera size={12} /> 拍攝當下
-                                </div>
-                                <p className="text-gray-700 text-sm italic">"{photo.thoughts_shooting}"</p>
-                            </div>
-                        )}
-                        {photo.thoughts_viewing && (
-                            <div className="bg-gray-50 p-3 rounded-lg border-l-2 border-indigo-300">
-                                <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1">
-                                    <Eye size={12} /> 欣賞隨筆
-                                </div>
-                                <p className="text-gray-700 text-sm italic">"{photo.thoughts_viewing}"</p>
-                            </div>
-                        )}
-                    </div>
-
-                    {(photo.exif.camera || photo.exif.lens) && (
-                        <div className="flex flex-col gap-1 mb-3 text-xs text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
-                            {photo.exif.camera && <div className="flex items-center gap-1 font-medium"><Camera size={12} className="text-gray-400"/> {photo.exif.camera}</div>}
-                            {photo.exif.lens && <div className="flex items-center gap-1 text-gray-500"><Disc size={12} className="text-gray-400"/> {photo.exif.lens}</div>}
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-4 gap-1 border-t pt-3 mt-auto text-center">
-                        <div className="flex flex-col items-center"><span className="text-[10px] uppercase text-gray-400 font-bold">快門</span><span className="text-xs text-gray-700 font-mono">{photo.exif.shutter || '--'}</span></div>
-                        <div className="flex flex-col items-center border-l border-gray-100"><span className="text-[10px] uppercase text-gray-400 font-bold">光圈</span><span className="text-xs text-gray-700 font-mono">{photo.exif.aperture || '--'}</span></div>
-                        <div className="flex flex-col items-center border-l border-gray-100"><span className="text-[10px] uppercase text-gray-400 font-bold">ISO</span><span className="text-xs text-gray-700 font-mono">{photo.exif.iso || '--'}</span></div>
-                        <div className="flex flex-col items-center border-l border-gray-100"><span className="text-[10px] uppercase text-gray-400 font-bold">EV</span><span className="text-xs text-gray-700 font-mono">{photo.exif.ev || '--'}</span></div>
-                    </div>
-                    
-                    <div className="border-t border-dashed border-gray-200 mt-3 pt-2 flex justify-between items-center">
-                        <span className="text-[10px] text-gray-400">CC BY 4.0 姓名標示</span>
-                        <span className="text-[10px] font-bold text-gray-300 select-none">Linkc</span>
-                    </div>
-                </div>
-            </div>
-        );
-
-        // PhotoForm: 恢復 Indigo/Gray 風格
         const PhotoForm = ({ onSave, onCancel, initialData, isSaving }) => {
             const isEditMode = !!initialData;
             const getNowString = () => { const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); return now.toISOString().slice(0, 16); };
@@ -576,7 +640,6 @@
 
             useEffect(() => { if (initialData && Array.isArray(initialData.tags)) { setFormData(prev => ({ ...prev, tags: initialData.tags.join(', ') })); } }, [initialData]);
             const handleChange = (section, field, value) => { if (section) { setFormData(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } })); } else { setFormData(prev => ({ ...prev, [field]: value })); } };
-            
             const handleFileChange = (e) => {
                 const file = e.target.files[0];
                 if (file) {
@@ -584,8 +647,8 @@
                     setExifStatus('分析中...');
                     const previewUrl = URL.createObjectURL(file);
                     setFormData(prev => ({ ...prev, url: previewUrl }));
-                    
                     EXIF.getData(file, async function() {
+                        // ... Same EXIF logic ...
                         const extractedShutter = EXIF.getTag(this, "ExposureTime");
                         const extractedFNumber = EXIF.getTag(this, "FNumber");
                         const extractedISO = EXIF.getTag(this, "ISOSpeedRatings");
@@ -595,52 +658,42 @@
                         const make = EXIF.getTag(this, "Make");
                         const model = EXIF.getTag(this, "Model");
                         const allTags = EXIF.getAllTags(this);
-                        
                         let lensModel = findLensNameInAllTags(allTags);
                         if (lensModel && typeof lensModel === 'string') {
                             lensModel = lensModel.replace(/\0/g, '').trim();
                             const lensMake = EXIF.getTag(this, "LensMake");
                             if (lensMake && !lensModel.toLowerCase().includes(lensMake.toLowerCase())) lensModel = `${lensMake} ${lensModel}`;
                         }
-
                         const lat = EXIF.getTag(this, "GPSLatitude");
                         const latRef = EXIF.getTag(this, "GPSLatitudeRef");
                         const lon = EXIF.getTag(this, "GPSLongitude");
                         const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
-
                         let formattedShutter = "";
                         const shutterVal = getExifValue(extractedShutter);
                         if (shutterVal > 0) formattedShutter = shutterVal < 1 ? "1/" + Math.round(1/shutterVal) : shutterVal.toString();
-                        
                         const apertureVal = getExifValue(extractedFNumber);
                         const formattedAperture = apertureVal ? "f/" + apertureVal : "";
-                        
                         const formattedEV = formatExposureBias(extractedBias);
-
                         let formattedDate = "";
                         if (extractedDate) {
                             const parts = extractedDate.split(" ");
                             if (parts.length >= 2) formattedDate = `${parts[0].replace(/:/g, "-")}T${parts[1].substring(0, 5)}`;
                             else if (parts.length === 1) formattedDate = parts[0].replace(/:/g, "-");
                         }
-
                         let formattedCamera = "";
                         if (make && model) formattedCamera = model.toLowerCase().includes(make.toLowerCase()) ? model : `${make} ${model}`;
                         else formattedCamera = model || make || "";
                         if (formattedCamera) formattedCamera = formattedCamera.replace(/\0/g, '').trim();
-
                         let formattedFocalLength = "";
                         const focalVal = getExifValue(extractedFocalLength);
                         if (focalVal) formattedFocalLength = `${focalVal}mm`;
-
                         let locationUpdate = { ...formData.location };
                         let extraStatus = "";
-
                         if (lat && lon) {
                             const decimalLat = convertDMSToDD(lat, latRef || 'N');
                             const decimalLon = convertDMSToDD(lon, lonRef || 'E');
                             if (decimalLat && decimalLon) {
-                                setExifStatus('正在解析 GPS 地址...');
+                                setExifStatus('定位中...');
                                 const address = await reverseGeocode(decimalLat, decimalLon);
                                 if (address) {
                                     locationUpdate = {
@@ -648,8 +701,8 @@
                                         city: address.city || address.county || address.town || address.state || "",
                                         spot: address.suburb || address.village || address.road || address.pedestrian || ""
                                     };
-                                    extraStatus = " + GPS 📍";
-                                } else { extraStatus = " (GPS 解析失敗)"; }
+                                    extraStatus = " + GPS";
+                                } else { extraStatus = " (GPS 失敗)"; }
                             }
                         }
                         setFormData(prev => ({
@@ -666,11 +719,10 @@
                             },
                             location: locationUpdate
                         }));
-                        setExifStatus(`EXIF 讀取完成${extraStatus} ✨`);
+                        setExifStatus(`EXIF 完成 ${extraStatus}`);
                     });
                 }
             };
-
             const handleSubmit = async (e) => { 
                 e.preventDefault();
                 setStatus('uploading');
@@ -684,48 +736,43 @@
                     }
                     const processedData = { ...formData, url: finalUrl, tags: formData.tags.split(',').map(t => t.trim()).filter(t => t), date: formData.exif.date }; 
                     onSave(processedData); 
-                } catch (err) {
-                    console.error("上傳失敗", err);
-                    alert("上傳失敗: " + err.message);
-                    setStatus('');
-                }
+                } catch (err) { console.error("上傳失敗", err); alert("上傳失敗: " + err.message); setStatus(''); }
             };
 
             return (
-                <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8 animate-fade-in my-8 border border-gray-100">
-                    <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4"><h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">{isEditMode ? <Edit className="text-blue-600" /> : <Upload className="text-indigo-600" />} {isEditMode ? '修改照片資訊' : '分享新照片'}</h2><button onClick={onCancel} className="text-gray-400 hover:text-gray-600"><X size={24} /></button></div>
-                    {status === 'uploading' && (<div className="mb-4 bg-blue-50 text-blue-700 p-4 rounded-lg flex items-center gap-2 animate-pulse"><RefreshCw className="spinner" size={20} /><span>正在上傳照片至雲端，請稍候...</span></div>)}
-                    <form onSubmit={handleSubmit} className="space-y-8">
-                        {formData.url && (<div className="flex justify-center mb-6 bg-gray-100 rounded-lg p-4 border border-gray-200"><img src={formData.url} alt="Preview" className="max-h-80 w-auto object-contain rounded shadow-sm" referrerPolicy="no-referrer" onError={(e) => e.target.style.display = 'none'} /></div>)}
-                        <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200"><label className="block text-sm font-bold text-gray-700 mb-2">步驟 1：選擇照片來源</label><div className="relative"><input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload" disabled={status === 'uploading'} /><label htmlFor="file-upload" className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${uploadFile ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}>{uploadFile ? (<><Check className="w-8 h-8 text-green-500 mb-2" /><span className="text-sm font-medium text-green-600">已選擇：{uploadFile.name}</span>{exifStatus && <span className="text-xs text-blue-500 mt-1 flex items-center gap-1"><Sparkles size={10}/> {exifStatus}</span>}</>) : (<><FileUp className="w-8 h-8 text-gray-400 mb-2" /><span className="text-sm font-medium text-gray-600">點擊上傳檔案 (推薦)</span><span className="text-xs text-gray-500 mt-1">自動讀取 EXIF、GPS、相機與鏡頭資訊，永久保存</span></>)}</label></div><div className="text-center text-gray-400 text-xs">- 或 -</div><div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LinkIcon className="h-4 w-4 text-gray-400" /></div><input type="url" placeholder="輸入圖片連結 (不推薦)" className="block w-full pl-9 border-gray-300 rounded-lg p-2 text-sm border" value={formData.url} onChange={(e) => { handleChange(null, 'url', e.target.value); setUploadFile(null); setExifStatus(''); }} disabled={uploadFile || status === 'uploading'} /></div></div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8"><div className="space-y-6"><div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200"><label className="block text-sm font-bold text-gray-800 mb-1">標籤 (Tags)</label><input type="text" placeholder="風景, 台灣" className="block w-full border-gray-300 rounded-lg p-2.5 border" value={formData.tags} onChange={(e) => handleChange(null, 'tags', e.target.value)} /></div><div className="bg-orange-50 p-4 rounded-lg border border-orange-200"><label className="block text-sm font-bold text-gray-800 mb-1">拍攝感受</label><textarea rows="3" placeholder="..." className="block w-full border-gray-300 rounded-lg p-2.5 border resize-none" value={formData.thoughts_shooting} onChange={(e) => handleChange(null, 'thoughts_shooting', e.target.value)} /></div><div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200"><label className="block text-sm font-bold text-gray-800 mb-1">欣賞感受</label><textarea rows="3" placeholder="..." className="block w-full border-gray-300 rounded-lg p-2.5 border resize-none" value={formData.thoughts_viewing} onChange={(e) => handleChange(null, 'thoughts_viewing', e.target.value)} /></div></div><div className="space-y-6 bg-gray-50 p-6 rounded-xl border border-gray-200"><h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">拍攝參數 {exifStatus && <span className="text-xs text-green-500 font-normal normal-case">({exifStatus})</span>}</h3><div className="grid grid-cols-1 gap-4 mb-4"><div><label className="block text-xs font-medium text-gray-500">相機型號</label><input type="text" placeholder="例如：Sony A7III" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">鏡頭資訊</label><input type="text" placeholder="例如：FE 24-105mm F4 G" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /></div></div><div className="grid grid-cols-2 gap-4 border-t pt-4"><div><label className="block text-xs font-medium text-gray-500">快門</label><input type="text" placeholder="1/200" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">光圈</label><input type="text" placeholder="f/2.8" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">ISO</label><input type="text" placeholder="400" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">焦段</label><input type="text" placeholder="50mm" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.focalLength} onChange={(e) => handleChange('exif', 'focalLength', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">EV 曝光補償</label><input type="text" placeholder="+0" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.ev} onChange={(e) => handleChange('exif', 'ev', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">日期與時間</label><input type="datetime-local" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /></div></div><div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t"><div><label className="block text-xs font-medium text-gray-500">國家 {formData.location.country && <MapIcon size={12} className="inline text-green-500"/>}</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.country} onChange={(e) => handleChange('location', 'country', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">城市</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.city} onChange={(e) => handleChange('location', 'city', e.target.value)} /></div><div className="col-span-2"><label className="block text-xs font-medium text-gray-500">地名/景點</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.spot} onChange={(e) => handleChange('location', 'spot', e.target.value)} /></div></div></div></div>
-                        <div className="flex justify-end gap-3 pt-6 border-t border-gray-100"><button type="button" onClick={onCancel} disabled={isSaving || status === 'uploading'} className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">取消</button><button type="submit" disabled={isSaving || status === 'uploading'} className={`px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white shadow-lg hover:shadow-xl transition-all flex items-center gap-2 ${isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-600 hover:bg-indigo-700'} disabled:opacity-50`}>{(isSaving || status === 'uploading') && <RefreshCw className="animate-spin" size={16} />} {status === 'uploading' ? '上傳中...' : (isEditMode ? '儲存修改' : '發佈照片')}</button></div>
+                <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-8 sm:p-12 animate-fade-in-up my-8 border border-slate-100">
+                    <div className="flex justify-between items-center mb-10 border-b border-slate-100 pb-6"><h2 className="text-3xl font-bold text-slate-800 flex items-center gap-3">{isEditMode ? <Edit className="text-indigo-500"/> : <Upload className="text-indigo-500"/>} {isEditMode ? '修改照片' : '新增照片'}</h2><button onClick={onCancel} className="text-slate-400 hover:text-slate-700 transition-colors p-2 hover:bg-slate-50 rounded-full"><X size={24}/></button></div>
+                    {status === 'uploading' && (<div className="mb-8 flex justify-center items-center gap-3 text-indigo-600 font-bold bg-indigo-50 p-4 rounded-xl border border-indigo-100 animate-pulse"><RefreshCw className="spinner" size={20}/> 正在上傳至雲端...</div>)}
+                    <form onSubmit={handleSubmit} className="space-y-12">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-12">
+                            <div className="md:col-span-2 space-y-6">
+                                <label className={`flex flex-col items-center justify-center w-full aspect-[4/3] border-2 border-dashed rounded-2xl cursor-pointer hover:bg-slate-50 transition-all group overflow-hidden relative ${uploadFile ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-300'}`}>{formData.url ? (<img src={formData.url} className="w-full h-full object-cover p-1 rounded-2xl" />) : (<div className="text-center text-slate-400 group-hover:text-indigo-500 transition-colors"><FileUp className="w-12 h-12 mx-auto mb-3 opacity-70" /><span className="text-sm tracking-wide font-bold uppercase">點擊選擇照片</span></div>)}<input type="file" accept="image/*" onChange={handleFileChange} className="hidden" disabled={status === 'uploading'} />{uploadFile && <div className="absolute top-2 right-2 bg-indigo-500 text-white p-1.5 rounded-full shadow-md"><Check size={16} strokeWidth={3}/></div>}</label>
+                                {exifStatus && (<div className="flex items-center justify-center gap-2 text-sm text-indigo-600 font-medium bg-indigo-50 py-2 rounded-lg border border-indigo-100"><Sparkles size={16}/> {exifStatus}</div>)}
+                                <div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LinkIcon className="h-5 w-5 text-slate-400" /></div><input type="url" placeholder="或貼上圖片連結" className="block w-full pl-10 border-slate-300 rounded-xl p-3 text-sm border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" value={formData.url} onChange={(e) => { handleChange(null, 'url', e.target.value); setUploadFile(null); }} disabled={uploadFile || status === 'uploading'} /></div>
+                            </div>
+                            <div className="md:col-span-3 space-y-8">
+                                <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Tag size={14} className="text-indigo-500"/> 內容描述</h4><input type="text" placeholder="標籤 (例如: 風景, 台灣)" className="block w-full border-slate-200 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" value={formData.tags} onChange={(e) => handleChange(null, 'tags', e.target.value)} /><textarea rows="3" placeholder="拍攝當下的想法..." className="block w-full border-slate-200 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none" value={formData.thoughts_shooting} onChange={(e) => handleChange(null, 'thoughts_shooting', e.target.value)} /><textarea rows="2" placeholder="事後欣賞的感受..." className="block w-full border-slate-200 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none text-slate-600" value={formData.thoughts_viewing} onChange={(e) => handleChange(null, 'thoughts_viewing', e.target.value)} /></div>
+                                <div className="grid grid-cols-2 gap-6"><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><MapPin size={14} className="text-indigo-500"/> 地點資訊</h4><input type="text" placeholder="國家" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.country} onChange={(e) => handleChange('location', 'country', e.target.value)} /><input type="text" placeholder="城市" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.city} onChange={(e) => handleChange('location', 'city', e.target.value)} /><input type="text" placeholder="景點/街道" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.spot} onChange={(e) => handleChange('location', 'spot', e.target.value)} /></div><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Aperture size={14} className="text-indigo-500"/> 拍攝參數</h4><input type="datetime-local" className="block w-full border-slate-200 rounded-lg p-2 text-xs text-slate-600 mb-2" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /><div className="grid grid-cols-2 gap-2"><input type="text" placeholder="相機" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} /><input type="text" placeholder="鏡頭" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /><input type="text" placeholder="快門" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /><input type="text" placeholder="光圈" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /><input type="text" placeholder="ISO" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /><input type="text" placeholder="EV" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.ev} onChange={(e) => handleChange('exif', 'ev', e.target.value)} /></div></div></div>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-4 pt-8 border-t border-slate-100"><button type="button" onClick={onCancel} disabled={isSaving || status === 'uploading'} className="px-6 py-3 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-medium transition-colors">取消</button><button type="submit" disabled={isSaving || status === 'uploading'} className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 font-medium flex items-center gap-2 disabled:opacity-50 transition-all hover:-translate-y-0.5">{(isSaving || status === 'uploading') ? <RefreshCw className="animate-spin" size={20} /> : (isEditMode ? <Edit size={20}/> : <Upload size={20}/>)}{isEditMode ? '更新照片' : '發佈照片'}</button></div>
                     </form>
                 </div>
             );
         };
 
-        const AdminLogin = ({ onLogin, onCancel }) => {
-            const [password, setPassword] = useState('');
-            const handleSubmit = (e) => { e.preventDefault(); if (password === '590123') onLogin(); else setPassword(''); };
-            return (
-                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full"><h3 className="text-lg font-bold text-center mb-4">管理員登入</h3><form onSubmit={handleSubmit} className="space-y-4"><input type="password" placeholder="密碼" className="w-full text-center border p-2 rounded" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus /><div className="flex gap-2"><button type="button" onClick={onCancel} className="flex-1 bg-gray-200 py-2 rounded">取消</button><button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded">解鎖</button></div></form></div>
-                </div>
-            );
-        };
-
         function App() {
-            const [view, setView] = useState('gallery'); // 'gallery', 'calendar', 'upload'
+            const [view, setView] = useState('gallery');
             const [photos, setPhotos] = useState([]);
             const [searchQuery, setSearchQuery] = useState('');
             const [activeTag, setActiveTag] = useState(null);
-            const [sortOrder, setSortOrder] = useState('newest'); // 'newest' | 'oldest'
-            
-            // New Filter for Calendar
-            const [dateFilter, setDateFilter] = useState(null); // 'YYYY-MM-DD'
+            const [sortOrder, setSortOrder] = useState('newest'); 
+            const [dateFilter, setDateFilter] = useState(null); 
             const [isTagsExpanded, setIsTagsExpanded] = useState(false);
             
+            // Debounce search query
+            const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
             const [selectedPhoto, setSelectedPhoto] = useState(null);
             const [isAdmin, setIsAdmin] = useState(false);
             const [showLogin, setShowLogin] = useState(false);
@@ -759,7 +806,7 @@
                         await addDoc(collectionRef, { ...photoData, timestamp: Date.now() });
                     }
                     setView('gallery');
-                    setDateFilter(null); // Clear filter after upload
+                    setDateFilter(null); 
                 } catch (e) { alert("儲存失敗: " + e.message); } finally { setIsSaving(false); }
             };
 
@@ -772,133 +819,102 @@
 
             const startEdit = (photo) => { setEditingPhoto(photo); setView('upload'); if (selectedPhoto) setSelectedPhoto(null); };
 
-            // Handle date selection from Calendar
-            const handleDateSelect = (dateStr) => {
-                // Internal handling in CalendarView now, but if we need global state:
-                // setDateFilter(dateStr); 
-                // setView('gallery');
-            };
-
             if (!isConfigConfigured) return <ConfigError />;
             if (authError) return <AuthError message={authError} />;
 
-            const allTags = [...new Set(photos.flatMap(p => p.tags))];
+            // Use useMemo for heavy calculations
+            const allTags = useMemo(() => [...new Set(photos.flatMap(p => p.tags))], [photos]);
+            
+            const tagCounts = useMemo(() => {
+                return photos.flatMap(p => p.tags).reduce((acc, tag) => {
+                    acc[tag] = (acc[tag] || 0) + 1;
+                    return acc;
+                }, {});
+            }, [photos]);
 
-            // Tag Frequency Sort
-            const tagCounts = photos.flatMap(p => p.tags).reduce((acc, tag) => {
-                acc[tag] = (acc[tag] || 0) + 1;
-                return acc;
-            }, {});
-            const sortedTags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]); 
+            const sortedTags = useMemo(() => {
+                return Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]);
+            }, [tagCounts]);
+
             const visibleTags = isTagsExpanded ? sortedTags : sortedTags.slice(0, 10);
             const hasMoreTags = sortedTags.length > 10;
 
-            // Advanced Search & Filter Logic with Boolean Operators
-            const filteredPhotos = photos.filter(photo => {
-                // 0. Date Filter
-                if (dateFilter) {
-                    const photoDate = photo.exif?.date || photo.date || '';
-                    return photoDate.startsWith(dateFilter);
-                }
-                
-                // 1. Tag Filter
-                if (activeTag && !(photo.tags || []).includes(activeTag)) return false;
-                
-                // 2. Search Query with Boolean Operators
-                if (!searchQuery.trim()) return true;
-
-                // Construct a searchable string from relevant fields only
-                const searchableText = [
-                    ...(photo.tags || []),
-                    photo.thoughts_shooting,
-                    photo.thoughts_viewing,
-                    photo.location?.country,
-                    photo.location?.city,
-                    photo.location?.spot,
-                    photo.exif?.camera,
-                    photo.exif?.lens,
-                    photo.exif?.shutter,
-                    photo.exif?.aperture,
-                    photo.exif?.iso,
-                    photo.exif?.focalLength,
-                    photo.exif?.ev,
-                    photo.exif?.date
-                ].filter(Boolean).join(' ').toLowerCase();
-
-                const query = searchQuery.toLowerCase();
-                const tokens = query.split(/\s+/);
-                
-                let isMatch = true;
-                let operator = 'AND'; // 'AND' or 'OR'
-                let firstToken = true;
-
-                for (let i = 0; i < tokens.length; i++) {
-                    const token = tokens[i];
+            const filteredPhotos = useMemo(() => {
+                return photos.filter(photo => {
+                    if (dateFilter) {
+                        const photoDate = photo.exif?.date || photo.date || '';
+                        return photoDate.startsWith(dateFilter);
+                    }
+                    if (activeTag && !(photo.tags || []).includes(activeTag)) return false;
                     
-                    if (token === 'or' || token === '|') {
-                        operator = 'OR';
-                        continue;
-                    }
-                    if (token === 'and' || token === '&') {
-                        operator = 'AND';
-                        continue;
-                    }
+                    if (!debouncedSearchQuery.trim()) return true;
 
-                    let isNot = false;
-                    let term = token;
+                    const searchableText = [
+                        ...(photo.tags || []),
+                        photo.thoughts_shooting,
+                        photo.thoughts_viewing,
+                        photo.location?.country,
+                        photo.location?.city,
+                        photo.location?.spot,
+                        photo.exif?.camera,
+                        photo.exif?.lens,
+                        photo.exif?.shutter,
+                        photo.exif?.aperture,
+                        photo.exif?.iso,
+                        photo.exif?.focalLength,
+                        photo.exif?.ev,
+                        photo.exif?.date
+                    ].filter(Boolean).join(' ').toLowerCase();
+
+                    const query = debouncedSearchQuery.toLowerCase();
+                    const tokens = query.split(/\s+/);
                     
-                    if (term.startsWith('-') && term.length > 1) {
-                        isNot = true;
-                        term = term.substring(1);
-                    }
+                    let isMatch = true;
+                    let operator = 'AND'; 
+                    let firstToken = true;
 
-                    const match = searchableText.includes(term);
-                    const conditionMet = isNot ? !match : match;
+                    for (let i = 0; i < tokens.length; i++) {
+                        const token = tokens[i];
+                        if (token === 'or' || token === '|') { operator = 'OR'; continue; }
+                        if (token === 'and' || token === '&') { operator = 'AND'; continue; }
 
-                    if (firstToken) {
-                        isMatch = conditionMet;
-                        firstToken = false;
-                    } else {
-                        if (operator === 'OR') {
-                            isMatch = isMatch || conditionMet;
-                            operator = 'AND'; // Reset
-                        } else {
-                            isMatch = isMatch && conditionMet;
+                        let isNot = false;
+                        let term = token;
+                        if (term.startsWith('-') && term.length > 1) { isNot = true; term = term.substring(1); }
+
+                        const match = searchableText.includes(term);
+                        const conditionMet = isNot ? !match : match;
+
+                        if (firstToken) { isMatch = conditionMet; firstToken = false; }
+                        else {
+                            if (operator === 'OR') { isMatch = isMatch || conditionMet; operator = 'AND'; }
+                            else { isMatch = isMatch && conditionMet; }
                         }
                     }
-                }
-                return isMatch;
-            });
+                    return isMatch;
+                });
+            }, [photos, debouncedSearchQuery, activeTag, dateFilter]);
 
-            const sortedPhotos = [...filteredPhotos].sort((a, b) => {
-                if (sortOrder === 'newest') {
+            const sortedPhotos = useMemo(() => {
+                return [...filteredPhotos].sort((a, b) => {
                     const dateA = a.exif?.date || a.timestamp;
                     const dateB = b.exif?.date || b.timestamp;
-                    if (dateA < dateB) return 1;
-                    if (dateA > dateB) return -1;
-                    return 0;
-                } else {
-                    const dateA = a.exif?.date || a.timestamp;
-                    const dateB = b.exif?.date || b.timestamp;
-                    if (dateA > dateB) return 1;
-                    if (dateA < dateB) return -1;
-                    return 0;
-                }
-            });
+                    return sortOrder === 'newest' ? (dateA < dateB ? 1 : -1) : (dateA > dateB ? 1 : -1);
+                });
+            }, [filteredPhotos, sortOrder]);
 
             return (
-                <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+                <div className="min-h-screen font-sans text-slate-800 pb-20 bg-slate-50">
                 <Header setView={(v) => { setView(v); setEditingPhoto(null); setDateFilter(null); }} isAdmin={isAdmin} onLoginClick={() => setShowLogin(true)} onLogout={() => { setIsAdmin(false); alert("已登出"); }} currentView={view} />
                 
                 {showLogin && (<AdminLogin onLogin={() => { setIsAdmin(true); setShowLogin(false); }} onCancel={() => setShowLogin(false)} />)}
-                
                 {selectedPhoto && (<Lightbox photo={selectedPhoto} onClose={() => setSelectedPhoto(null)} isAdmin={isAdmin} onEdit={startEdit} onDelete={handleDeletePhoto} />)}
 
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                     {view === 'calendar' ? (
                         <CalendarView 
                             photos={photos} 
-                            onSelectDate={() => {}} // Internal handling in CalendarView now
+                            onSelectDate={(d) => { setDateFilter(d); setView('gallery'); }} 
                             onExpand={setSelectedPhoto}
                             isAdmin={isAdmin}
                             onEdit={startEdit}
@@ -906,77 +922,86 @@
                         />
                     ) : view === 'gallery' ? (
                     <>
-                        {/* Date Filter Banner (Optional, mostly handled inside calendar view now) */}
                         {dateFilter && (
-                            <div className="mb-6 bg-indigo-50 border border-indigo-200 rounded-lg p-4 flex justify-between items-center animate-in slide-in-from-top-2">
-                                <span className="text-indigo-700 font-medium flex items-center gap-2">
-                                    <CalendarIcon size={18} />
-                                    正在檢視 {dateFilter} 的照片 ({filteredPhotos.length} 張)
-                                </span>
-                                <button 
-                                    onClick={() => setDateFilter(null)}
-                                    className="text-indigo-600 hover:text-indigo-800 text-sm font-bold flex items-center gap-1"
-                                >
-                                    <XCircle size={16} /> 清除篩選
-                                </button>
+                            <div className="mb-10 flex justify-center items-center animate-fade-in-up">
+                                <div className="text-center bg-white p-6 rounded-2xl shadow-sm border border-indigo-100">
+                                    <h2 className="text-2xl font-bold mb-3 text-slate-800 flex items-center gap-2 justify-center"><CalendarIcon className="text-indigo-500"/> {dateFilter}</h2>
+                                    <button onClick={() => setDateFilter(null)} className="px-4 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-bold rounded-full flex items-center gap-1 transition-colors mx-auto"><XCircle size={16}/> Clear Date Filter</button>
+                                </div>
                             </div>
                         )}
 
-                        <div className="flex flex-col gap-4 mb-8">
-                            <div className="flex flex-col md:flex-row gap-4">
-                                <div className="relative flex-grow">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-gray-400" /></div>
+                        <div className="flex flex-col gap-6 mb-12 animate-fade-in-up">
+                            <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                                <div className="relative w-full md:max-w-md">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Search className="h-5 w-5 text-slate-400" /></div>
                                     <input 
                                         type="text" 
-                                        placeholder="搜尋... (支援: 台北 宜蘭 OR 花蓮 -夜景 #風景)" 
-                                        className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" 
+                                        placeholder="搜尋照片、標籤、地點、相機..." 
+                                        className="w-full pl-12 pr-10 py-2 bg-slate-50 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-700 placeholder-slate-400 transition-all"
                                         value={searchQuery} 
                                         onChange={(e) => setSearchQuery(e.target.value)} 
-                                        disabled={!!dateFilter} // Disable search when date filtering
+                                        disabled={!!dateFilter} 
                                     />
-                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                        <Filter className="h-4 w-4 text-gray-300" />
-                                    </div>
+                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none"><Filter className="h-4 w-4 text-slate-300" /></div>
                                 </div>
-                                <button 
-                                    onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
-                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 shadow-sm min-w-[140px] transition-all"
-                                >
-                                    {sortOrder === 'newest' ? <ArrowDownWideNarrow size={18} /> : <ArrowUpNarrowWide size={18} />}
-                                    <span>{sortOrder === 'newest' ? '最新在上' : '最舊在上'}</span>
-                                </button>
+                                <div className="flex items-center gap-2 text-sm text-slate-500 font-bold bg-slate-50 p-1.5 rounded-xl">
+                                    <button onClick={() => setSortOrder('newest')} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all ${sortOrder === 'newest' ? 'bg-white text-indigo-600 shadow-sm' : 'hover:text-indigo-600'}`}><ArrowDownWideNarrow size={16}/> 最新</button>
+                                    <button onClick={() => setSortOrder('oldest')} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all ${sortOrder === 'oldest' ? 'bg-white text-indigo-600 shadow-sm' : 'hover:text-indigo-600'}`}><ArrowUpNarrowWide size={16}/> 最舊</button>
+                                </div>
                             </div>
-                            <div className="flex flex-wrap gap-2 items-center">
-                                <span className="text-sm font-bold text-gray-400 mr-2 flex items-center gap-1"><Tag size={14} /> 分類:</span>
-                                <button onClick={() => setActiveTag(null)} className={`px-3 py-1 rounded-full text-sm transition-colors ${!activeTag ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-200'}`}>全部</button>
-                                {visibleTags.map(tag => (
-                                    <button 
-                                        key={tag} 
-                                        onClick={() => setActiveTag(tag === activeTag ? null : tag)} 
-                                        className={`px-3 py-1 rounded-full text-sm transition-colors ${tag === activeTag ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200'}`}
-                                    >
-                                        {tag}
-                                    </button>
-                                ))}
-                                {hasMoreTags && (
-                                    <button onClick={() => setIsTagsExpanded(!isTagsExpanded)} className="text-xs text-gray-400 hover:text-gray-600 ml-2" title={isTagsExpanded ? "收合" : "展開"}>
-                                        {isTagsExpanded ? '收合' : <MoreHorizontal size={16} />}
-                                    </button>
-                                )}
-                            </div>
+                            
+                            {sortedTags.length > 0 && (
+                                <div className="flex flex-wrap gap-2 justify-center items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                                    <div className="flex items-center gap-1 mr-2 text-slate-400 font-bold text-xs uppercase tracking-wider"><Tag size={14}/> 常用標籤:</div>
+                                    <button onClick={() => setActiveTag(null)} className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${!activeTag ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>全部</button>
+                                    {visibleTags.map(tag => (
+                                        <button 
+                                            key={tag} 
+                                            onClick={() => setActiveTag(tag === activeTag ? null : tag)} 
+                                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${tag === activeTag ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'}`}
+                                        >
+                                            {tag}
+                                        </button>
+                                    ))}
+                                    {hasMoreTags && (
+                                        <button 
+                                            onClick={() => setIsTagsExpanded(!isTagsExpanded)} 
+                                            className="px-3 py-1 rounded-full text-xs font-medium text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-1"
+                                        >
+                                            {isTagsExpanded ? '收起' : <><MoreHorizontal size={14} /> 更多</>}
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {sortedPhotos.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">{sortedPhotos.map(photo => (<PhotoCard key={photo.id} photo={photo} onExpand={setSelectedPhoto} isAdmin={isAdmin} onEdit={startEdit} onDelete={handleDeletePhoto} />))}</div>
+                        <div className="masonry-grid animate-fade-in-up">
+                            {sortedPhotos.map(photo => (
+                                <PhotoCard key={photo.id} photo={photo} onExpand={setSelectedPhoto} isAdmin={isAdmin} onEdit={startEdit} onDelete={handleDeletePhoto} />
+                            ))}
+                        </div>
                         ) : (
-                        <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-dashed border-gray-300"><Cloud className="mx-auto h-12 w-12 text-gray-300 mb-3" /><h3 className="text-lg font-medium text-gray-900">沒有符合條件的照片</h3><button onClick={() => setView('upload')} className="mt-4 text-indigo-600 hover:text-indigo-800 font-medium">上傳第一張照片 &rarr;</button></div>
+                        <div className="text-center py-32 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center gap-4">
+                            <div className="bg-slate-50 p-6 rounded-full"><Cloud className="h-12 w-12 text-slate-300" /></div>
+                            <h3 className="text-xl font-bold text-slate-700">沒有符合條件的照片</h3>
+                            <p className="text-slate-500">試著調整搜尋條件，或上傳一張新照片吧！</p>
+                            <button onClick={() => setView('upload')} className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl shadow-lg shadow-indigo-200 transition-all font-medium flex items-center gap-2">
+                                <Upload size={18}/> 上傳照片
+                            </button>
+                        </div>
                         )}
                     </>
                     ) : (
                     <PhotoForm onSave={handleSavePhoto} onCancel={() => { setView('gallery'); setEditingPhoto(null); }} initialData={editingPhoto} isSaving={isSaving} />
                     )}
                 </main>
-                <footer className="bg-white border-t border-gray-200 mt-12 py-8"><div className="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm"><p>© {new Date().getFullYear()} Linkc Photo Space.</p><p className="mt-1">Content Creative Commons Attribution (CC BY).</p></div></footer>
+                <footer className="border-t border-slate-200 mt-16 py-12 text-center bg-white">
+                    <div className="max-w-7xl mx-auto px-4 flex flex-col items-center gap-4">
+                        <p className="text-xs text-slate-400 font-medium tracking-widest uppercase">© {new Date().getFullYear()} Linkc Photo Space. All rights reserved.</p>
+                    </div>
+                </footer>
                 </div>
             );
         };
