@@ -13,15 +13,25 @@
 
     <!-- 3. CSS -->
     <style>
-        body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f5f5f4; /* stone-100 */ color: #44403c; /* stone-700 */ }
+        body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f5f5f4; color: #44403c; }
         .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; color: #059669; font-weight: bold; }
         .error-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; text-align: center; color: #44403c; }
         
         /* 捲軸美化 */
-        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #e7e5e4; }
-        ::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #78716c; }
+        ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+
+        /* 隱藏水平捲軸但保留功能 (讓標籤列更美觀) */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 漸層遮罩效果：讓標籤列右側有漸層消失感 (調整為 90% 開始淡出，保留更多可視區域) */
+        .mask-linear-fade {
+            mask-image: linear-gradient(to right, black 90%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+        }
 
         .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -45,7 +55,7 @@
             Copy, Check, Lock, Unlock, Edit, Trash2, LogOut, 
             Cloud, RefreshCw, AlertTriangle, Info, Link as LinkIcon, FileUp, 
             Calendar, FileText, BarChart2, Hash, ExternalLink, PlusCircle, FileCode,
-            BookOpen, Users, Video, Mic, Globe, MessageCircle, FileBox
+            BookOpen, Users, Video, Mic, Globe, MessageCircle, FileBox, ShieldCheck, Copyright, Terminal
         } from 'https://esm.sh/lucide-react@0.294.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -54,7 +64,7 @@
         import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
         // -----------------------------------------------------------------------------
-        // 設定區 (Firebase Config) - 已填入您的設定
+        // 設定區 (Firebase Config)
         // -----------------------------------------------------------------------------
         
         const firebaseConfig = {
@@ -81,7 +91,6 @@
             }
         }
 
-        // 使用不同的 Collection 以區隔照片
         const COLLECTION_NAME = 'linkc_charts_v1';
 
         // -----------------------------------------------------------------------------
@@ -89,25 +98,32 @@
         // -----------------------------------------------------------------------------
 
         const copyToClipboard = (text) => {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-9999px';
-            textArea.style.top = '0';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                document.execCommand('copy');
-            } catch (err) {
-                console.error('複製失敗', err);
+            const fallbackCopy = () => {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-9999px';
+                textArea.style.top = '0';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                } catch (err) {
+                    console.error('複製失敗', err);
+                }
+                document.body.removeChild(textArea);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).catch(() => fallbackCopy());
+            } else {
+                fallbackCopy();
             }
-            document.body.removeChild(textArea);
         };
 
         const formatDate = (dateStr) => {
             if (!dateStr) return '';
-            // 支援 YYYY-MM-DD 或 ISO 格式，如果是 ISO 轉為 YYYY-MM-DD HH:MM
             return dateStr.replace('T', ' ').substring(0, 16);
         };
 
@@ -123,6 +139,86 @@
             }
         };
 
+        // 核心搜尋演算法：支援位元運算子
+        const evaluateSearch = (chart, query) => {
+            const q = query.trim();
+            if (!q) return true;
+
+            // 1. 如果沒有運算子，使用智慧型多關鍵字 AND 搜尋
+            // 例如 "財務 2024" => 標題或標籤必須同時包含 "財務" 和 "2024"
+            if (!/[&|!]/.test(q)) {
+                const terms = q.toLowerCase().split(/\s+/);
+                const text = ((chart.title || '') + ' ' + (chart.tags || []).join(' ')).toLowerCase();
+                return terms.every(term => text.includes(term));
+            }
+
+            // 2. 進階搜尋：Tokenize (正規化輸入)
+            const normalized = q.replace(/&/g, ' & ')
+                                .replace(/\|/g, ' | ')
+                                .replace(/!/g, ' ! ')
+                                .replace(/\(/g, ' ( ')
+                                .replace(/\)/g, ' ) ');
+            
+            const tokens = normalized.split(/\s+/).filter(t => t);
+            
+            // Shunting-yard 演算法：轉換為後置表示法 (RPN)
+            const ops = { '&': 2, '|': 1, '!': 3, '(': 0 };
+            const output = [];
+            const stack = [];
+
+            try {
+                tokens.forEach(token => {
+                    if (ops[token] !== undefined && token !== '(' && token !== ')') { // Operator
+                        while (stack.length && ops[stack[stack.length-1]] >= ops[token]) {
+                            output.push(stack.pop());
+                        }
+                        stack.push(token);
+                    } else if (token === '(') {
+                        stack.push(token);
+                    } else if (token === ')') {
+                        while (stack.length && stack[stack.length-1] !== '(') {
+                            output.push(stack.pop());
+                        }
+                        stack.pop();
+                    } else { // Operand (關鍵字)
+                        output.push(token);
+                    }
+                });
+                while (stack.length) output.push(stack.pop());
+
+                // RPN Evaluation (計算結果)
+                const evalStack = [];
+                const check = (term) => {
+                    const t = term.toLowerCase();
+                    const inTitle = (chart.title || '').toLowerCase().includes(t);
+                    const inTags = (chart.tags || []).some(tag => tag.toLowerCase().includes(t));
+                    return inTitle || inTags;
+                };
+
+                output.forEach(token => {
+                    if (token === '!') {
+                        const a = evalStack.pop();
+                        evalStack.push(!a);
+                    } else if (token === '&') {
+                        const b = evalStack.pop();
+                        const a = evalStack.pop();
+                        evalStack.push(a && b);
+                    } else if (token === '|') {
+                        const b = evalStack.pop();
+                        const a = evalStack.pop();
+                        evalStack.push(a || b);
+                    } else {
+                        evalStack.push(check(token));
+                    }
+                });
+
+                return evalStack.length ? evalStack[0] : false;
+            } catch (e) {
+                // 如果語法錯誤 (例如輸入 "A &")，預設不顯示或顯示全部，這裡選擇不顯示以避免困惑
+                return false; 
+            }
+        };
+
         // -----------------------------------------------------------------------------
         // UI Components
         // -----------------------------------------------------------------------------
@@ -133,17 +229,6 @@
                     <AlertTriangle className="mx-auto h-12 w-12 text-yellow-600 mb-4" />
                     <h3 className="error-title text-stone-800">尚未設定 Firebase</h3>
                     <p className="text-stone-600 mb-4">請編輯 index.html 並填入您的 Firebase Config。</p>
-                </div>
-            </div>
-        );
-
-        const AuthError = ({ message }) => (
-            <div className="error-container bg-stone-50">
-                <div className="error-box border-red-100">
-                    <AlertTriangle className="mx-auto h-12 w-12 text-red-600 mb-4" />
-                    <h3 className="error-title">連線失敗</h3>
-                    <p className="text-stone-800 font-mono text-xs bg-red-50 p-2 rounded mb-4 break-all">{message}</p>
-                    <button onClick={() => window.location.reload()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded">重新整理</button>
                 </div>
             </div>
         );
@@ -176,7 +261,6 @@
             </header>
         );
 
-        // 分享與引用計數器
         const ShareActions = ({ chart, onUpdateUsage }) => {
             const handleCopyLink = (e) => {
                 e.stopPropagation();
@@ -212,7 +296,7 @@
 
         const ChartCard = ({ chart, onExpand, isAdmin, onEdit, onDelete, onUpdateUsage }) => {
             return (
-                <div className="bg-white rounded-xl border border-stone-200 shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden flex flex-col h-full animate-fade-in">
+                <div className="bg-white rounded-xl border border-stone-200 shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden flex flex-col h-full animate-fade-in group/card">
                     {/* Header: File Name */}
                     <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50 flex justify-between items-start">
                         <div className="flex flex-col gap-0.5">
@@ -223,7 +307,7 @@
                             </div>
                         </div>
                         {isAdmin && (
-                            <div className="flex gap-1 ml-2">
+                            <div className="flex gap-1 ml-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
                                 <button onClick={(e) => {e.stopPropagation(); onEdit(chart)}} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit size={14}/></button>
                                 <button onClick={(e) => {e.stopPropagation(); onDelete(chart.id)}} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 size={14}/></button>
                             </div>
@@ -236,28 +320,34 @@
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
                             <Maximize2 className="text-white opacity-0 group-hover:opacity-100 drop-shadow-md" size={32} />
                         </div>
+                        {/* CC Badge on Card */}
+                        <div className="absolute bottom-1 right-1 opacity-60">
+                            <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/20 text-white rounded text-[10px] backdrop-blur-sm" title="CC BY 4.0 姓名標示">
+                                <Copyright size={10}/> CC BY
+                            </div>
+                        </div>
                     </div>
 
                     {/* Content */}
                     <div className="p-4 flex flex-col flex-grow gap-3">
                         {/* Summary */}
                         {chart.summary && (
-                            <div className="text-sm text-stone-600 bg-stone-50 p-2 rounded border-l-2 border-emerald-500 italic">
+                            <div className="text-sm text-stone-600 bg-stone-50 p-2 rounded border-l-2 border-emerald-500 italic line-clamp-2">
                                 "{chart.summary}"
                             </div>
                         )}
 
                         {/* Tags */}
                         <div className="flex flex-wrap gap-1.5">
-                            {chart.tags && chart.tags.map(tag => (
+                            {chart.tags && chart.tags.slice(0, 5).map(tag => (
                                 <span key={tag} className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">#{tag}</span>
                             ))}
+                            {chart.tags && chart.tags.length > 5 && <span className="text-xs px-1.5 text-stone-400">+{chart.tags.length - 5}</span>}
                         </div>
 
                         <div className="mt-auto pt-3 border-t border-stone-100 grid grid-cols-2 gap-4 text-xs text-stone-500">
                             <div>
                                 <div className="flex items-center gap-1 mb-1"><Calendar size={12}/> {formatDate(chart.createdAt).split(' ')[0] || 'N/A'}</div>
-                                {chart.updatedAt && chart.updatedAt !== chart.createdAt && <div className="flex items-center gap-1 text-emerald-600 font-medium"><RefreshCw size={12}/> {formatDate(chart.updatedAt)}</div>}
                             </div>
                             <div className="text-right">
                                 <div className="flex items-center justify-end gap-1 font-bold text-stone-700" title="總引用次數">
@@ -265,13 +355,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        {/* Usage Log Preview */}
-                        {chart.usageNotes && (
-                            <div className="text-[10px] text-stone-400 truncate border-t border-dashed border-stone-200 pt-2" title={chart.usageNotes}>
-                                運用於: {chart.usageNotes}
-                            </div>
-                        )}
 
                         {/* Actions */}
                         <div className="pt-2 flex justify-between items-center">
@@ -305,6 +388,15 @@
                                 <div className="text-xs text-stone-400 flex flex-col gap-1">
                                     <div className="flex items-center gap-1"><Calendar size={12}/> 創建: {formatDate(chart.createdAt)}</div>
                                     {chart.updatedAt && <div className="flex items-center gap-1 text-emerald-600"><RefreshCw size={12}/> 修訂: {formatDate(chart.updatedAt)}</div>}
+                                </div>
+                            </div>
+
+                            {/* CC 授權宣告區塊 (新增連結) */}
+                            <div className="bg-slate-50 border border-slate-200 rounded p-3 flex items-start gap-3">
+                                <div className="bg-black text-white p-1 rounded"><Copyright size={16}/></div>
+                                <div>
+                                    <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-slate-700 mb-0.5 hover:text-emerald-600 hover:underline decoration-emerald-500 underline-offset-2 transition-all">CC BY 4.0 姓名標示</a>
+                                    <p className="text-[10px] text-slate-500 leading-tight">您可以自由分享、修改本圖表，但請務必標示出處（Linkc）。</p>
                                 </div>
                             </div>
 
@@ -591,10 +683,11 @@
             if (!isConfigConfigured) return <ConfigError />;
 
             const allTags = [...new Set(charts.flatMap(p => p.tags))];
+            
+            // 使用進階搜尋邏輯過濾
             const filteredCharts = charts.filter(chart => {
                 if (activeTag && !(chart.tags || []).includes(activeTag)) return false;
-                if (!searchQuery.trim()) return true;
-                return JSON.stringify(chart).toLowerCase().includes(searchQuery.toLowerCase());
+                return evaluateSearch(chart, searchQuery);
             });
 
             return (
@@ -610,13 +703,21 @@
                                 <div className="flex flex-col md:flex-row gap-4 mb-8">
                                     <div className="relative flex-grow">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-stone-400" /></div>
-                                        <input type="text" placeholder="搜尋圖表名稱、摘要或標籤..." className="block w-full pl-10 pr-3 py-3 border border-stone-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm transition-all" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                                        <input 
+                                            type="text" 
+                                            placeholder="搜尋關鍵字... (支援 & | ! 運算子，例如: 財務 & 2024)" 
+                                            className="block w-full pl-10 pr-3 py-3 border border-stone-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm transition-all" 
+                                            value={searchQuery} 
+                                            onChange={(e) => setSearchQuery(e.target.value)} 
+                                        />
                                     </div>
-                                    <div className="flex flex-wrap gap-2 items-center">
-                                        <span className="text-sm font-bold text-stone-400 mr-2 flex items-center gap-1"><Tag size={14} /> 標籤:</span>
-                                        <button onClick={() => setActiveTag(null)} className={`px-3 py-1 rounded-full text-sm transition-colors ${!activeTag ? 'bg-emerald-700 text-white' : 'bg-white text-stone-600 hover:bg-stone-200'}`}>全部</button>
+                                    
+                                    {/* 標籤區域優化：水平捲動容器 */}
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar max-w-full md:max-w-[50%] mask-linear-fade">
+                                        <span className="text-sm font-bold text-stone-400 mr-2 flex-shrink-0 flex items-center gap-1"><Tag size={14} /> 標籤:</span>
+                                        <button onClick={() => setActiveTag(null)} className={`flex-shrink-0 px-3 py-1 rounded-full text-sm transition-colors whitespace-nowrap ${!activeTag ? 'bg-emerald-700 text-white shadow-md' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'}`}>全部</button>
                                         {allTags.map(tag => (
-                                            <button key={tag} onClick={() => setActiveTag(tag === activeTag ? null : tag)} className={`px-3 py-1 rounded-full text-sm transition-colors ${tag === activeTag ? 'bg-emerald-600 text-white' : 'bg-white text-stone-600 border border-stone-200 hover:bg-emerald-50 hover:border-emerald-200'}`}>{tag}</button>
+                                            <button key={tag} onClick={() => setActiveTag(tag === activeTag ? null : tag)} className={`flex-shrink-0 px-3 py-1 rounded-full text-sm transition-colors whitespace-nowrap ${tag === activeTag ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-stone-600 border border-stone-200 hover:bg-emerald-50 hover:border-emerald-200'}`}>{tag}</button>
                                         ))}
                                     </div>
                                 </div>
