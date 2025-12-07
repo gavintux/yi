@@ -3,51 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Linkc Chart Hub</title>
+    <title>Linkc Chart Hub | 知識圖表庫</title>
     
     <!-- 1. 載入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        stone: { 50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 300: '#d6d3d1', 400: '#a8a29e', 500: '#78716c', 600: '#57534e', 700: '#44403c', 800: '#292524', 900: '#1c1917' },
+                        emerald: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'glow': '0 0 15px rgba(16, 185, 129, 0.3)'
+                    }
+                }
+            }
+        }
+    </script>
     
     <!-- 2. 載入 Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <!-- 3. CSS -->
     <style>
-        body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f5f5f4; color: #44403c; }
+        body { 
+            margin: 0; 
+            font-family: 'Noto Sans TC', 'Microsoft JhengHei', 'Segoe UI', system-ui, sans-serif; 
+            background-color: #f5f5f4; 
+            color: #44403c; 
+            -webkit-font-smoothing: antialiased;
+        }
         .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; color: #059669; font-weight: bold; }
         .error-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; text-align: center; color: #44403c; }
         
         /* 捲軸美化 */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #e7e5e4; }
-        ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 3px; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 4px; border: 2px solid #f5f5f4; }
         ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
 
-        /* 隱藏水平捲軸但保留功能 (讓標籤列更美觀) */
+        /* 隱藏水平捲軸但保留功能 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* 漸層遮罩效果：讓標籤列右側有漸層消失感 (調整為 90% 開始淡出，保留更多可視區域) */
+        /* 漸層遮罩效果 */
         .mask-linear-fade {
             mask-image: linear-gradient(to right, black 90%, transparent 100%);
             -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
         }
 
-        .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .spinner { animation: spin 1s linear infinite; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
     </style>
 </head>
 <body>
     <div id="root">
-        <div class="loading-screen">正在載入 Linkc Chart Hub...</div>
+        <div class="loading-screen">
+            <div class="flex flex-col items-center gap-4">
+                <div class="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+                <div class="text-emerald-800 text-sm tracking-widest font-medium">LINKC CHART HUB</div>
+            </div>
+        </div>
     </div>
 
     <!-- 4. React App -->
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useRef } from 'https://esm.sh/react@18.2.0';
+        import React, { useState, useEffect, useRef, useMemo } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
             Leaf, Search, Upload, Download, Tag, X, 
@@ -55,7 +92,8 @@
             Copy, Check, Lock, Unlock, Edit, Trash2, LogOut, 
             Cloud, RefreshCw, AlertTriangle, Info, Link as LinkIcon, FileUp, 
             Calendar, FileText, BarChart2, Hash, ExternalLink, PlusCircle, FileCode,
-            BookOpen, Users, Video, Mic, Globe, MessageCircle, FileBox, ShieldCheck, Copyright, Terminal
+            BookOpen, Users, Video, Mic, Globe, MessageCircle, FileBox, ShieldCheck, Copyright, Terminal,
+            LayoutGrid
         } from 'https://esm.sh/lucide-react@0.294.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -64,7 +102,7 @@
         import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
         // -----------------------------------------------------------------------------
-        // 設定區 (Firebase Config)
+        // 設定區
         // -----------------------------------------------------------------------------
         
         const firebaseConfig = {
@@ -78,7 +116,9 @@
         };
 
         const isConfigConfigured = !firebaseConfig.apiKey.includes("您的API_KEY");
+        const COLLECTION_NAME = 'linkc_charts_v1';
 
+        // 初始化 Firebase
         let app, auth, db, storage;
         if (isConfigConfigured) {
             try {
@@ -90,8 +130,6 @@
                 console.error("Firebase 初始化失敗", e);
             }
         }
-
-        const COLLECTION_NAME = 'linkc_charts_v1';
 
         // -----------------------------------------------------------------------------
         // Helper Functions
@@ -139,84 +177,43 @@
             }
         };
 
-        // 核心搜尋演算法：支援位元運算子
+        // 搜尋演算法
         const evaluateSearch = (chart, query) => {
             const q = query.trim();
             if (!q) return true;
-
-            // 1. 如果沒有運算子，使用智慧型多關鍵字 AND 搜尋
-            // 例如 "財務 2024" => 標題或標籤必須同時包含 "財務" 和 "2024"
             if (!/[&|!]/.test(q)) {
                 const terms = q.toLowerCase().split(/\s+/);
                 const text = ((chart.title || '') + ' ' + (chart.tags || []).join(' ')).toLowerCase();
                 return terms.every(term => text.includes(term));
             }
-
-            // 2. 進階搜尋：Tokenize (正規化輸入)
-            const normalized = q.replace(/&/g, ' & ')
-                                .replace(/\|/g, ' | ')
-                                .replace(/!/g, ' ! ')
-                                .replace(/\(/g, ' ( ')
-                                .replace(/\)/g, ' ) ');
-            
+            const normalized = q.replace(/&/g, ' & ').replace(/\|/g, ' | ').replace(/!/g, ' ! ').replace(/\(/g, ' ( ').replace(/\)/g, ' ) ');
             const tokens = normalized.split(/\s+/).filter(t => t);
-            
-            // Shunting-yard 演算法：轉換為後置表示法 (RPN)
             const ops = { '&': 2, '|': 1, '!': 3, '(': 0 };
             const output = [];
             const stack = [];
-
             try {
                 tokens.forEach(token => {
-                    if (ops[token] !== undefined && token !== '(' && token !== ')') { // Operator
-                        while (stack.length && ops[stack[stack.length-1]] >= ops[token]) {
-                            output.push(stack.pop());
-                        }
+                    if (ops[token] !== undefined && token !== '(' && token !== ')') { 
+                        while (stack.length && ops[stack[stack.length-1]] >= ops[token]) output.push(stack.pop());
                         stack.push(token);
-                    } else if (token === '(') {
-                        stack.push(token);
-                    } else if (token === ')') {
-                        while (stack.length && stack[stack.length-1] !== '(') {
-                            output.push(stack.pop());
-                        }
-                        stack.pop();
-                    } else { // Operand (關鍵字)
-                        output.push(token);
-                    }
+                    } else if (token === '(') { stack.push(token); } 
+                    else if (token === ')') { while (stack.length && stack[stack.length-1] !== '(') output.push(stack.pop()); stack.pop(); } 
+                    else { output.push(token); }
                 });
                 while (stack.length) output.push(stack.pop());
-
-                // RPN Evaluation (計算結果)
                 const evalStack = [];
                 const check = (term) => {
                     const t = term.toLowerCase();
-                    const inTitle = (chart.title || '').toLowerCase().includes(t);
-                    const inTags = (chart.tags || []).some(tag => tag.toLowerCase().includes(t));
-                    return inTitle || inTags;
+                    return ((chart.title || '').toLowerCase().includes(t) || (chart.tags || []).some(tag => tag.toLowerCase().includes(t)));
                 };
-
                 output.forEach(token => {
-                    if (token === '!') {
-                        const a = evalStack.pop();
-                        evalStack.push(!a);
-                    } else if (token === '&') {
-                        const b = evalStack.pop();
-                        const a = evalStack.pop();
-                        evalStack.push(a && b);
-                    } else if (token === '|') {
-                        const b = evalStack.pop();
-                        const a = evalStack.pop();
-                        evalStack.push(a || b);
-                    } else {
-                        evalStack.push(check(token));
-                    }
+                    if (token === '!') { const a = evalStack.pop(); evalStack.push(!a); } 
+                    else if (token === '&') { const b = evalStack.pop(); const a = evalStack.pop(); evalStack.push(a && b); } 
+                    else if (token === '|') { const b = evalStack.pop(); const a = evalStack.pop(); evalStack.push(a || b); } 
+                    else { evalStack.push(check(token)); }
                 });
-
                 return evalStack.length ? evalStack[0] : false;
-            } catch (e) {
-                // 如果語法錯誤 (例如輸入 "A &")，預設不顯示或顯示全部，這裡選擇不顯示以避免困惑
-                return false; 
-            }
+            } catch (e) { return false; }
         };
 
         // -----------------------------------------------------------------------------
@@ -225,59 +222,92 @@
 
         const ConfigError = () => (
             <div className="error-container bg-stone-50">
-                <div className="error-box border-stone-200">
-                    <AlertTriangle className="mx-auto h-12 w-12 text-yellow-600 mb-4" />
-                    <h3 className="error-title text-stone-800">尚未設定 Firebase</h3>
-                    <p className="text-stone-600 mb-4">請編輯 index.html 並填入您的 Firebase Config。</p>
+                <div className="error-box border border-stone-200 bg-white p-8 rounded-2xl shadow-soft max-w-md">
+                    <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
+                    <h3 className="text-xl font-bold text-stone-800 mb-2">尚未設定 Firebase</h3>
+                    <p className="text-stone-600 mb-4 text-sm">請編輯 index.html 並填入您的 Firebase Config。</p>
                 </div>
             </div>
         );
 
         const Header = ({ setView, isAdmin, onLoginClick, onLogout }) => (
-            <header className="bg-emerald-900 shadow-md sticky top-0 z-40 text-stone-50">
+            <header className="bg-emerald-900 shadow-lg sticky top-0 z-40 text-stone-50 transition-all duration-300">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setView('gallery')}>
-                        <div className="p-2 bg-emerald-800 rounded-lg group-hover:bg-emerald-700 transition-colors">
-                            <Leaf size={24} className="text-emerald-100" />
+                    <div className="flex items-center gap-3 cursor-pointer group select-none" onClick={() => setView('gallery')}>
+                        <div className="p-2 bg-emerald-800 rounded-xl group-hover:bg-emerald-700 transition-colors shadow-inner ring-1 ring-emerald-700/50">
+                            <Leaf size={22} className="text-emerald-100" />
                         </div>
-                        <div>
-                            <h1 className="text-xl font-bold tracking-wide">Linkc <span className="font-light text-emerald-200">Chart Hub</span></h1>
-                            <p className="text-[10px] text-emerald-300 uppercase tracking-widest hidden sm:block">Knowledge Visualization</p>
+                        <div className="flex flex-col">
+                            <h1 className="text-lg font-bold tracking-wide leading-tight group-hover:text-white transition-colors">Linkc <span className="font-light text-emerald-300">Hub</span></h1>
+                            <p className="text-[10px] text-emerald-400/80 uppercase tracking-widest hidden sm:block font-medium">Knowledge Visualization</p>
                         </div>
-                        {isAdmin && <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold ml-2">ADMIN</span>}
+                        {isAdmin && <span className="text-[9px] bg-red-500/90 text-white px-2 py-0.5 rounded-full font-bold ml-2 shadow-sm backdrop-blur-sm">ADMIN</span>}
                     </div>
                     
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        {/* Zen's Portal Button */}
+                        <a href="https://gavintux.github.io/yi/" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-2 text-xs font-medium text-emerald-200 hover:text-white hover:bg-emerald-800 px-3 py-1.5 rounded-full transition-all duration-300 border border-transparent hover:border-emerald-700/50" title="前往 Zen's Portal">
+                            <LayoutGrid size={16} />
+                            <span>Zen's Portal</span>
+                        </a>
+
+                        <div className="w-px h-6 bg-emerald-800 mx-1 hidden sm:block"></div>
+
                         {isAdmin ? (
-                            <button onClick={onLogout} className="p-2 text-emerald-300 hover:text-white transition-colors" title="登出"><LogOut size={20} /></button>
+                            <button onClick={onLogout} className="p-2 text-emerald-300 hover:text-white transition-colors rounded-full hover:bg-emerald-800" title="登出"><LogOut size={20} /></button>
                         ) : (
-                            <button onClick={onLoginClick} className="p-2 text-emerald-300 hover:text-white transition-colors" title="管理員登入"><Lock size={20} /></button>
+                            <button onClick={onLoginClick} className="p-2 text-emerald-300 hover:text-white transition-colors rounded-full hover:bg-emerald-800" title="管理員登入"><Lock size={20} /></button>
                         )}
-                        <button onClick={() => setView('upload')} className="flex items-center gap-2 bg-stone-100 text-emerald-900 px-4 py-2 rounded-full font-medium hover:bg-white transition-all shadow-sm">
-                            <Upload size={18} /><span className="hidden sm:inline">新增圖表</span>
+                        <button onClick={() => setView('upload')} className="flex items-center gap-2 bg-stone-100 text-emerald-900 px-4 py-2 rounded-full font-bold text-sm hover:bg-white transition-all shadow-md hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0">
+                            <Upload size={16} /><span className="hidden sm:inline">新增圖表</span>
                         </button>
                     </div>
                 </div>
             </header>
         );
 
+        // 骨架屏載入圖片
+        const LazyImage = ({ src, alt, onClick }) => {
+            const [loaded, setLoaded] = useState(false);
+            return (
+                <div className="relative aspect-[4/3] bg-stone-50 cursor-zoom-in group overflow-hidden" onClick={onClick}>
+                    {!loaded && <div className="absolute inset-0 skeleton z-10" />}
+                    <img 
+                        src={src} 
+                        alt={alt} 
+                        className={`w-full h-full object-contain p-4 transition-all duration-700 ease-out ${loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} 
+                        onLoad={() => setLoaded(true)} 
+                        loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 flex items-center justify-center z-20">
+                        <Maximize2 className="text-stone-800 opacity-0 group-hover:opacity-100 drop-shadow-lg transform scale-75 group-hover:scale-100 transition-all duration-300" size={32} />
+                    </div>
+                    <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-80 transition-opacity duration-500 delay-100 z-20">
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-black/60 text-white rounded text-[9px] backdrop-blur-md">
+                            <Copyright size={9}/> CC BY
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const ShareActions = ({ chart, onUpdateUsage }) => {
+            const actionBtnClass = "p-1.5 rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0";
+            
             const handleCopyLink = (e) => {
                 e.stopPropagation();
                 copyToClipboard(chart.url);
                 onUpdateUsage(chart.id, (chart.usageCount || 0) + 1);
-                alert("已複製圖片連結！\n\n適用於：Google 文件、簡報 (透過網址插入圖片)");
+                alert("已複製圖片連結！");
             };
-
             const handleObsidian = (e) => {
                 e.stopPropagation();
                 const altText = chart.title || 'Chart';
                 const markdown = `![${altText}](${chart.url})\n*${chart.summary || ''}*`;
                 copyToClipboard(markdown);
                 onUpdateUsage(chart.id, (chart.usageCount || 0) + 1);
-                alert("已複製 Obsidian 語法！\n\n直接貼上即可顯示圖表與摘要。");
+                alert("已複製 Obsidian 語法！");
             };
-
             const handleFB = (e) => {
                 e.stopPropagation();
                 window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(chart.url)}`, '_blank');
@@ -286,151 +316,125 @@
 
             return (
                 <div className="flex gap-2">
-                    <button onClick={handleObsidian} className="p-2 rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors" title="複製 Obsidian 語法"><FileCode size={18} /></button>
-                    <button onClick={handleCopyLink} className="p-2 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors" title="複製連結 (Google Docs/Slides)"><LinkIcon size={18} /></button>
-                    <button onClick={handleFB} className="p-2 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors" title="分享至 Facebook"><Facebook size={18} /></button>
-                    <a href={chart.url} download target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="p-2 rounded-lg bg-stone-200 text-stone-700 hover:bg-stone-300 transition-colors" title="下載原圖"><Download size={18} /></a>
+                    <button onClick={handleObsidian} className={`${actionBtnClass} bg-purple-50 text-purple-600 hover:bg-purple-100 ring-1 ring-purple-100`} title="複製 Obsidian 語法"><FileCode size={16} /></button>
+                    <button onClick={handleCopyLink} className={`${actionBtnClass} bg-blue-50 text-blue-600 hover:bg-blue-100 ring-1 ring-blue-100`} title="複製連結"><LinkIcon size={16} /></button>
+                    <button onClick={handleFB} className={`${actionBtnClass} bg-indigo-50 text-indigo-600 hover:bg-indigo-100 ring-1 ring-indigo-100`} title="Facebook"><Facebook size={16} /></button>
+                    <a href={chart.url} download target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className={`${actionBtnClass} bg-stone-100 text-stone-600 hover:bg-stone-200 ring-1 ring-stone-200`} title="下載原圖"><Download size={16} /></a>
                 </div>
             );
         };
 
-        const ChartCard = ({ chart, onExpand, isAdmin, onEdit, onDelete, onUpdateUsage }) => {
+        // 使用 React.memo 優化渲染效能
+        const ChartCard = React.memo(({ chart, onExpand, isAdmin, onEdit, onDelete, onUpdateUsage }) => {
             return (
-                <div className="bg-white rounded-xl border border-stone-200 shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden flex flex-col h-full animate-fade-in group/card">
-                    {/* Header: File Name */}
-                    <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50 flex justify-between items-start">
-                        <div className="flex flex-col gap-0.5">
-                            <h3 className="font-bold text-stone-800 line-clamp-1" title={chart.title}>{chart.title || '未命名圖表'}</h3>
-                            <div className="flex gap-2 items-center text-[10px] text-stone-500 uppercase tracking-wide">
-                                <span className="bg-stone-100 px-1.5 rounded border border-stone-200">{chart.fileType || '圖表'}</span>
-                                {chart.source && <span className="flex items-center gap-1"><span className="text-emerald-600">{getSourceIcon(chart.source)}</span> {chart.source}</span>}
+                <div className="bg-white rounded-2xl border border-stone-200/60 shadow-soft hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden flex flex-col h-full animate-fade-in group/card relative">
+                    {/* Header */}
+                    <div className="px-4 py-3 border-b border-stone-100/50 bg-stone-50/30 flex justify-between items-start backdrop-blur-sm">
+                        <div className="flex flex-col gap-0.5 overflow-hidden">
+                            <h3 className="font-bold text-stone-700 text-sm sm:text-base truncate tracking-tight group-hover/card:text-emerald-700 transition-colors" title={chart.title}>{chart.title || '未命名圖表'}</h3>
+                            <div className="flex gap-2 items-center text-[10px] text-stone-400 uppercase tracking-wider font-medium">
+                                <span className="bg-stone-100 px-1.5 py-0.5 rounded-md border border-stone-200/50">{chart.fileType || '圖表'}</span>
+                                {chart.source && <span className="flex items-center gap-1 text-stone-500"><span className="text-emerald-500">{getSourceIcon(chart.source)}</span> {chart.source}</span>}
                             </div>
                         </div>
                         {isAdmin && (
-                            <div className="flex gap-1 ml-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                                <button onClick={(e) => {e.stopPropagation(); onEdit(chart)}} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Edit size={14}/></button>
-                                <button onClick={(e) => {e.stopPropagation(); onDelete(chart.id)}} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 size={14}/></button>
+                            <div className="flex gap-1 ml-2 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 absolute top-3 right-3 bg-white/90 p-1 rounded-lg shadow-sm border border-stone-100">
+                                <button onClick={(e) => {e.stopPropagation(); onEdit(chart)}} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-md transition-colors"><Edit size={14}/></button>
+                                <button onClick={(e) => {e.stopPropagation(); onDelete(chart.id)}} className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors"><Trash2 size={14}/></button>
                             </div>
                         )}
                     </div>
 
-                    {/* Image Preview */}
-                    <div className="relative aspect-[4/3] bg-stone-100 cursor-zoom-in group overflow-hidden" onClick={() => onExpand(chart)}>
-                        <img src={chart.url} alt={chart.title} className="w-full h-full object-contain p-2 transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
-                            <Maximize2 className="text-white opacity-0 group-hover:opacity-100 drop-shadow-md" size={32} />
-                        </div>
-                        {/* CC Badge on Card */}
-                        <div className="absolute bottom-1 right-1 opacity-60">
-                            <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/20 text-white rounded text-[10px] backdrop-blur-sm" title="CC BY 4.0 姓名標示">
-                                <Copyright size={10}/> CC BY
-                            </div>
-                        </div>
-                    </div>
+                    <LazyImage src={chart.url} alt={chart.title} onClick={() => onExpand(chart)} />
 
                     {/* Content */}
                     <div className="p-4 flex flex-col flex-grow gap-3">
-                        {/* Summary */}
-                        {chart.summary && (
-                            <div className="text-sm text-stone-600 bg-stone-50 p-2 rounded border-l-2 border-emerald-500 italic line-clamp-2">
+                        {chart.summary ? (
+                            <div className="text-xs text-stone-600 bg-stone-50/80 p-2.5 rounded-lg border-l-[3px] border-emerald-400/50 italic line-clamp-2 leading-relaxed">
                                 "{chart.summary}"
                             </div>
-                        )}
+                        ) : <div className="h-4"></div>}
 
-                        {/* Tags */}
-                        <div className="flex flex-wrap gap-1.5">
-                            {chart.tags && chart.tags.slice(0, 5).map(tag => (
-                                <span key={tag} className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">#{tag}</span>
+                        <div className="flex flex-wrap gap-1.5 min-h-[24px]">
+                            {chart.tags && chart.tags.slice(0, 4).map(tag => (
+                                <span key={tag} className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100 hover:bg-emerald-100 transition-colors cursor-default">#{tag}</span>
                             ))}
-                            {chart.tags && chart.tags.length > 5 && <span className="text-xs px-1.5 text-stone-400">+{chart.tags.length - 5}</span>}
+                            {chart.tags && chart.tags.length > 4 && <span className="text-[10px] px-1.5 text-stone-400">+{chart.tags.length - 4}</span>}
                         </div>
 
-                        <div className="mt-auto pt-3 border-t border-stone-100 grid grid-cols-2 gap-4 text-xs text-stone-500">
-                            <div>
-                                <div className="flex items-center gap-1 mb-1"><Calendar size={12}/> {formatDate(chart.createdAt).split(' ')[0] || 'N/A'}</div>
-                            </div>
-                            <div className="text-right">
-                                <div className="flex items-center justify-end gap-1 font-bold text-stone-700" title="總引用次數">
-                                    <BarChart2 size={12}/> {chart.usageCount || 0} 次引用
-                                </div>
+                        <div className="mt-auto pt-3 border-t border-stone-100 grid grid-cols-2 gap-4 text-[10px] text-stone-400 font-medium">
+                            <div className="flex items-center gap-1"><Calendar size={10}/> {formatDate(chart.createdAt).split(' ')[0] || 'N/A'}</div>
+                            <div className="text-right flex items-center justify-end gap-1 text-stone-500">
+                                <BarChart2 size={10}/> {chart.usageCount || 0} 次引用
                             </div>
                         </div>
 
-                        {/* Actions */}
-                        <div className="pt-2 flex justify-between items-center">
+                        <div className="pt-2 flex justify-between items-center opacity-80 group-hover/card:opacity-100 transition-opacity">
                             <ShareActions chart={chart} onUpdateUsage={onUpdateUsage} />
                         </div>
                     </div>
                 </div>
             );
-        };
+        });
 
         const Lightbox = ({ chart, onClose, isAdmin, onEdit, onDelete, onUpdateUsage }) => {
             if (!chart) return null;
             return (
-                <div className="fixed inset-0 z-50 bg-stone-900/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-                    <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-white p-2 z-50"><X size={32} /></button>
+                <div className="fixed inset-0 z-50 bg-stone-900/90 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-8 animate-fade-in" onClick={onClose}>
+                    <button onClick={onClose} className="absolute top-6 right-6 text-white/70 hover:text-white p-2 z-50 transition-colors bg-black/20 rounded-full hover:bg-black/40"><X size={24} /></button>
                     
-                    <div className="relative max-w-5xl max-h-[90vh] w-full flex flex-col md:flex-row bg-white rounded-lg overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="relative max-w-6xl max-h-[90vh] w-full flex flex-col md:flex-row bg-white rounded-2xl overflow-hidden shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
                         {/* Image Side */}
-                        <div className="flex-1 bg-stone-100 flex items-center justify-center p-4 overflow-hidden relative">
-                            <img src={chart.url} className="max-w-full max-h-[50vh] md:max-h-[85vh] object-contain" />
+                        <div className="flex-1 bg-stone-100/50 flex items-center justify-center p-4 md:p-8 overflow-hidden relative group">
+                            <div className="absolute inset-0 pattern-grid opacity-5 pointer-events-none"></div>
+                            <img src={chart.url} className="max-w-full max-h-[40vh] md:max-h-[85vh] object-contain drop-shadow-md rounded-lg" />
                         </div>
 
                         {/* Info Side */}
-                        <div className="w-full md:w-96 bg-white p-6 flex flex-col gap-4 border-l border-stone-200 overflow-y-auto">
+                        <div className="w-full md:w-96 bg-white p-6 md:p-8 flex flex-col gap-5 border-l border-stone-100 overflow-y-auto custom-scrollbar">
                             <div>
-                                <h2 className="text-xl font-bold text-stone-800 mb-1">{chart.title}</h2>
-                                <div className="flex gap-2 mb-2 text-xs">
+                                <h2 className="text-2xl font-bold text-stone-800 mb-2 leading-tight">{chart.title}</h2>
+                                <div className="flex flex-wrap gap-2 mb-3 text-xs">
                                     <span className="bg-stone-100 px-2 py-1 rounded text-stone-600 border border-stone-200">{chart.fileType}</span>
                                     <span className="bg-emerald-50 px-2 py-1 rounded text-emerald-700 border border-emerald-100 flex items-center gap-1">{getSourceIcon(chart.source)} {chart.source}</span>
                                 </div>
-                                <div className="text-xs text-stone-400 flex flex-col gap-1">
-                                    <div className="flex items-center gap-1"><Calendar size={12}/> 創建: {formatDate(chart.createdAt)}</div>
-                                    {chart.updatedAt && <div className="flex items-center gap-1 text-emerald-600"><RefreshCw size={12}/> 修訂: {formatDate(chart.updatedAt)}</div>}
+                                <div className="text-xs text-stone-400 flex items-center gap-3">
+                                    <span className="flex items-center gap-1"><Calendar size={12}/> {formatDate(chart.createdAt)}</span>
+                                    {chart.updatedAt && <span className="flex items-center gap-1 text-emerald-600"><RefreshCw size={12}/> 修訂</span>}
                                 </div>
                             </div>
 
-                            {/* CC 授權宣告區塊 (新增連結) */}
-                            <div className="bg-slate-50 border border-slate-200 rounded p-3 flex items-start gap-3">
-                                <div className="bg-black text-white p-1 rounded"><Copyright size={16}/></div>
+                            <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3 flex items-start gap-3 shadow-sm">
+                                <div className="bg-stone-800 text-white p-1 rounded-md mt-0.5"><Copyright size={14}/></div>
                                 <div>
-                                    <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-slate-700 mb-0.5 hover:text-emerald-600 hover:underline decoration-emerald-500 underline-offset-2 transition-all">CC BY 4.0 姓名標示</a>
-                                    <p className="text-[10px] text-slate-500 leading-tight">您可以自由分享、修改本圖表，但請務必標示出處（Linkc）。</p>
+                                    <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-slate-700 mb-1 hover:text-emerald-600 hover:underline decoration-emerald-500 underline-offset-2 transition-all block">CC BY 4.0 姓名標示</a>
+                                    <p className="text-[10px] text-slate-500 leading-relaxed">您可以自由分享、修改本圖表，但請務必標示出處（Linkc）。</p>
                                 </div>
                             </div>
 
-                            <div className="bg-stone-50 p-3 rounded-lg border border-stone-100">
-                                <h4 className="text-xs font-bold text-stone-500 uppercase mb-2">圖表摘要</h4>
-                                <p className="text-sm text-stone-700 leading-relaxed">{chart.summary || "無摘要"}</p>
+                            <div className="bg-stone-50/50 p-4 rounded-xl border border-stone-100">
+                                <h4 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-1"><FileText size={12}/> 摘要</h4>
+                                <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">{chart.summary || "無摘要"}</p>
                             </div>
 
                             <div>
-                                <h4 className="text-xs font-bold text-stone-500 uppercase mb-2">標籤</h4>
-                                <div className="flex flex-wrap gap-1">
-                                    {chart.tags && chart.tags.map(t => <span key={t} className="text-xs px-2 py-1 bg-emerald-100 text-emerald-800 rounded">#{t}</span>)}
+                                <h4 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-1"><Tag size={12}/> 標籤</h4>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {chart.tags && chart.tags.map(t => <span key={t} className="text-xs px-2.5 py-1 bg-white text-emerald-700 rounded-full border border-emerald-100 shadow-sm">#{t}</span>)}
                                 </div>
                             </div>
 
-                            <div className="border-t border-stone-100 pt-4">
-                                <h4 className="text-xs font-bold text-stone-500 uppercase mb-2">引用紀錄</h4>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-2xl font-bold text-emerald-600">{chart.usageCount || 0}</span>
-                                    <span className="text-xs text-stone-400">次被使用</span>
+                            <div className="border-t border-stone-100 pt-5 mt-auto">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-xs font-bold text-stone-400 uppercase tracking-widest">使用統計</h4>
+                                    <span className="text-xl font-bold text-emerald-600 tabular-nums">{chart.usageCount || 0} <span className="text-xs font-normal text-stone-400">次</span></span>
                                 </div>
-                                <div className="text-xs text-stone-600 bg-stone-50 p-3 rounded border border-stone-100">
-                                    <span className="font-bold text-stone-400 block mb-1">運用位置紀錄：</span>
-                                    {chart.usageNotes || "尚未記錄"}
-                                </div>
-                            </div>
-
-                            <div className="mt-auto pt-4 flex flex-col gap-2">
-                                <div className="flex justify-between items-center bg-emerald-50 p-3 rounded-lg">
-                                    <span className="text-xs font-bold text-emerald-800">分享 / 引用</span>
+                                <div className="flex justify-between items-center bg-stone-50 p-3 rounded-xl border border-stone-100">
+                                    <span className="text-xs font-bold text-emerald-800">快速分享</span>
                                     <ShareActions chart={chart} onUpdateUsage={onUpdateUsage} />
                                 </div>
                                 {isAdmin && (
-                                    <button onClick={() => { onEdit(chart); onClose(); }} className="w-full py-2 border border-stone-300 text-stone-600 rounded hover:bg-stone-50 text-sm">編輯圖表資訊</button>
+                                    <button onClick={() => { onEdit(chart); onClose(); }} className="mt-3 w-full py-2.5 border border-stone-200 text-stone-500 rounded-xl hover:bg-stone-50 hover:text-stone-700 text-sm font-medium transition-colors">編輯圖表資訊</button>
                                 )}
                             </div>
                         </div>
@@ -442,17 +446,11 @@
         const ChartForm = ({ onSave, onCancel, initialData, isSaving }) => {
             const isEditMode = !!initialData;
             const [formData, setFormData] = useState(initialData || { 
-                title: '', 
-                fileType: '統計圖表',
-                source: '自己',
-                summary: '', 
-                tags: '', 
-                url: '',
-                usageNotes: '',
-                usageCount: 0
+                title: '', fileType: '統計圖表', source: '自己', summary: '', tags: '', url: '', usageNotes: '', usageCount: 0
             });
             const [status, setStatus] = useState('');
             const [uploadFile, setUploadFile] = useState(null);
+            const [preview, setPreview] = useState(initialData?.url || '');
 
             useEffect(() => { if (initialData && Array.isArray(initialData.tags)) { setFormData(prev => ({ ...prev, tags: initialData.tags.join(', ') })); } }, [initialData]);
             
@@ -462,6 +460,7 @@
                 const file = e.target.files[0];
                 if (file) {
                     setUploadFile(file);
+                    setPreview(URL.createObjectURL(file));
                     setFormData(prev => ({ ...prev, url: URL.createObjectURL(file), title: prev.title || file.name.split('.')[0] }));
                 }
             };
@@ -470,7 +469,6 @@
                 e.preventDefault();
                 setStatus('uploading');
                 let finalUrl = formData.url;
-
                 try {
                     if (uploadFile) {
                         const filename = `charts/${Date.now()}_${uploadFile.name}`;
@@ -478,11 +476,8 @@
                         await uploadBytes(storageRef, uploadFile);
                         finalUrl = await getDownloadURL(storageRef);
                     } else if (!formData.url) {
-                        alert("請選擇圖片檔案或輸入連結");
-                        setStatus('');
-                        return;
+                        alert("請選擇圖片"); setStatus(''); return;
                     }
-
                     const processedData = { 
                         ...formData, 
                         url: finalUrl,
@@ -490,61 +485,60 @@
                         usageCount: Number(formData.usageCount)
                     }; 
                     onSave(processedData); 
-
                 } catch (err) {
-                    console.error("Error", err);
-                    alert("上傳失敗: " + err.message);
-                    setStatus('');
+                    console.error("Error", err); alert("上傳失敗: " + err.message); setStatus('');
                 }
             };
 
             return (
-                <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8 animate-fade-in border border-stone-200">
-                    <div className="flex justify-between items-center mb-6 border-b border-stone-100 pb-4">
-                        <h2 className="text-2xl font-bold text-emerald-800 flex items-center gap-2">
-                            {isEditMode ? <Edit /> : <Upload />} 
-                            {isEditMode ? '編輯圖表資訊' : '新增圖表'}
+                <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl border border-stone-100 overflow-hidden animate-scale-in my-8">
+                    <div className="bg-stone-50 px-8 py-6 border-b border-stone-100 flex justify-between items-center">
+                        <h2 className="text-xl font-bold text-stone-800 flex items-center gap-2">
+                            {isEditMode ? <Edit className="text-emerald-600"/> : <Upload className="text-emerald-600"/>} 
+                            {isEditMode ? '編輯圖表' : '新增圖表'}
                         </h2>
-                        <button onClick={onCancel} className="text-stone-400 hover:text-stone-600"><X size={24} /></button>
+                        <button onClick={onCancel} className="text-stone-400 hover:text-stone-600 hover:bg-stone-200/50 p-1 rounded-full transition-colors"><X size={24} /></button>
                     </div>
                     
-                    {status === 'uploading' && (
-                        <div className="mb-4 bg-emerald-50 text-emerald-700 p-4 rounded-lg flex items-center gap-2 animate-pulse">
-                            <RefreshCw className="spinner" size={20} />
-                            <span>正在處理圖表資料，請稍候...</span>
-                        </div>
-                    )}
+                    <div className="p-8">
+                        {status === 'uploading' && (
+                            <div className="mb-6 bg-emerald-50 text-emerald-800 p-4 rounded-xl flex items-center gap-3 animate-pulse border border-emerald-100">
+                                <RefreshCw className="spinner text-emerald-600" size={20} />
+                                <span className="font-medium">正在處理資料，請稍候...</span>
+                            </div>
+                        )}
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* File Upload */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="md:col-span-1">
-                                <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-stone-50 transition-colors border-emerald-300 bg-emerald-50/30 overflow-hidden relative">
-                                    {formData.url ? (
-                                        <img src={formData.url} className="h-full w-full object-contain p-2" />
-                                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="flex flex-col items-center justify-center">
+                                <label className={`w-full h-64 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 flex flex-col items-center justify-center overflow-hidden relative group ${preview ? 'border-emerald-200 bg-emerald-50/30' : 'border-stone-300 hover:border-emerald-400 hover:bg-stone-50'}`}>
+                                    {preview ? (
                                         <>
-                                            <FileUp className="w-8 h-8 text-emerald-500 mb-2" />
-                                            <span className="text-sm font-medium text-emerald-600">點擊上傳圖表</span>
+                                            <img src={preview} className="h-full w-full object-contain p-4" />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold backdrop-blur-sm">點擊更換圖片</div>
                                         </>
+                                    ) : (
+                                        <div className="text-center p-6">
+                                            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:scale-110 transition-transform"><FileUp size={32} /></div>
+                                            <span className="text-lg font-bold text-stone-600 block mb-1">拖放或點擊上傳</span>
+                                            <span className="text-xs text-stone-400">支援 JPG, PNG, WebP</span>
+                                        </div>
                                     )}
                                     <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" disabled={status === 'uploading'} />
                                 </label>
                             </div>
                             
-                            <div className="md:col-span-2 space-y-4">
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-bold text-stone-700 mb-1">檔案名稱 (File Name)</label>
-                                    <input type="text" required placeholder="例如：2023 年度營收趨勢圖" className="block w-full border-stone-300 rounded-lg p-2.5 border focus:ring-emerald-500 focus:border-emerald-500" value={formData.title} onChange={(e) => handleChange('title', e.target.value)} />
+                                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5 ml-1">檔案名稱</label>
+                                    <input type="text" required placeholder="例如：2023 年度營收趨勢圖" className="block w-full border-stone-200 rounded-xl p-3 bg-stone-50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all" value={formData.title} onChange={(e) => handleChange('title', e.target.value)} />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-bold text-stone-700 mb-1">檔案種類</label>
-                                        <select className="block w-full border-stone-300 rounded-lg p-2.5 border focus:ring-emerald-500 focus:border-emerald-500 bg-white" value={formData.fileType} onChange={(e) => handleChange('fileType', e.target.value)}>
+                                        <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5 ml-1">類型</label>
+                                        <select className="block w-full border-stone-200 rounded-xl p-3 bg-stone-50 focus:bg-white outline-none" value={formData.fileType} onChange={(e) => handleChange('fileType', e.target.value)}>
                                             <option value="統計圖表">統計圖表</option>
                                             <option value="心智圖">心智圖</option>
                                             <option value="流程圖">流程圖</option>
-                                            <option value="概念圖">概念圖</option>
                                             <option value="資訊圖表">資訊圖表</option>
                                             <option value="手稿/筆記">手稿/筆記</option>
                                             <option value="截圖">截圖</option>
@@ -552,52 +546,39 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-stone-700 mb-1">資料來源</label>
-                                        <select className="block w-full border-stone-300 rounded-lg p-2.5 border focus:ring-emerald-500 focus:border-emerald-500 bg-white" value={formData.source} onChange={(e) => handleChange('source', e.target.value)}>
-                                            <option value="自己">自己 (Self)</option>
-                                            <option value="網路">網路 (Internet)</option>
-                                            <option value="書籍">書籍 (Book)</option>
-                                            <option value="演講">演講 (Speech)</option>
-                                            <option value="聊天">聊天 (Chat)</option>
-                                            <option value="影片">影片 (Video)</option>
-                                            <option value="其他">其他 (Other)</option>
+                                        <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5 ml-1">來源</label>
+                                        <select className="block w-full border-stone-200 rounded-xl p-3 bg-stone-50 focus:bg-white outline-none" value={formData.source} onChange={(e) => handleChange('source', e.target.value)}>
+                                            <option value="自己">自己</option>
+                                            <option value="網路">網路</option>
+                                            <option value="書籍">書籍</option>
+                                            <option value="演講">演講</option>
+                                            <option value="影片">影片</option>
+                                            <option value="其他">其他</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-stone-700 mb-1">標籤 (Tags)</label>
-                                    <input type="text" placeholder="財務, 趨勢, 2023 (以逗號分隔)" className="block w-full border-stone-300 rounded-lg p-2.5 border focus:ring-emerald-500 focus:border-emerald-500" value={formData.tags} onChange={(e) => handleChange('tags', e.target.value)} />
+                                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5 ml-1">標籤 (逗號分隔)</label>
+                                    <div className="relative">
+                                        <Tag className="absolute left-3 top-3.5 text-stone-400" size={16}/>
+                                        <input type="text" placeholder="財務, 趨勢, 2023" className="block w-full border-stone-200 rounded-xl p-3 pl-10 bg-stone-50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all" value={formData.tags} onChange={(e) => handleChange('tags', e.target.value)} />
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-bold text-stone-700 mb-1">圖表摘要 (Summary)</label>
-                            <textarea rows="3" placeholder="簡述此圖表的重點、數據來源或結論..." className="block w-full border-stone-300 rounded-lg p-2.5 border resize-none focus:ring-emerald-500 focus:border-emerald-500" value={formData.summary} onChange={(e) => handleChange('summary', e.target.value)} />
-                        </div>
-
-                        <div className="bg-stone-50 p-4 rounded-lg border border-stone-200">
-                            <h4 className="text-sm font-bold text-stone-500 uppercase mb-3 flex items-center gap-2"><BarChart2 size={14}/> 引用紀錄管理</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-stone-500 mb-1">目前引用次數</label>
-                                    <input type="number" className="block w-full border-stone-300 rounded-md p-2 border text-sm" value={formData.usageCount} onChange={(e) => handleChange('usageCount', e.target.value)} />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-xs font-bold text-stone-500 mb-1">被運用的地方 (筆記)</label>
-                                    <input type="text" placeholder="例如：Q3 檢討簡報 p.12, Obsidian 專案筆記..." className="block w-full border-stone-300 rounded-md p-2 border text-sm" value={formData.usageNotes} onChange={(e) => handleChange('usageNotes', e.target.value)} />
+                                    <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1.5 ml-1">摘要</label>
+                                    <textarea rows="3" placeholder="簡述重點..." className="block w-full border-stone-200 rounded-xl p-3 bg-stone-50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-none transition-all" value={formData.summary} onChange={(e) => handleChange('summary', e.target.value)} />
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="flex justify-end gap-3 pt-4 border-t border-stone-100">
-                            <button type="button" onClick={onCancel} disabled={isSaving || status === 'uploading'} className="px-6 py-2 border border-stone-300 rounded-lg text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50">取消</button>
-                            <button type="submit" disabled={isSaving || status === 'uploading'} className="px-6 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-emerald-700 shadow-md flex items-center gap-2 disabled:opacity-50">
-                                {(isSaving || status === 'uploading') && <RefreshCw className="animate-spin" size={16} />} 
-                                {isEditMode ? '儲存變更' : '上傳圖表'}
-                            </button>
-                        </div>
-                    </form>
+                            <div className="flex justify-end gap-3 pt-6 border-t border-stone-100">
+                                <button type="button" onClick={onCancel} disabled={isSaving || status === 'uploading'} className="px-6 py-2.5 border border-stone-200 rounded-xl text-stone-600 font-medium hover:bg-stone-50 hover:border-stone-300 transition-colors">取消</button>
+                                <button type="submit" disabled={isSaving || status === 'uploading'} className="px-8 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-2">
+                                    {(isSaving || status === 'uploading') ? <RefreshCw className="animate-spin" size={18} /> : (isEditMode ? <Check size={18}/> : <Upload size={18}/>)}
+                                    {isEditMode ? '儲存變更' : '上傳'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             );
         };
@@ -606,15 +587,18 @@
             const [password, setPassword] = useState('');
             const handleSubmit = (e) => { e.preventDefault(); if (password === '590123') onLogin(); else setPassword(''); };
             return (
-                <div className="fixed inset-0 z-50 bg-stone-800/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full border border-emerald-100">
-                        <div className="text-center mb-6">
-                            <div className="mx-auto bg-emerald-100 w-12 h-12 rounded-full flex items-center justify-center mb-4"><Lock className="text-emerald-600" /></div>
-                            <h3 className="text-lg font-bold text-stone-800">管理員登入</h3>
+                <div className="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border border-stone-100 animate-scale-in">
+                        <div className="text-center mb-8">
+                            <div className="mx-auto bg-emerald-100 w-16 h-16 rounded-2xl flex items-center justify-center mb-4 rotate-3"><Lock className="text-emerald-600" size={28} /></div>
+                            <h3 className="text-xl font-bold text-stone-800">管理員驗證</h3>
                         </div>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <input type="password" placeholder="密碼" className="w-full text-center tracking-widest border border-stone-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
-                            <div className="flex gap-3"><button type="button" onClick={onCancel} className="flex-1 py-2 text-stone-500 hover:bg-stone-100 rounded-lg transition-colors">取消</button><button type="submit" className="flex-1 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-md">解鎖</button></div>
+                            <input type="password" placeholder="輸入通行碼" className="w-full text-center tracking-[0.5em] font-bold text-lg border-2 border-stone-200 rounded-xl p-3 focus:border-emerald-500 outline-none transition-colors" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
+                            <div className="flex gap-3 pt-2">
+                                <button type="button" onClick={onCancel} className="flex-1 py-3 text-stone-500 hover:bg-stone-100 rounded-xl font-medium transition-colors">取消</button>
+                                <button type="submit" className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 transition-all">解鎖</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -670,7 +654,7 @@
                 }
             };
 
-            const handleUpdateUsage = async (id, newCount, note) => {
+            const handleUpdateUsage = async (id, newCount) => {
                  if (!currentUser) return;
                  try {
                      const chartRef = doc(db, COLLECTION_NAME, id);
@@ -684,14 +668,16 @@
 
             const allTags = [...new Set(charts.flatMap(p => p.tags))];
             
-            // 使用進階搜尋邏輯過濾
-            const filteredCharts = charts.filter(chart => {
-                if (activeTag && !(chart.tags || []).includes(activeTag)) return false;
-                return evaluateSearch(chart, searchQuery);
-            });
+            // 使用 useMemo 優化篩選計算
+            const filteredCharts = useMemo(() => {
+                return charts.filter(chart => {
+                    if (activeTag && !(chart.tags || []).includes(activeTag)) return false;
+                    return evaluateSearch(chart, searchQuery);
+                });
+            }, [charts, activeTag, searchQuery]);
 
             return (
-                <div className="min-h-screen bg-stone-100 font-sans text-stone-800 pb-12">
+                <div className="min-h-screen bg-stone-100 font-sans text-stone-800 pb-20 selection:bg-emerald-100 selection:text-emerald-900">
                     <Header setView={(v) => { setView(v); setEditingChart(null); }} isAdmin={isAdmin} onLoginClick={() => setShowLogin(true)} onLogout={() => { setIsAdmin(false); alert("已登出"); }} />
                     
                     {showLogin && <AdminLogin onLogin={() => { setIsAdmin(true); setShowLogin(false); }} onCancel={() => setShowLogin(false)} />}
@@ -699,50 +685,56 @@
 
                     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                         {view === 'gallery' ? (
-                            <>
-                                <div className="flex flex-col md:flex-row gap-4 mb-8">
-                                    <div className="relative flex-grow">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-stone-400" /></div>
+                            <div className="animate-fade-in space-y-8">
+                                <div className="flex flex-col md:flex-row gap-4 sticky top-20 z-30 transition-all">
+                                    <div className="relative flex-grow group">
+                                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><Search className="h-5 w-5 text-stone-400 group-focus-within:text-emerald-500 transition-colors" /></div>
                                         <input 
                                             type="text" 
-                                            placeholder="搜尋關鍵字... (支援 & | ! 運算子，例如: 財務 & 2024)" 
-                                            className="block w-full pl-10 pr-3 py-3 border border-stone-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm transition-all" 
+                                            placeholder="搜尋關鍵字... (支援 & | ! 邏輯運算)" 
+                                            className="block w-full pl-11 pr-4 py-3.5 border border-stone-200 rounded-2xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all hover:shadow-md" 
                                             value={searchQuery} 
                                             onChange={(e) => setSearchQuery(e.target.value)} 
                                         />
                                     </div>
                                     
-                                    {/* 標籤區域優化：水平捲動容器 */}
-                                    <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar max-w-full md:max-w-[50%] mask-linear-fade">
-                                        <span className="text-sm font-bold text-stone-400 mr-2 flex-shrink-0 flex items-center gap-1"><Tag size={14} /> 標籤:</span>
-                                        <button onClick={() => setActiveTag(null)} className={`flex-shrink-0 px-3 py-1 rounded-full text-sm transition-colors whitespace-nowrap ${!activeTag ? 'bg-emerald-700 text-white shadow-md' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'}`}>全部</button>
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar max-w-full md:max-w-[45%] mask-linear-fade">
+                                        <button onClick={() => setActiveTag(null)} className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${!activeTag ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 hover:border-stone-300'}`}>全部</button>
                                         {allTags.map(tag => (
-                                            <button key={tag} onClick={() => setActiveTag(tag === activeTag ? null : tag)} className={`flex-shrink-0 px-3 py-1 rounded-full text-sm transition-colors whitespace-nowrap ${tag === activeTag ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-stone-600 border border-stone-200 hover:bg-emerald-50 hover:border-emerald-200'}`}>{tag}</button>
+                                            <button key={tag} onClick={() => setActiveTag(tag === activeTag ? null : tag)} className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${tag === activeTag ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30' : 'bg-white text-stone-600 border border-stone-200 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'}`}>{tag}</button>
                                         ))}
                                     </div>
                                 </div>
 
                                 {filteredCharts.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12">
                                         {filteredCharts.map(chart => (
                                             <ChartCard key={chart.id} chart={chart} onExpand={setSelectedChart} isAdmin={isAdmin} onEdit={startEdit} onDelete={handleDelete} onUpdateUsage={handleUpdateUsage} />
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-24 bg-white rounded-xl border border-dashed border-stone-300">
-                                        <div className="mx-auto h-16 w-16 bg-stone-100 rounded-full flex items-center justify-center mb-4"><BarChart2 className="text-stone-300" size={32} /></div>
-                                        <h3 className="text-lg font-medium text-stone-900">尚無圖表資料</h3>
-                                        <p className="text-stone-500 mb-6">開始建立您的第一個圖表知識庫吧！</p>
-                                        <button onClick={() => setView('upload')} className="text-emerald-600 hover:text-emerald-800 font-bold flex items-center justify-center gap-1"><PlusCircle size={18}/> 新增圖表</button>
+                                    <div className="text-center py-24 bg-white/50 rounded-3xl border-2 border-dashed border-stone-200 animate-fade-in">
+                                        <div className="mx-auto h-20 w-20 bg-stone-100 rounded-full flex items-center justify-center mb-4"><Search className="text-stone-300" size={32} /></div>
+                                        <h3 className="text-lg font-bold text-stone-600 mb-1">找不到相關圖表</h3>
+                                        <p className="text-stone-400 mb-6 text-sm">試試看其他關鍵字，或新增一張圖表</p>
+                                        <button onClick={() => setView('upload')} className="text-emerald-600 hover:text-emerald-700 font-bold flex items-center justify-center gap-2 px-6 py-2 rounded-full hover:bg-emerald-50 transition-colors"><PlusCircle size={18}/> 新增圖表</button>
                                     </div>
                                 )}
-                            </>
+                            </div>
                         ) : (
                             <ChartForm onSave={handleSave} onCancel={() => { setView('gallery'); setEditingChart(null); }} initialData={editingChart} isSaving={isSaving} />
                         )}
                     </main>
-                    <footer className="border-t border-stone-200 mt-12 py-8 text-center text-stone-400 text-sm">
-                        <p>© {new Date().getFullYear()} Linkc Chart Hub.</p>
+
+                    <footer className="border-t border-stone-200 py-12 text-center text-stone-400 text-sm bg-stone-50">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="flex gap-6 text-stone-500 font-medium">
+                                <a href="https://gavintux.github.io/yi/" target="_blank" className="hover:text-emerald-600 transition-colors">Zen's Portal</a>
+                                <span>•</span>
+                                <span>Linkc Chart Hub</span>
+                            </div>
+                            <p className="text-stone-300">© {new Date().getFullYear()} Knowledge Visualization.</p>
+                        </div>
                     </footer>
                 </div>
             );
