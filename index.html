@@ -130,6 +130,22 @@
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
             </IconBase>
         );
+        const BarChart = (props) => (
+            <IconBase {...props}>
+                <line x1="12" y1="20" x2="12" y2="10" />
+                <line x1="18" y1="20" x2="18" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="16" />
+            </IconBase>
+        );
+        // Custom Tai Chi Icon
+        const TaiChi = (props) => (
+            <IconBase {...props}>
+                <circle cx="12" cy="12" r="10" stroke="currentColor" fill="white" strokeWidth="2" />
+                <path d="M12 22 A 10 10 0 0 1 12 2 A 5 5 0 0 0 12 12 A 5 5 0 0 1 12 22 Z" fill="currentColor" stroke="none" />
+                <circle cx="12" cy="7" r="1.5" fill="currentColor" />
+                <circle cx="12" cy="17" r="1.5" fill="white" />
+            </IconBase>
+        );
 
         // --- Main Component ---
         const Portfolio = () => {
@@ -148,7 +164,7 @@
                     title: "Yi 工具平台",
                     desc: "易經卜卦的解卦工具",
                     url: "https://gavintux.github.io/yi/yi.html",
-                    icon: <Code className="w-6 h-6" />,
+                    icon: <TaiChi className="w-6 h-6" />,
                     color: "bg-emerald-100 text-emerald-700"
                 },
                 {
@@ -157,6 +173,13 @@
                     url: "https://gavintux.github.io/yi/linkcmindomo.html",
                     icon: <Brain className="w-6 h-6" />,
                     color: "bg-amber-100 text-amber-700"
+                },
+                {
+                    title: "系統圖表",
+                    desc: "各類圖表的系統化彙整",
+                    url: "https://gavintux.github.io/yi/linkcchart.html",
+                    icon: <BarChart className="w-6 h-6" />,
+                    color: "bg-purple-100 text-purple-700"
                 },
                 {
                     title: "影像部落格",
