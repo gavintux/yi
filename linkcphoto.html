@@ -41,8 +41,10 @@
             Camera, MapPin, Clock, Search, Upload, Download, Tag, Eye, X, 
             Image as ImageIcon, Maximize2, Share2, Facebook, Instagram, 
             MessageCircle, Copy, Check, Lock, Unlock, Edit, Trash2, LogOut, 
-            Cloud, RefreshCw, AlertTriangle, Info, Save, Link as LinkIcon, FileUp, Sparkles, Map as MapIcon, Aperture, Disc,
-            ArrowDownWideNarrow, ArrowUpNarrowWide, Filter
+            Cloud, RefreshCw, AlertTriangle, Info, Save, Link as LinkIcon, FileUp, 
+            Sparkles, Map as MapIcon, Aperture, Disc, Gauge, 
+            ArrowDownWideNarrow, ArrowUpNarrowWide, Filter, FileCode,
+            Calendar as CalendarIcon, ChevronLeft, ChevronRight, XCircle
         } from 'https://esm.sh/lucide-react@0.294.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -81,10 +83,9 @@
         const COLLECTION_NAME = 'linkc_photos_v1';
 
         // -----------------------------------------------------------------------------
-        // Helper Functions (強力解析版 v3 - 針對 Nikon/Olympus 優化)
+        // Helper Functions (v4: Lens, GPS, EV Enhanced)
         // -----------------------------------------------------------------------------
 
-        // 通用數值解析 (處理分數、字串分數、Number物件)
         const getExifValue = (item) => {
             if (typeof item === 'number') return item;
             if (typeof item === 'string') {
@@ -94,8 +95,8 @@
                 }
                 return Number(item);
             }
-            if (item && item.numerator && item.denominator && item.denominator !== 0) {
-                return item.numerator / item.denominator;
+            if (item && item.numerator !== undefined && item.denominator !== undefined) {
+                return item.denominator === 0 ? 0 : item.numerator / item.denominator;
             }
             if (item && typeof item.valueOf === 'function') {
                 const val = item.valueOf();
@@ -104,7 +105,25 @@
             return 0;
         };
 
-        // 解析 LensInfo 數值陣列轉為字串
+        // 格式化 EV 值
+        const formatExposureBias = (bias) => {
+            const val = getExifValue(bias);
+            if (val === 0) return "0";
+            
+            // 嘗試轉為分數，如 0.333 -> +1/3, -0.666 -> -2/3
+            const sign = val > 0 ? "+" : "";
+            const absVal = Math.abs(val);
+            
+            // 常見 EV 值映射
+            if (Math.abs(absVal - 0.333) < 0.01) return `${sign}1/3`;
+            if (Math.abs(absVal - 0.666) < 0.01) return `${sign}2/3`;
+            if (Math.abs(absVal - 0.5) < 0.01) return `${sign}1/2`;
+            
+            // 整數或保留一位小數
+            if (Number.isInteger(val)) return `${sign}${val}`;
+            return `${sign}${val.toFixed(1)}`;
+        };
+
         const parseLensInfo = (lensInfo) => {
             if (!lensInfo || lensInfo.length < 2) return null;
             
@@ -113,7 +132,7 @@
             const minF = getExifValue(lensInfo[2]);
             const maxF = getExifValue(lensInfo[3]);
 
-            if (!minFocal || minFocal === 0) return null;
+            if (!minFocal) return null;
 
             let focalStr = "";
             if (minFocal === maxFocal) {
@@ -134,41 +153,30 @@
             return `${focalStr} ${apertureStr}`.trim();
         };
 
-        // 暴力搜索所有標籤來找鏡頭名稱
         const findLensNameInAllTags = (allTags) => {
-            const candidates = [
-                allTags.LensModel, 
-                allTags.Lens, 
-                allTags.LensID,
-                allTags.LensInfo 
-            ];
+            // 1. Direct standard tags
+            if (allTags.LensModel && allTags.LensModel.length > 2) return allTags.LensModel;
+            if (allTags.Lens && allTags.Lens.length > 2) return allTags.Lens;
+            
+            // 2. Specific numeric tags (0xA434 = LensModel)
+            // exif-js sometimes puts these in "undefined" keys if it doesn't recognize standard
+            // We check for string values in likely keys
+            
+            // 3. Construct from LensInfo (0xA432)
+            if (allTags.LensInfo) return parseLensInfo(allTags.LensInfo);
 
-            for (const c of candidates) {
-                if (c && typeof c === 'string' && c.trim().length > 0) {
-                    if(c.toLowerCase().includes("undefined")) continue;
-                    return c;
-                }
-            }
-
+            // 4. Fallback: Search any tag with "Lens" string content
             for (const key in allTags) {
                 const val = allTags[key];
-                if (key.includes("Lens") && typeof val === 'string' && val.length > 3) {
-                    if (val.toLowerCase().includes("unknown") || val.toLowerCase().includes("defined")) continue;
+                if (typeof val === 'string' && val.length > 3 && key.includes('Lens')) {
+                    if (val.toLowerCase().includes('undefined')) continue;
                     return val;
                 }
             }
-
-            if (allTags.LensInfo) {
-                return parseLensInfo(allTags.LensInfo);
-            }
-            if (allTags['UndefinedTag:0xA432']) {
-                return parseLensInfo(allTags['UndefinedTag:0xA432']);
-            }
-
             return "";
         };
 
-        // GPS 座標轉換 (TG-6 優化版)
+        // GPS Logic V2 (TG-6 fix)
         const convertDMSToDD = (dms, ref) => {
             if (!dms) return null;
             
@@ -178,6 +186,8 @@
 
             let dd = d + m / 60 + s / 3600;
             
+            // TG-6 specific check: sometimes values are already signed in d/m/s
+            // If ref is missing, check if dd is valid
             if (ref === "S" || ref === "W") {
                 dd = dd * -1;
             }
@@ -253,14 +263,13 @@
                         document.body.removeChild(link);
                         resolve(true);
                     } catch (err) {
-                        console.warn("Canvas Tainted (CORS 限制)，轉為下載原圖。", err);
+                        console.warn("Canvas Tainted", err);
                         downloadOriginal(imageUrl, filename);
                         resolve(false); 
                     }
                 };
                 
                 img.onerror = () => {
-                    console.warn("圖片載入失敗 (CORS 限制)，轉為下載原圖。");
                     downloadOriginal(imageUrl, filename);
                     resolve(false);
                 };
@@ -268,16 +277,20 @@
         };
 
         const copyToClipboard = (text) => {
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(text);
-            } else {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand("copy");
-                document.body.removeChild(textArea);
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            textArea.style.top = '0';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+            } catch (err) {
+                console.error('複製失敗', err);
             }
+            document.body.removeChild(textArea);
         };
 
         // -----------------------------------------------------------------------------
@@ -305,7 +318,7 @@
             </div>
         );
 
-        const Header = ({ setView, isAdmin, onLoginClick, onLogout }) => (
+        const Header = ({ setView, isAdmin, onLoginClick, onLogout, currentView }) => (
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -320,6 +333,14 @@
                     {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2">ADMIN</span>}
                 </div>
                 <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setView('calendar')} 
+                        className={`p-2 rounded-full transition-colors ${currentView === 'calendar' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100'}`}
+                        title="日曆模式"
+                    >
+                        <CalendarIcon size={20} />
+                    </button>
+
                     {isAdmin ? (
                         <button onClick={onLogout} className="p-2 text-gray-500 hover:text-red-600 transition-colors" title="登出"><LogOut size={20} /></button>
                     ) : (
@@ -333,25 +354,135 @@
             </header>
         );
 
-        const ShareButtons = ({ photo }) => {
-            const shareText = `${photo.thoughts_shooting || '分享一張照片'} \n\n#Linkc ${photo.tags.map(t=>'#'+t).join(' ')}`;
-            
-            const handleIG = async (e) => {
-                e.stopPropagation();
-                copyToClipboard(shareText);
-                const success = await downloadWithWatermark(photo.url, photo.id, e);
-                if (success) {
-                    alert("已複製貼文內容並下載照片 (含浮水印)！\n\n請開啟 Instagram 選擇照片並貼上文字。");
-                } else {
-                    alert("已複製貼文內容！\n\n因瀏覽器限制，無法自動下載合成浮水印的照片。\n系統已為您開啟原圖，請長按儲存後，再至 Instagram 發佈。");
-                }
+        // ... CalendarView, ShareButtons, Lightbox ...
+        const CalendarView = ({ photos, onSelectDate, onExpand, isAdmin, onEdit, onDelete }) => {
+            const [currentDate, setCurrentDate] = useState(new Date());
+            const [selectedDate, setSelectedDate] = useState(null);
+            const photoSectionRef = useRef(null);
+
+            const getDaysInMonth = (date) => {
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const days = new Date(year, month + 1, 0).getDate();
+                const firstDay = new Date(year, month, 1).getDay();
+                return { days, firstDay };
             };
 
+            const { days, firstDay } = getDaysInMonth(currentDate);
+            const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
+
+            const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+            const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+
+            const getFormattedDate = (day) => {
+                const y = currentDate.getFullYear();
+                const m = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const d = String(day).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            };
+
+            const getPhotosForDate = (dateStr) => {
+                return photos.filter(p => {
+                    const photoDate = p.exif?.date || p.date || '';
+                    return photoDate.startsWith(dateStr);
+                });
+            };
+
+            const handleDateClick = (dateStr) => {
+                setSelectedDate(dateStr);
+                setTimeout(() => {
+                    photoSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            };
+
+            const selectedPhotos = selectedDate ? getPhotosForDate(selectedDate) : [];
+
+            return (
+                <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-gray-800">
+                                {currentDate.getFullYear()}年 {monthNames[currentDate.getMonth()]}
+                            </h2>
+                            <div className="flex gap-2">
+                                <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-full"><ChevronLeft /></button>
+                                <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-full"><ChevronRight /></button>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-7 gap-2 mb-2 text-center text-gray-400 font-medium text-sm">
+                            <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+                        </div>
+                        <div className="grid grid-cols-7 gap-2">
+                            {Array.from({ length: firstDay }).map((_, i) => (
+                                <div key={`empty-${i}`} className="h-24 sm:h-32"></div>
+                            ))}
+                            {Array.from({ length: days }).map((_, i) => {
+                                const day = i + 1;
+                                const dateStr = getFormattedDate(day);
+                                const dayPhotos = getPhotosForDate(dateStr);
+                                const count = dayPhotos.length;
+                                const isToday = dateStr === new Date().toISOString().split('T')[0];
+                                const isSelected = dateStr === selectedDate;
+                                return (
+                                    <div 
+                                        key={day}
+                                        onClick={() => count > 0 && handleDateClick(dateStr)}
+                                        className={`h-24 sm:h-32 border rounded-lg p-2 flex flex-col justify-between transition-all relative group
+                                            ${count > 0 ? 'cursor-pointer hover:bg-indigo-50 border-indigo-100 hover:border-indigo-300 hover:shadow-md' : 'bg-gray-50 border-gray-100 text-gray-400'}
+                                            ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-2 bg-indigo-50 border-indigo-400' : ''}
+                                            ${isToday ? 'ring-1 ring-offset-1 ring-gray-400' : ''}
+                                        `}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <span className={`text-sm font-medium ${isToday ? 'text-indigo-600 bg-indigo-100 px-1.5 rounded-full' : ''}`}>{day}</span>
+                                        </div>
+                                        {count > 0 && (
+                                            <div className="flex flex-col items-center gap-1 mb-1">
+                                                <div className="flex justify-center gap-1 flex-wrap max-w-full">
+                                                     {Array.from({ length: Math.min(count, 3) }).map((_, dotIdx) => (
+                                                        <div key={dotIdx} className={`w-2 h-2 rounded-full ${isSelected ? 'bg-indigo-600' : 'bg-indigo-400'}`}></div>
+                                                     ))}
+                                                     {count > 3 && <span className="text-[10px] text-indigo-400 leading-none">+</span>}
+                                                </div>
+                                                <span className="text-[10px] text-gray-400">{count} 張</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {selectedDate && selectedPhotos.length > 0 && (
+                        <div ref={photoSectionRef} className="bg-gray-50 border-t-4 border-indigo-500 rounded-xl p-6 shadow-inner animate-in slide-in-from-bottom-4">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                    <CalendarIcon className="text-indigo-600"/>
+                                    {selectedDate} 的照片 ({selectedPhotos.length} 張)
+                                </h3>
+                                <button onClick={() => setSelectedDate(null)} className="p-2 hover:bg-gray-200 rounded-full text-gray-500"><XCircle size={24} /></button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {selectedPhotos.map(photo => (
+                                    <PhotoCard key={photo.id} photo={photo} onExpand={onExpand} isAdmin={isAdmin} onEdit={onEdit} onDelete={onDelete} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const ShareButtons = ({ photo }) => {
+            const shareText = `${photo.thoughts_shooting || '分享一張照片'} \n\n#Linkc ${photo.tags.map(t=>'#'+t).join(' ')}`;
+            const handleIG = async (e) => { e.stopPropagation(); copyToClipboard(shareText); await downloadWithWatermark(photo.url, photo.id, e); };
+            const handleObsidian = (e) => { e.stopPropagation(); const altText = photo.tags.length > 0 ? photo.tags.join(', ') : 'Linkc Photo'; const markdown = `![${altText}](${photo.url})`; copyToClipboard(markdown); alert("已複製 Obsidian 語法！"); };
             return (
                 <div className="flex items-center gap-2">
                     <button onClick={(e) => {e.stopPropagation(); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(photo.url)}`, '_blank')}} className="bg-blue-600 text-white p-2 rounded-full hover:scale-110 transition-transform"><Facebook size={18} /></button>
                     <button onClick={(e) => {e.stopPropagation(); window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(photo.url)}`, '_blank')}} className="bg-green-500 text-white p-2 rounded-full hover:scale-110 transition-transform"><MessageCircle size={18} /></button>
-                    <button onClick={handleIG} className="bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white p-2 rounded-full hover:scale-110 transition-transform" title="分享到 Instagram"><Instagram size={18} /></button>
+                    <button onClick={handleIG} className="bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white p-2 rounded-full hover:scale-110 transition-transform"><Instagram size={18} /></button>
+                    <button onClick={handleObsidian} className="bg-purple-600 text-white p-2 rounded-full hover:scale-110 transition-transform"><FileCode size={18} /></button>
                 </div>
             );
         };
@@ -361,25 +492,20 @@
             return (
                 <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center p-4" onClick={onClose}>
                     <button onClick={onClose} className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-50"><X size={32} /></button>
-                    
                     {isAdmin && (
                         <div className="absolute top-4 left-4 flex gap-2 z-50">
                             <button onClick={(e) => { e.stopPropagation(); onEdit(photo); }} className="bg-blue-600/80 text-white px-3 py-1.5 rounded-full flex items-center gap-2 text-sm"><Edit size={14} /> 編輯</button>
                             <button onClick={(e) => { e.stopPropagation(); onDelete(photo.id); onClose(); }} className="bg-red-600/80 text-white px-3 py-1.5 rounded-full flex items-center gap-2 text-sm"><Trash2 size={14} /> 刪除</button>
                         </div>
                     )}
-
                     <div className="relative max-w-full max-h-[85vh]" onClick={e => e.stopPropagation()}>
                         <img src={photo.url} className="max-w-full max-h-[85vh] object-contain shadow-2xl rounded-sm" />
                         <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/10">
-                            <button onClick={(e) => downloadWithWatermark(photo.url, photo.id, e)} className="text-white hover:text-indigo-300 flex flex-col items-center gap-1">
-                                <Download size={20} /><span className="text-[10px]">下載</span>
-                            </button>
+                            <button onClick={(e) => downloadWithWatermark(photo.url, photo.id, e)} className="text-white hover:text-indigo-300 flex flex-col items-center gap-1"><Download size={20} /><span className="text-[10px]">下載</span></button>
                             <div className="w-px h-8 bg-white/20 mx-2"></div>
                             <ShareButtons photo={photo} />
                         </div>
                     </div>
-                    
                     <div className="mt-4 text-white/80 text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-4 text-sm font-medium mb-1">
                             <span className="flex items-center gap-1"><Clock size={14}/> {photo.date ? photo.date.replace('T', ' ') : ''}</span>
@@ -392,7 +518,7 @@
                             </div>
                         )}
                         <p className="text-white/60 text-xs font-mono">
-                            {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso} {photo.exif.focalLength ? `· ${photo.exif.focalLength}` : ''}
+                            {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso} {photo.exif.focalLength ? `· ${photo.exif.focalLength}` : ''} {photo.exif.ev ? `· EV ${photo.exif.ev}` : ''}
                         </p>
                     </div>
                 </div>
@@ -424,25 +550,19 @@
                     </div>
 
                     <div className="flex flex-wrap gap-2 mb-4">
-                        {photo.tags.map(tag => (
-                            <span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full font-medium">#{tag}</span>
-                        ))}
+                        {photo.tags.map(tag => (<span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full font-medium">#{tag}</span>))}
                     </div>
 
                     <div className="space-y-3 mb-4 flex-grow">
                         {photo.thoughts_shooting && (
                             <div className="bg-gray-50 p-3 rounded-lg border-l-2 border-orange-300">
-                                <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1">
-                                    <Camera size={12} /> 拍攝當下
-                                </div>
+                                <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1"><Camera size={12} /> 拍攝當下</div>
                                 <p className="text-gray-700 text-sm italic">"{photo.thoughts_shooting}"</p>
                             </div>
                         )}
                         {photo.thoughts_viewing && (
                             <div className="bg-gray-50 p-3 rounded-lg border-l-2 border-indigo-300">
-                                <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1">
-                                    <Eye size={12} /> 欣賞隨筆
-                                </div>
+                                <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1"><Eye size={12} /> 欣賞隨筆</div>
                                 <p className="text-gray-700 text-sm italic">"{photo.thoughts_viewing}"</p>
                             </div>
                         )}
@@ -456,22 +576,10 @@
                     )}
 
                     <div className="grid grid-cols-4 gap-1 border-t pt-3 mt-auto text-center">
-                        <div className="flex flex-col items-center">
-                            <span className="text-[10px] uppercase text-gray-400 font-bold">快門</span>
-                            <span className="text-xs text-gray-700 font-mono">{photo.exif.shutter || '--'}</span>
-                        </div>
-                        <div className="flex flex-col items-center border-l border-gray-100">
-                            <span className="text-[10px] uppercase text-gray-400 font-bold">光圈</span>
-                            <span className="text-xs text-gray-700 font-mono">{photo.exif.aperture || '--'}</span>
-                        </div>
-                        <div className="flex flex-col items-center border-l border-gray-100">
-                            <span className="text-[10px] uppercase text-gray-400 font-bold">ISO</span>
-                            <span className="text-xs text-gray-700 font-mono">{photo.exif.iso || '--'}</span>
-                        </div>
-                        <div className="flex flex-col items-center border-l border-gray-100">
-                            <span className="text-[10px] uppercase text-gray-400 font-bold">焦段</span>
-                            <span className="text-xs text-gray-700 font-mono">{photo.exif.focalLength || '--'}</span>
-                        </div>
+                        <div className="flex flex-col items-center"><span className="text-[10px] uppercase text-gray-400 font-bold">快門</span><span className="text-xs text-gray-700 font-mono">{photo.exif.shutter || '--'}</span></div>
+                        <div className="flex flex-col items-center border-l border-gray-100"><span className="text-[10px] uppercase text-gray-400 font-bold">光圈</span><span className="text-xs text-gray-700 font-mono">{photo.exif.aperture || '--'}</span></div>
+                        <div className="flex flex-col items-center border-l border-gray-100"><span className="text-[10px] uppercase text-gray-400 font-bold">ISO</span><span className="text-xs text-gray-700 font-mono">{photo.exif.iso || '--'}</span></div>
+                        <div className="flex flex-col items-center border-l border-gray-100"><span className="text-[10px] uppercase text-gray-400 font-bold">EV</span><span className="text-xs text-gray-700 font-mono">{photo.exif.ev || '--'}</span></div>
                     </div>
                     
                     <div className="border-t border-dashed border-gray-200 mt-3 pt-2 flex justify-between items-center">
@@ -484,27 +592,13 @@
 
         const PhotoForm = ({ onSave, onCancel, initialData, isSaving }) => {
             const isEditMode = !!initialData;
-            
-            const getNowString = () => {
-                const now = new Date();
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                return now.toISOString().slice(0, 16);
-            };
-
-            const [formData, setFormData] = useState(initialData || { 
-                url: '', 
-                tags: '', 
-                thoughts_shooting: '', 
-                thoughts_viewing: '', 
-                exif: { shutter: '', aperture: 'f/', iso: '', date: getNowString(), camera: '', lens: '', focalLength: '' }, 
-                location: { country: '', city: '', spot: '' } 
-            });
+            const getNowString = () => { const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); return now.toISOString().slice(0, 16); };
+            const [formData, setFormData] = useState(initialData || { url: '', tags: '', thoughts_shooting: '', thoughts_viewing: '', exif: { shutter: '', aperture: 'f/', iso: '', date: getNowString(), camera: '', lens: '', focalLength: '', ev: '' }, location: { country: '', city: '', spot: '' } });
             const [status, setStatus] = useState('');
             const [uploadFile, setUploadFile] = useState(null);
             const [exifStatus, setExifStatus] = useState(''); 
 
             useEffect(() => { if (initialData && Array.isArray(initialData.tags)) { setFormData(prev => ({ ...prev, tags: initialData.tags.join(', ') })); } }, [initialData]);
-            
             const handleChange = (section, field, value) => { if (section) { setFormData(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } })); } else { setFormData(prev => ({ ...prev, [field]: value })); } };
             
             const handleFileChange = (e) => {
@@ -512,92 +606,65 @@
                 if (file) {
                     setUploadFile(file);
                     setExifStatus('分析中...');
-                    
-                    // Create object URL for preview
                     const previewUrl = URL.createObjectURL(file);
                     setFormData(prev => ({ ...prev, url: previewUrl }));
                     
                     EXIF.getData(file, async function() {
-                        // 1. 基本資訊
                         const extractedShutter = EXIF.getTag(this, "ExposureTime");
                         const extractedFNumber = EXIF.getTag(this, "FNumber");
                         const extractedISO = EXIF.getTag(this, "ISOSpeedRatings");
                         const extractedDate = EXIF.getTag(this, "DateTimeOriginal");
                         const extractedFocalLength = EXIF.getTag(this, "FocalLength");
-                        
+                        const extractedBias = EXIF.getTag(this, "ExposureBiasValue");
                         const make = EXIF.getTag(this, "Make");
                         const model = EXIF.getTag(this, "Model");
-                        
-                        // 2. 暴力抓取鏡頭資訊
                         const allTags = EXIF.getAllTags(this);
-                        let lensModel = findLensNameInAllTags(allTags);
                         
-                        // 3. 清理鏡頭名稱
+                        // Smart Lens Detection
+                        let lensModel = findLensNameInAllTags(allTags);
                         if (lensModel && typeof lensModel === 'string') {
                             lensModel = lensModel.replace(/\0/g, '').trim();
-                            // 如果 LensMake (如果有的話) 已經在名稱裡，就不重複加
                             const lensMake = EXIF.getTag(this, "LensMake");
-                            if (lensMake && !lensModel.toLowerCase().includes(lensMake.toLowerCase())) {
-                                lensModel = `${lensMake} ${lensModel}`;
-                            }
+                            if (lensMake && !lensModel.toLowerCase().includes(lensMake.toLowerCase())) lensModel = `${lensMake} ${lensModel}`;
                         }
 
-                        // 4. GPS (包含 TG-6 修正)
+                        // GPS
                         const lat = EXIF.getTag(this, "GPSLatitude");
                         const latRef = EXIF.getTag(this, "GPSLatitudeRef");
                         const lon = EXIF.getTag(this, "GPSLongitude");
                         const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
 
-                        // 5. 格式化數值
+                        // Formatters
                         let formattedShutter = "";
                         const shutterVal = getExifValue(extractedShutter);
-                        if (shutterVal > 0) {
-                            if (shutterVal < 1) {
-                                formattedShutter = "1/" + Math.round(1/shutterVal);
-                            } else {
-                                formattedShutter = shutterVal.toString();
-                            }
-                        }
+                        if (shutterVal > 0) formattedShutter = shutterVal < 1 ? "1/" + Math.round(1/shutterVal) : shutterVal.toString();
                         
                         const apertureVal = getExifValue(extractedFNumber);
                         const formattedAperture = apertureVal ? "f/" + apertureVal : "";
                         
+                        const formattedEV = formatExposureBias(extractedBias);
+
                         let formattedDate = "";
                         if (extractedDate) {
                             const parts = extractedDate.split(" ");
-                            if (parts.length >= 2) {
-                                const d = parts[0].replace(/:/g, "-");
-                                const t = parts[1].substring(0, 5);
-                                formattedDate = `${d}T${t}`;
-                            } else if (parts.length === 1) {
-                                formattedDate = parts[0].replace(/:/g, "-");
-                            }
+                            if (parts.length >= 2) formattedDate = `${parts[0].replace(/:/g, "-")}T${parts[1].substring(0, 5)}`;
+                            else if (parts.length === 1) formattedDate = parts[0].replace(/:/g, "-");
                         }
 
                         let formattedCamera = "";
-                        if (make && model) {
-                            if (model.toLowerCase().includes(make.toLowerCase())) {
-                                formattedCamera = model;
-                            } else {
-                                formattedCamera = `${make} ${model}`;
-                            }
-                        } else {
-                            formattedCamera = model || make || "";
-                        }
+                        if (make && model) formattedCamera = model.toLowerCase().includes(make.toLowerCase()) ? model : `${make} ${model}`;
+                        else formattedCamera = model || make || "";
                         if (formattedCamera) formattedCamera = formattedCamera.replace(/\0/g, '').trim();
 
                         let formattedFocalLength = "";
                         const focalVal = getExifValue(extractedFocalLength);
-                        if (focalVal) {
-                            formattedFocalLength = `${focalVal}mm`;
-                        }
+                        if (focalVal) formattedFocalLength = `${focalVal}mm`;
 
-                        // 6. GPS 與地址解析
                         let locationUpdate = { ...formData.location };
                         let extraStatus = "";
 
-                        // 修正：容錯處理，若無 Ref 預設 N/E
                         if (lat && lon) {
+                            // Default refs if missing (common in some devices)
                             const decimalLat = convertDMSToDD(lat, latRef || 'N');
                             const decimalLon = convertDMSToDD(lon, lonRef || 'E');
                             
@@ -626,7 +693,8 @@
                                 date: formattedDate || prev.exif.date,
                                 camera: formattedCamera || prev.exif.camera,
                                 lens: lensModel || prev.exif.lens,
-                                focalLength: formattedFocalLength || prev.exif.focalLength
+                                focalLength: formattedFocalLength || prev.exif.focalLength,
+                                ev: formattedEV || prev.exif.ev
                             },
                             location: locationUpdate
                         }));
@@ -638,28 +706,14 @@
             const handleSubmit = async (e) => { 
                 e.preventDefault();
                 setStatus('uploading');
-                
                 let finalUrl = formData.url;
-
                 try {
                     if (uploadFile) {
                         const filename = `photos/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${uploadFile.name}`;
                         const storageRef = ref(storage, filename);
                         await uploadBytes(storageRef, uploadFile);
                         finalUrl = await getDownloadURL(storageRef);
-                    } else if (formData.url) {
-                        if (formData.url.includes('googleusercontent') || formData.url.includes('photos.app.goo.gl')) {
-                            if (!confirm("警告：使用 Google Photos 連結極高機率會因為時效性而破圖。\n\n強烈建議您將照片下載後，使用「上傳檔案」功能。\n\n您確定要繼續使用連結嗎？")) {
-                                setStatus('');
-                                return;
-                            }
-                        }
-                    } else {
-                        alert("請選擇一張照片檔案上傳，或輸入圖片連結。");
-                        setStatus('');
-                        return;
                     }
-
                     const processedData = { 
                         ...formData, 
                         url: finalUrl,
@@ -667,10 +721,9 @@
                         date: formData.exif.date 
                     }; 
                     onSave(processedData); 
-
                 } catch (err) {
                     console.error("上傳失敗", err);
-                    alert("上傳失敗: " + err.message + "\n\n請確認您的 Firebase Storage 是否已啟用 (Test Mode)。");
+                    alert("上傳失敗: " + err.message);
                     setStatus('');
                 }
             };
@@ -678,94 +731,12 @@
             return (
                 <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-300">
                     <div className="flex justify-between items-center mb-6 border-b pb-4"><h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">{isEditMode ? <Edit className="text-blue-600" /> : <Upload className="text-indigo-600" />} {isEditMode ? '修改照片資訊' : '分享新照片'}</h2><button onClick={onCancel} className="text-gray-400 hover:text-gray-600"><X size={24} /></button></div>
-                    
-                    {status === 'uploading' && (
-                        <div className="mb-4 bg-blue-50 text-blue-700 p-4 rounded-lg flex items-center gap-2 animate-pulse">
-                            <RefreshCw className="spinner" size={20} />
-                            <span>正在上傳照片至雲端，請稍候...</span>
-                        </div>
-                    )}
-
+                    {status === 'uploading' && (<div className="mb-4 bg-blue-50 text-blue-700 p-4 rounded-lg flex items-center gap-2 animate-pulse"><RefreshCw className="spinner" size={20} /><span>正在上傳照片至雲端，請稍候...</span></div>)}
                     <form onSubmit={handleSubmit} className="space-y-8">
-                        {formData.url && (
-                            <div className="flex justify-center mb-6 bg-gray-100 rounded-lg p-4 border border-gray-200">
-                                <img 
-                                    src={formData.url} 
-                                    alt="Preview" 
-                                    className="max-h-80 w-auto object-contain rounded shadow-sm"
-                                    referrerPolicy="no-referrer"
-                                    onError={(e) => e.target.style.display = 'none'} 
-                                />
-                            </div>
-                        )}
-
-                        <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">步驟 1：選擇照片來源</label>
-                            
-                            <div className="relative">
-                                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload" disabled={status === 'uploading'} />
-                                <label htmlFor="file-upload" className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${uploadFile ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}>
-                                    {uploadFile ? (
-                                        <>
-                                            <Check className="w-8 h-8 text-green-500 mb-2" />
-                                            <span className="text-sm font-medium text-green-600">已選擇：{uploadFile.name}</span>
-                                            {exifStatus && <span className="text-xs text-blue-500 mt-1 flex items-center gap-1"><Sparkles size={10}/> {exifStatus}</span>}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <FileUp className="w-8 h-8 text-gray-400 mb-2" />
-                                            <span className="text-sm font-medium text-gray-600">點擊上傳檔案 (推薦)</span>
-                                            <span className="text-xs text-gray-500 mt-1">自動讀取 EXIF、GPS、相機與鏡頭資訊，永久保存</span>
-                                        </>
-                                    )}
-                                </label>
-                            </div>
-
-                            <div className="text-center text-gray-400 text-xs">- 或 -</div>
-
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LinkIcon className="h-4 w-4 text-gray-400" /></div>
-                                <input type="url" placeholder="輸入圖片連結 (不推薦 Google Photos 連結)" className="block w-full pl-9 border-gray-300 rounded-lg p-2 text-sm border" value={formData.url} onChange={(e) => { handleChange(null, 'url', e.target.value); setUploadFile(null); setExifStatus(''); }} disabled={uploadFile || status === 'uploading'} />
-                            </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-6">
-                                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200"><label className="block text-sm font-bold text-gray-800 mb-1">標籤 (Tags)</label><input type="text" placeholder="風景, 台灣" className="block w-full border-gray-300 rounded-lg p-2.5 border" value={formData.tags} onChange={(e) => handleChange(null, 'tags', e.target.value)} /></div>
-                                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200"><label className="block text-sm font-bold text-gray-800 mb-1">拍攝感受</label><textarea rows="3" placeholder="..." className="block w-full border-gray-300 rounded-lg p-2.5 border resize-none" value={formData.thoughts_shooting} onChange={(e) => handleChange(null, 'thoughts_shooting', e.target.value)} /></div>
-                                <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200"><label className="block text-sm font-bold text-gray-800 mb-1">欣賞感受</label><textarea rows="3" placeholder="..." className="block w-full border-gray-300 rounded-lg p-2.5 border resize-none" value={formData.thoughts_viewing} onChange={(e) => handleChange(null, 'thoughts_viewing', e.target.value)} /></div>
-                            </div>
-                            <div className="space-y-6 bg-gray-50 p-6 rounded-xl border border-gray-200">
-                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                                    拍攝參數 {exifStatus && <span className="text-xs text-green-500 font-normal normal-case">({exifStatus})</span>}
-                                </h3>
-                                
-                                <div className="grid grid-cols-1 gap-4 mb-4">
-                                    <div><label className="block text-xs font-medium text-gray-500">相機型號</label><input type="text" placeholder="例如：Sony A7III" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} /></div>
-                                    <div><label className="block text-xs font-medium text-gray-500">鏡頭資訊</label><input type="text" placeholder="例如：FE 24-105mm F4 G" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /></div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4 border-t pt-4">
-                                    <div><label className="block text-xs font-medium text-gray-500">快門</label><input type="text" placeholder="1/200" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /></div>
-                                    <div><label className="block text-xs font-medium text-gray-500">光圈</label><input type="text" placeholder="f/2.8" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /></div>
-                                    <div><label className="block text-xs font-medium text-gray-500">ISO</label><input type="text" placeholder="400" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /></div>
-                                    <div><label className="block text-xs font-medium text-gray-500">焦段</label><input type="text" placeholder="50mm" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.focalLength} onChange={(e) => handleChange('exif', 'focalLength', e.target.value)} /></div>
-                                    <div className="col-span-2"><label className="block text-xs font-medium text-gray-500">日期與時間</label><input type="datetime-local" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /></div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
-                                    <div><label className="block text-xs font-medium text-gray-500">國家 {formData.location.country && <MapIcon size={12} className="inline text-green-500"/>}</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.country} onChange={(e) => handleChange('location', 'country', e.target.value)} /></div>
-                                    <div><label className="block text-xs font-medium text-gray-500">城市</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.city} onChange={(e) => handleChange('location', 'city', e.target.value)} /></div>
-                                    <div className="col-span-2"><label className="block text-xs font-medium text-gray-500">地名/景點</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.spot} onChange={(e) => handleChange('location', 'spot', e.target.value)} /></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex justify-end gap-3 pt-6">
-                            <button type="button" onClick={onCancel} disabled={isSaving || status === 'uploading'} className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">取消</button>
-                            <button type="submit" disabled={isSaving || status === 'uploading'} className={`px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white shadow-lg hover:shadow-xl transition-all flex items-center gap-2 ${isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-600 hover:bg-indigo-700'} disabled:opacity-50`}>
-                                {(isSaving || status === 'uploading') && <RefreshCw className="animate-spin" size={16} />} 
-                                {status === 'uploading' ? '上傳中...' : (isEditMode ? '儲存修改' : '發佈照片')}
-                            </button>
-                        </div>
+                        {formData.url && (<div className="flex justify-center mb-6 bg-gray-100 rounded-lg p-4 border border-gray-200"><img src={formData.url} alt="Preview" className="max-h-80 w-auto object-contain rounded shadow-sm" referrerPolicy="no-referrer" onError={(e) => e.target.style.display = 'none'} /></div>)}
+                        <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200"><label className="block text-sm font-bold text-gray-700 mb-2">步驟 1：選擇照片來源</label><div className="relative"><input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload" disabled={status === 'uploading'} /><label htmlFor="file-upload" className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${uploadFile ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}>{uploadFile ? (<><Check className="w-8 h-8 text-green-500 mb-2" /><span className="text-sm font-medium text-green-600">已選擇：{uploadFile.name}</span>{exifStatus && <span className="text-xs text-blue-500 mt-1 flex items-center gap-1"><Sparkles size={10}/> {exifStatus}</span>}</>) : (<><FileUp className="w-8 h-8 text-gray-400 mb-2" /><span className="text-sm font-medium text-gray-600">點擊上傳檔案 (推薦)</span><span className="text-xs text-gray-500 mt-1">自動讀取 EXIF、GPS、相機與鏡頭資訊，永久保存</span></>)}</label></div><div className="text-center text-gray-400 text-xs">- 或 -</div><div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><LinkIcon className="h-4 w-4 text-gray-400" /></div><input type="url" placeholder="輸入圖片連結 (不推薦)" className="block w-full pl-9 border-gray-300 rounded-lg p-2 text-sm border" value={formData.url} onChange={(e) => { handleChange(null, 'url', e.target.value); setUploadFile(null); setExifStatus(''); }} disabled={uploadFile || status === 'uploading'} /></div></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8"><div className="space-y-6"><div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200"><label className="block text-sm font-bold text-gray-800 mb-1">標籤 (Tags)</label><input type="text" placeholder="風景, 台灣" className="block w-full border-gray-300 rounded-lg p-2.5 border" value={formData.tags} onChange={(e) => handleChange(null, 'tags', e.target.value)} /></div><div className="bg-orange-50 p-4 rounded-lg border border-orange-200"><label className="block text-sm font-bold text-gray-800 mb-1">拍攝感受</label><textarea rows="3" placeholder="..." className="block w-full border-gray-300 rounded-lg p-2.5 border resize-none" value={formData.thoughts_shooting} onChange={(e) => handleChange(null, 'thoughts_shooting', e.target.value)} /></div><div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200"><label className="block text-sm font-bold text-gray-800 mb-1">欣賞感受</label><textarea rows="3" placeholder="..." className="block w-full border-gray-300 rounded-lg p-2.5 border resize-none" value={formData.thoughts_viewing} onChange={(e) => handleChange(null, 'thoughts_viewing', e.target.value)} /></div></div><div className="space-y-6 bg-gray-50 p-6 rounded-xl border border-gray-200"><h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">拍攝參數 {exifStatus && <span className="text-xs text-green-500 font-normal normal-case">({exifStatus})</span>}</h3><div className="grid grid-cols-1 gap-4 mb-4"><div><label className="block text-xs font-medium text-gray-500">相機型號</label><input type="text" placeholder="例如：Sony A7III" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">鏡頭資訊</label><input type="text" placeholder="例如：FE 24-105mm F4 G" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /></div></div><div className="grid grid-cols-2 gap-4 border-t pt-4"><div><label className="block text-xs font-medium text-gray-500">快門</label><input type="text" placeholder="1/200" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">光圈</label><input type="text" placeholder="f/2.8" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">ISO</label><input type="text" placeholder="400" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">焦段</label><input type="text" placeholder="50mm" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.focalLength} onChange={(e) => handleChange('exif', 'focalLength', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">EV 曝光補償</label><input type="text" placeholder="+0" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.ev} onChange={(e) => handleChange('exif', 'ev', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">日期與時間</label><input type="datetime-local" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /></div></div><div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t"><div><label className="block text-xs font-medium text-gray-500">國家 {formData.location.country && <MapIcon size={12} className="inline text-green-500"/>}</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.country} onChange={(e) => handleChange('location', 'country', e.target.value)} /></div><div><label className="block text-xs font-medium text-gray-500">城市</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.city} onChange={(e) => handleChange('location', 'city', e.target.value)} /></div><div className="col-span-2"><label className="block text-xs font-medium text-gray-500">地名/景點</label><input type="text" className="mt-1 block w-full border-gray-300 rounded-md p-2 border" value={formData.location.spot} onChange={(e) => handleChange('location', 'spot', e.target.value)} /></div></div></div></div>
+                        <div className="flex justify-end gap-3 pt-6"><button type="button" onClick={onCancel} disabled={isSaving || status === 'uploading'} className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">取消</button><button type="submit" disabled={isSaving || status === 'uploading'} className={`px-6 py-2 border border-transparent rounded-lg text-sm font-medium text-white shadow-lg hover:shadow-xl transition-all flex items-center gap-2 ${isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-600 hover:bg-indigo-700'} disabled:opacity-50`}>{(isSaving || status === 'uploading') && <RefreshCw className="animate-spin" size={16} />} {status === 'uploading' ? '上傳中...' : (isEditMode ? '儲存修改' : '發佈照片')}</button></div>
                     </form>
                 </div>
             );
@@ -782,11 +753,14 @@
         };
 
         function App() {
-            const [view, setView] = useState('gallery');
+            const [view, setView] = useState('gallery'); // 'gallery', 'calendar', 'upload'
             const [photos, setPhotos] = useState([]);
             const [searchQuery, setSearchQuery] = useState('');
             const [activeTag, setActiveTag] = useState(null);
             const [sortOrder, setSortOrder] = useState('newest'); // 'newest' | 'oldest'
+            
+            // New Filter for Calendar
+            const [dateFilter, setDateFilter] = useState(null); // 'YYYY-MM-DD'
             
             const [selectedPhoto, setSelectedPhoto] = useState(null);
             const [isAdmin, setIsAdmin] = useState(false);
@@ -821,6 +795,7 @@
                         await addDoc(collectionRef, { ...photoData, timestamp: Date.now() });
                     }
                     setView('gallery');
+                    setDateFilter(null); // Clear filter after upload
                 } catch (e) { alert("儲存失敗: " + e.message); } finally { setIsSaving(false); }
             };
 
@@ -833,13 +808,24 @@
 
             const startEdit = (photo) => { setEditingPhoto(photo); setView('upload'); if (selectedPhoto) setSelectedPhoto(null); };
 
+            // Handle date selection from Calendar
+            const handleDateSelect = (dateStr) => {
+                // Internal handling in CalendarView now, but if we need global state:
+                // setDateFilter(dateStr); 
+                // setView('gallery');
+            };
+
             if (!isConfigConfigured) return <ConfigError />;
             if (authError) return <AuthError message={authError} />;
 
             const allTags = [...new Set(photos.flatMap(p => p.tags))];
 
-            // Advanced Search Logic
+            // Advanced Search & Filter Logic (for Gallery View)
             const filteredPhotos = photos.filter(photo => {
+                if (dateFilter) {
+                    const photoDate = photo.exif?.date || photo.date || '';
+                    return photoDate.startsWith(dateFilter);
+                }
                 if (activeTag && !(photo.tags || []).includes(activeTag)) return false;
                 if (!searchQuery.trim()) return true;
 
@@ -856,7 +842,6 @@
                         nextIsOr = true;
                         continue;
                     }
-
                     let isNot = false;
                     if (token.startsWith('-')) {
                         if (token.length > 1) {
@@ -864,7 +849,6 @@
                             token = token.substring(1);
                         }
                     }
-
                     const tokenMatch = photoString.includes(token);
                     const conditionMet = isNot ? !tokenMatch : tokenMatch;
 
@@ -900,32 +884,42 @@
 
             return (
                 <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
-                <Header setView={(v) => { setView(v); setEditingPhoto(null); }} isAdmin={isAdmin} onLoginClick={() => setShowLogin(true)} onLogout={() => { setIsAdmin(false); alert("已登出"); }} />
+                <Header setView={(v) => { setView(v); setEditingPhoto(null); setDateFilter(null); }} isAdmin={isAdmin} onLoginClick={() => setShowLogin(true)} onLogout={() => { setIsAdmin(false); alert("已登出"); }} currentView={view} />
+                
                 {showLogin && (<AdminLogin onLogin={() => { setIsAdmin(true); setShowLogin(false); }} onCancel={() => setShowLogin(false)} />)}
+                
                 {selectedPhoto && (<Lightbox photo={selectedPhoto} onClose={() => setSelectedPhoto(null)} isAdmin={isAdmin} onEdit={startEdit} onDelete={handleDeletePhoto} />)}
 
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    {view === 'gallery' ? (
+                    {view === 'calendar' ? (
+                        <CalendarView 
+                            photos={photos} 
+                            onSelectDate={() => {}} 
+                            onExpand={setSelectedPhoto}
+                            isAdmin={isAdmin}
+                            onEdit={startEdit}
+                            onDelete={handleDeletePhoto}
+                        />
+                    ) : view === 'gallery' ? (
                     <>
+                        {dateFilter && (
+                            <div className="mb-6 bg-indigo-50 border border-indigo-200 rounded-lg p-4 flex justify-between items-center animate-in slide-in-from-top-2">
+                                <span className="text-indigo-700 font-medium flex items-center gap-2">
+                                    <CalendarIcon size={18} />
+                                    正在檢視 {dateFilter} 的照片 ({filteredPhotos.length} 張)
+                                </span>
+                                <button onClick={() => setDateFilter(null)} className="text-indigo-600 hover:text-indigo-800 text-sm font-bold flex items-center gap-1"><XCircle size={16} /> 清除篩選</button>
+                            </div>
+                        )}
+
                         <div className="flex flex-col gap-4 mb-8">
                             <div className="flex flex-col md:flex-row gap-4">
                                 <div className="relative flex-grow">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Search className="h-5 w-5 text-gray-400" /></div>
-                                    <input 
-                                        type="text" 
-                                        placeholder="搜尋... (支援: 台北 宜蘭 OR 花蓮 -夜景 #風景)" 
-                                        className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" 
-                                        value={searchQuery} 
-                                        onChange={(e) => setSearchQuery(e.target.value)} 
-                                    />
-                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                        <Filter className="h-4 w-4 text-gray-300" />
-                                    </div>
+                                    <input type="text" placeholder="搜尋... (支援: 台北 宜蘭 OR 花蓮 -夜景 #風景)" className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} disabled={!!dateFilter} />
+                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><Filter className="h-4 w-4 text-gray-300" /></div>
                                 </div>
-                                <button 
-                                    onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
-                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 shadow-sm min-w-[140px] transition-all"
-                                >
+                                <button onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')} className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 shadow-sm min-w-[140px] transition-all">
                                     {sortOrder === 'newest' ? <ArrowDownWideNarrow size={18} /> : <ArrowUpNarrowWide size={18} />}
                                     <span>{sortOrder === 'newest' ? '最新在上' : '最舊在上'}</span>
                                 </button>
@@ -933,15 +927,7 @@
                             <div className="flex flex-wrap gap-2 items-center">
                                 <span className="text-sm font-bold text-gray-400 mr-2 flex items-center gap-1"><Tag size={14} /> 分類:</span>
                                 <button onClick={() => setActiveTag(null)} className={`px-3 py-1 rounded-full text-sm transition-colors ${!activeTag ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-200'}`}>全部</button>
-                                {allTags.map(tag => (
-                                    <button 
-                                        key={tag} 
-                                        onClick={() => setActiveTag(tag === activeTag ? null : tag)} 
-                                        className={`px-3 py-1 rounded-full text-sm transition-colors ${tag === activeTag ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200'}`}
-                                    >
-                                        {tag}
-                                    </button>
-                                ))}
+                                {allTags.map(tag => (<button key={tag} onClick={() => setActiveTag(tag === activeTag ? null : tag)} className={`px-3 py-1 rounded-full text-sm transition-colors ${tag === activeTag ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200'}`}>{tag}</button>))}
                             </div>
                         </div>
 
