@@ -18,18 +18,14 @@
                     colors: {
                         slate: {
                             50: '#f8fafc',
-                            100: '#f1f5f9', // 溫柔的背景色
-                            800: '#1e293b', // 深色文字
-                            900: '#0f172a',
+                            100: '#f1f5f9', 800: '#1e293b', 900: '#0f172a',
                         },
                         indigo: {
-                            500: '#6366f1', // 主色調
-                            600: '#4f46e5',
+                            500: '#6366f1', 600: '#4f46e5',
                         }
                     },
                     animation: {
                         'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     },
                     keyframes: {
                         fadeInUp: {
@@ -48,45 +44,52 @@
     <!-- 3. 載入 Exif-js -->
     <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
 
-    <!-- 4. 設定 Fonts -->
+    <!-- 4. 載入 Leaflet (地圖功能) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- 5. 設定 Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- 5. CSS -->
+    <!-- 6. CSS -->
     <style>
-        body { 
-            margin: 0; 
-            font-family: 'Inter', sans-serif; 
-            background-color: #f8fafc; /* Slate-50 */
-            color: #1e293b; /* Slate-800 */
-            -webkit-font-smoothing: antialiased;
-        }
-        
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; -webkit-font-smoothing: antialiased; }
         .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; color: #4f46e5; font-weight: 500; letter-spacing: 0.05em; }
-        
-        /* 捲軸樣式 */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
-
-        /* 瀑布流佈局 */
-        .masonry-grid {
-            column-count: 1;
-            column-gap: 1.5rem;
-        }
+        .masonry-grid { column-count: 1; column-gap: 1.5rem; }
         @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
         @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
+        .masonry-item { break-inside: avoid; margin-bottom: 1.5rem; }
         
-        /* 避免卡片在列中間斷開 */
-        .masonry-item {
-            break-inside: avoid;
-            margin-bottom: 1.5rem;
+        /* Map Styles */
+        .photo-marker {
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            transition: transform 0.2s;
+            background: white;
         }
-
-        .btn-icon {
-            @apply p-2 rounded-full transition-all duration-200 hover:bg-slate-100 text-slate-500 hover:text-indigo-600;
+        .photo-marker:hover {
+            transform: scale(1.2);
+            z-index: 1000 !important;
+            border-color: #6366f1;
+        }
+        .photo-marker img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        /* Leaflet Container Fix */
+        .leaflet-container {
+            width: 100%;
+            height: 100%;
+            z-index: 0; 
         }
     </style>
 </head>
@@ -100,9 +103,9 @@
         </div>
     </div>
 
-    <!-- 6. React App -->
+    <!-- 7. React App -->
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useRef, useMemo, useCallback } from 'https://esm.sh/react@18.2.0';
+        import React, { useState, useEffect, useRef, useMemo } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
             Camera, MapPin, Clock, Search, Upload, Download, Tag, Eye, X, 
@@ -111,12 +114,12 @@
             Cloud, RefreshCw, AlertTriangle, Info, Save, Link as LinkIcon, FileUp, 
             Sparkles, Map as MapIcon, Aperture, Disc, Gauge, 
             ArrowDownWideNarrow, ArrowUpNarrowWide, Filter, FileCode,
-            Calendar as CalendarIcon, ChevronLeft, ChevronRight, XCircle, MoreHorizontal, LayoutGrid, Globe, ChevronDown
+            Calendar as CalendarIcon, ChevronLeft, ChevronRight, XCircle, MoreHorizontal, Globe, ChevronDown
         } from 'https://esm.sh/lucide-react@0.294.0';
         
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
         // -----------------------------------------------------------------------------
@@ -149,34 +152,20 @@
         }
 
         // -----------------------------------------------------------------------------
-        // Hooks & Helpers
+        // Helpers
         // -----------------------------------------------------------------------------
 
         function useDebounce(value, delay) {
             const [debouncedValue, setDebouncedValue] = useState(value);
-            useEffect(() => {
-                const handler = setTimeout(() => setDebouncedValue(value), delay);
-                return () => clearTimeout(handler);
-            }, [value, delay]);
+            useEffect(() => { const h = setTimeout(() => setDebouncedValue(value), delay); return () => clearTimeout(h); }, [value, delay]);
             return debouncedValue;
         }
 
         const getExifValue = (item) => {
             if (typeof item === 'number') return item;
-            if (typeof item === 'string') {
-                if (item.includes('/')) {
-                    const [n, d] = item.split('/');
-                    return Number(n) / Number(d);
-                }
-                return Number(item);
-            }
-            if (item && item.numerator !== undefined && item.denominator !== undefined) {
-                return item.denominator === 0 ? 0 : item.numerator / item.denominator;
-            }
-            if (item && typeof item.valueOf === 'function') {
-                const val = item.valueOf();
-                return isNaN(val) ? 0 : Number(val);
-            }
+            if (typeof item === 'string') return item.includes('/') ? Number(item.split('/')[0]) / Number(item.split('/')[1]) : Number(item);
+            if (item && item.numerator !== undefined && item.denominator !== undefined) return item.denominator === 0 ? 0 : item.numerator / item.denominator;
+            if (item && typeof item.valueOf === 'function') { const val = item.valueOf(); return isNaN(val) ? 0 : Number(val); }
             return 0;
         };
 
@@ -188,8 +177,7 @@
             if (Math.abs(absVal - 0.333) < 0.01) return `${sign}1/3`;
             if (Math.abs(absVal - 0.666) < 0.01) return `${sign}2/3`;
             if (Math.abs(absVal - 0.5) < 0.01) return `${sign}1/2`;
-            if (Number.isInteger(val)) return `${sign}${val}`;
-            return `${sign}${val.toFixed(1)}`;
+            return Number.isInteger(val) ? `${sign}${val}` : `${sign}${val.toFixed(1)}`;
         };
 
         const parseLensInfo = (lensInfo) => {
@@ -198,7 +186,6 @@
             const maxFocal = getExifValue(lensInfo[1]);
             const minF = getExifValue(lensInfo[2]);
             const maxF = getExifValue(lensInfo[3]);
-
             if (!minFocal) return null;
             let focalStr = minFocal === maxFocal ? `${minFocal}mm` : `${minFocal}-${maxFocal}mm`;
             let apertureStr = "";
@@ -208,9 +195,7 @@
 
         const findLensNameInAllTags = (allTags) => {
             const candidates = [allTags.LensModel, allTags.Lens, allTags.LensID, allTags.LensInfo];
-            for (const c of candidates) {
-                if (c && typeof c === 'string' && c.trim().length > 0 && !c.toLowerCase().includes("undefined")) return c;
-            }
+            for (const c of candidates) { if (c && typeof c === 'string' && c.trim().length > 0 && !c.toLowerCase().includes("undefined")) return c; }
             for (const key in allTags) {
                 const val = allTags[key];
                 if (typeof val === 'string' && val.length > 3 && key.includes('Lens')) {
@@ -240,28 +225,17 @@
                 if (!response.ok) return null;
                 const data = await response.json();
                 return data.address;
-            } catch (error) {
-                console.error("Geocoding failed", error);
-                return null;
-            }
+            } catch (error) { console.error("Geocoding failed", error); return null; }
         };
 
-        const downloadOriginal = async (imageUrl, filename) => {
-            try {
-                const response = await fetch(imageUrl);
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `Linkc_${filename}_original.jpg`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            } catch (err) {
-                console.error(err);
-                window.open(imageUrl, '_blank');
-            }
+        const copyToClipboard = (text) => {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = 'fixed'; textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.focus(); textArea.select();
+            try { document.execCommand('copy'); } catch (err) { console.error('Copy failed', err); }
+            document.body.removeChild(textArea);
         };
 
         const downloadWithWatermark = async (imageUrl, filename, e) => {
@@ -295,227 +269,57 @@
                         link.click();
                         document.body.removeChild(link);
                         resolve(true);
-                    } catch (err) {
-                        console.warn("Canvas Tainted", err);
-                        downloadOriginal(imageUrl, filename);
-                        resolve(false); 
-                    }
+                    } catch (err) { console.warn("Canvas Tainted", err); window.open(imageUrl, '_blank'); resolve(false); }
                 };
-                img.onerror = () => {
-                    downloadOriginal(imageUrl, filename);
-                    resolve(false);
-                };
+                img.onerror = () => { window.open(imageUrl, '_blank'); resolve(false); };
             });
         };
 
-        const copyToClipboard = (text) => {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-9999px';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try { document.execCommand('copy'); } catch (err) { console.error('Copy failed', err); }
-            document.body.removeChild(textArea);
-        };
-
         // -----------------------------------------------------------------------------
-        // Defined Components
+        // Components
         // -----------------------------------------------------------------------------
 
         const ConfigError = () => (
-            <div className="error-container bg-gray-50">
-                <div className="error-box">
+            <div className="error-container bg-slate-50">
+                <div className="error-box border border-slate-200 shadow-md">
                     <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
-                    <h3 className="error-title text-gray-900">尚未設定 Firebase</h3>
-                    <p className="text-gray-600 mb-4">請編輯 index.html 並填入您的 Firebase Config。</p>
+                    <h3 className="error-title text-slate-900">尚未設定 Firebase</h3>
+                    <p className="text-slate-600 mb-4">請編輯 index.html 並填入您的 Firebase Config。</p>
                 </div>
             </div>
         );
 
         const AuthError = ({ message }) => (
-            <div className="error-container bg-gray-50">
-                <div className="error-box border-red-200">
+            <div className="error-container bg-slate-50">
+                <div className="error-box border border-red-200 shadow-md">
                     <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-                    <h3 className="error-title text-gray-900">連線失敗</h3>
-                    <p className="text-gray-800 font-mono text-xs bg-red-50 p-2 rounded mb-4 break-all">{message}</p>
+                    <h3 className="error-title text-slate-900">連線失敗</h3>
+                    <p className="text-slate-800 font-mono text-xs bg-red-50 p-2 rounded mb-4 break-all">{message}</p>
                     <button onClick={() => window.location.reload()} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors">重新整理</button>
                 </div>
             </div>
         );
 
-        const AdminLogin = ({ onLogin, onCancel }) => {
-            const [password, setPassword] = useState('');
-            const handleSubmit = (e) => { e.preventDefault(); if (password === '590123') onLogin(); else setPassword(''); };
-            return (
-                <div className="fixed inset-0 z-50 bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in-up">
-                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border border-gray-100">
-                        <div className="text-center mb-6">
-                            <div className="mx-auto bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mb-4"><Lock className="text-indigo-600 w-8 h-8" /></div>
-                            <h3 className="text-xl font-bold text-gray-800">管理員登入</h3>
-                        </div>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <input type="password" placeholder="Passcode" className="w-full text-center tracking-widest border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-lg" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
-                            <div className="flex gap-3"><button type="button" onClick={onCancel} className="flex-1 py-3 text-gray-500 hover:bg-gray-50 rounded-xl transition-colors font-medium">取消</button><button type="submit" className="flex-1 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 font-medium">解鎖</button></div>
-                        </form>
-                    </div>
-                </div>
-            );
-        };
-
-        const ShareButtons = ({ photo, minimal = false }) => {
-            const shareText = `${photo.thoughts_shooting || '分享一張照片'} \n\n#Linkc ${photo.tags.map(t=>'#'+t).join(' ')}`;
-            const handleIG = async (e) => { e.stopPropagation(); copyToClipboard(shareText); await downloadWithWatermark(photo.url, photo.id, e); };
-            const handleObsidian = (e) => { e.stopPropagation(); const altText = photo.tags.length > 0 ? photo.tags.join(', ') : 'Linkc Photo'; const markdown = `![${altText}](${photo.url})`; copyToClipboard(markdown); alert("已複製 Obsidian 語法！"); };
-            
-            const btnClass = minimal 
-                ? "text-gray-400 hover:text-gray-700 transition-colors p-1"
-                : "text-gray-500 hover:bg-gray-100 p-2 rounded-full transition-all";
-
-            return (
-                <div className="flex items-center gap-1">
-                    <button onClick={(e) => {e.stopPropagation(); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(photo.url)}`, '_blank')}} className={`${btnClass} hover:text-[#1877F2]`}><Facebook size={minimal ? 16 : 18} strokeWidth={1.5} /></button>
-                    <button onClick={(e) => {e.stopPropagation(); window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(photo.url)}`, '_blank')}} className={`${btnClass} hover:text-[#06c755]`}><MessageCircle size={minimal ? 16 : 18} strokeWidth={1.5} /></button>
-                    <button onClick={handleIG} className={`${btnClass} hover:text-[#E1306C]`}><Instagram size={minimal ? 16 : 18} strokeWidth={1.5} /></button>
-                    <button onClick={handleObsidian} className={`${btnClass} hover:text-purple-600`}><FileCode size={minimal ? 16 : 18} strokeWidth={1.5} /></button>
-                </div>
-            );
-        };
-
-        const Lightbox = ({ photo, onClose, isAdmin, onEdit, onDelete }) => {
-            if (!photo) return null;
-            return (
-                <div className="fixed inset-0 z-50 bg-gray-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fade-in-up" onClick={onClose}>
-                    <button onClick={onClose} className="absolute top-6 right-6 text-white/50 hover:text-white p-2 z-50 transition-colors"><X size={32} strokeWidth={1} /></button>
-                    
-                    {isAdmin && (
-                        <div className="absolute top-6 left-6 flex gap-4 z-50">
-                            <button onClick={(e) => { e.stopPropagation(); onEdit(photo); }} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium transition-all flex items-center gap-2"><Edit size={14}/> 編輯</button>
-                            <button onClick={(e) => { e.stopPropagation(); onDelete(photo.id); onClose(); }} className="bg-red-500/80 hover:bg-red-600 text-white px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium transition-all flex items-center gap-2"><Trash2 size={14}/> 刪除</button>
-                        </div>
-                    )}
-
-                    <div className="relative max-w-7xl max-h-[85vh] w-full flex flex-col items-center justify-center" onClick={e => e.stopPropagation()}>
-                        <img src={photo.url} className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-sm" loading="eager" decoding="async" />
-                        
-                        <div className="mt-6 flex flex-col items-center gap-3 text-white/90">
-                            <div className="flex items-center gap-6 text-sm font-light tracking-wide bg-black/40 px-6 py-2 rounded-full backdrop-blur-md border border-white/10">
-                                <span className="flex items-center gap-2"><Clock size={14} className="text-indigo-400"/> {photo.date ? photo.date.replace('T', ' ') : ''}</span>
-                                <span className="w-px h-3 bg-white/20"></span>
-                                <span className="flex items-center gap-2"><MapPin size={14} className="text-indigo-400"/> {photo.location.city} {photo.location.spot && `· ${photo.location.spot}`}</span>
-                                <span className="w-px h-3 bg-white/20"></span>
-                                <button onClick={(e) => downloadWithWatermark(photo.url, photo.id, e)} className="hover:text-indigo-300 transition-colors flex items-center gap-2"><Download size={14} /> 下載</button>
-                            </div>
-                            
-                            <div className="text-xs text-white/50 font-mono tracking-wider space-x-3">
-                                {photo.exif.camera && <span>{photo.exif.camera}</span>}
-                                {photo.exif.lens && <span>| {photo.exif.lens}</span>}
-                                <span>| {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso} {photo.exif.focalLength ? `· ${photo.exif.focalLength}` : ''} {photo.exif.ev ? `· EV ${photo.exif.ev}` : ''}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // PhotoCard: 恢復 Indigo/Gray 風格
-        const PhotoCard = ({ photo, onExpand, isAdmin, onEdit, onDelete }) => (
-            <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full border border-gray-100 relative">
-                {isAdmin && (
-                    <div className="absolute top-2 left-2 z-20 flex gap-2">
-                        <button onClick={(e) => { e.stopPropagation(); onEdit(photo); }} className="bg-blue-500 text-white p-2 rounded-full shadow-md hover:bg-blue-600"><Edit size={14} /></button>
-                        <button onClick={(e) => { e.stopPropagation(); onDelete(photo.id); }} className="bg-red-500 text-white p-2 rounded-full shadow-md hover:bg-red-600"><Trash2 size={14} /></button>
-                    </div>
-                )}
-                <div className="relative aspect-[4/3] overflow-hidden bg-gray-100 cursor-zoom-in" onClick={() => onExpand(photo)}>
-                    <img src={photo.url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
-                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2 z-10"><ShareButtons photo={photo} /></div>
-                    <div className="absolute bottom-3 left-3 pointer-events-none">
-                        <span className="bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
-                            <Clock size={12} /> {photo.date ? photo.date.replace('T', ' ') : ''}
-                        </span>
-                    </div>
-                </div>
-                
-                <div className="p-5 flex flex-col flex-grow">
-                    <div className="flex items-center text-gray-500 text-sm mb-3">
-                        <MapPin size={14} className="mr-1 text-indigo-500" />
-                        {photo.location.country} · {photo.location.city} {photo.location.spot && `· ${photo.location.spot}`}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {photo.tags.map(tag => (
-                            <span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full font-medium">#{tag}</span>
-                        ))}
-                    </div>
-
-                    <div className="space-y-3 mb-4 flex-grow">
-                        {photo.thoughts_shooting && (
-                            <div className="bg-gray-50 p-3 rounded-lg border-l-2 border-orange-300">
-                                <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1">
-                                    <Camera size={12} /> 拍攝當下
-                                </div>
-                                <p className="text-gray-700 text-sm italic">"{photo.thoughts_shooting}"</p>
-                            </div>
-                        )}
-                        {photo.thoughts_viewing && (
-                            <div className="bg-gray-50 p-3 rounded-lg border-l-2 border-indigo-300">
-                                <div className="flex items-center gap-1 text-xs font-bold text-gray-500 mb-1">
-                                    <Eye size={12} /> 欣賞隨筆
-                                </div>
-                                <p className="text-gray-700 text-sm italic">"{photo.thoughts_viewing}"</p>
-                            </div>
-                        )}
-                    </div>
-
-                    {(photo.exif.camera || photo.exif.lens) && (
-                        <div className="flex flex-col gap-1 mb-3 text-xs text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
-                            {photo.exif.camera && <div className="flex items-center gap-1 font-medium"><Camera size={12} className="text-gray-400"/> {photo.exif.camera}</div>}
-                            {photo.exif.lens && <div className="flex items-center gap-1 text-gray-500"><Disc size={12} className="text-gray-400"/> {photo.exif.lens}</div>}
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-4 gap-1 border-t pt-3 mt-auto text-center">
-                        <div className="flex flex-col items-center"><span className="text-[10px] uppercase text-gray-400 font-bold">快門</span><span className="text-xs text-gray-700 font-mono">{photo.exif.shutter || '--'}</span></div>
-                        <div className="flex flex-col items-center border-l border-gray-100"><span className="text-[10px] uppercase text-gray-400 font-bold">光圈</span><span className="text-xs text-gray-700 font-mono">{photo.exif.aperture || '--'}</span></div>
-                        <div className="flex flex-col items-center border-l border-gray-100"><span className="text-[10px] uppercase text-gray-400 font-bold">ISO</span><span className="text-xs text-gray-700 font-mono">{photo.exif.iso || '--'}</span></div>
-                        <div className="flex flex-col items-center border-l border-gray-100"><span className="text-[10px] uppercase text-gray-400 font-bold">EV</span><span className="text-xs text-gray-700 font-mono">{photo.exif.ev || '--'}</span></div>
-                    </div>
-                    
-                    <div className="border-t border-dashed border-gray-200 mt-3 pt-2 flex justify-between items-center">
-                        <span className="text-[10px] text-gray-400">CC BY 4.0 姓名標示</span>
-                        <span className="text-[10px] font-bold text-gray-300 select-none">Linkc</span>
-                    </div>
-                </div>
-            </div>
-        );
-
-        // Header: 回歸白色底、靛藍色點綴
         const Header = ({ setView, isAdmin, onLoginClick, onLogout, currentView }) => (
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    {/* Logo 連結至部落格 */}
                     <a href="https://2blog.ilc.edu.tw/linkc/" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity" title="前往 Linkc Blog">
                         <img src="https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f" alt="Linkc Logo" className="h-16 w-auto mr-2" />
                     </a>
-                    
                     <div className="flex items-center cursor-pointer gap-2" onClick={() => setView('gallery')}>
                         <h1 className="text-2xl font-bold text-gray-900 tracking-tight hidden sm:block">Linkc <span className="text-indigo-600 font-light">Gallery</span></h1>
                     </div>
-                    
                     {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2">ADMIN</span>}
                 </div>
                 <div className="flex items-center gap-3">
                     <a href="https://gavintux.github.io/yi/" target="_blank" rel="noopener noreferrer" className="p-2.5 rounded-xl transition-all text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="Zen's Portal">
                         <Globe size={20} />
                     </a>
-                    <button 
-                        onClick={() => setView('calendar')} 
-                        className={`p-2.5 rounded-xl transition-all ${currentView === 'calendar' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100'}`}
-                        title="日曆模式"
-                    >
+                    <button onClick={() => setView('map')} className={`p-2.5 rounded-xl transition-all ${currentView === 'map' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100'}`} title="地圖模式">
+                        <MapIcon size={20} />
+                    </button>
+                    <button onClick={() => setView('calendar')} className={`p-2.5 rounded-xl transition-all ${currentView === 'calendar' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100'}`} title="日曆模式">
                         <CalendarIcon size={20} />
                     </button>
 
@@ -524,7 +328,6 @@
                     ) : (
                         <button onClick={onLoginClick} className="p-2.5 text-gray-400 hover:text-indigo-600 transition-colors" title="登入"><Lock size={20} /></button>
                     )}
-                    {/* Conditionally render Upload button based on isAdmin */}
                     {isAdmin && (
                         <button onClick={() => setView('upload')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium text-sm">
                             <Upload size={18} /><span className="hidden sm:inline">新增照片</span>
@@ -535,11 +338,86 @@
             </header>
         );
 
-        // Updated Calendar View (Mobile Friendly + Picker)
+        // Map View Component (Fix: Ensure coordinates are numbers)
+        const MapView = ({ photos, onSelectPhoto }) => {
+            const mapRef = useRef(null);
+            
+            useEffect(() => {
+                // IMPORTANT: Filter photos with valid coordinates and ensure they are numbers
+                const geotaggedPhotos = photos.filter(p => {
+                    const lat = parseFloat(p.location?.lat);
+                    const lng = parseFloat(p.location?.lng);
+                    return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+                });
+                
+                if (!document.getElementById('map')) return;
+
+                if (!mapRef.current) {
+                    mapRef.current = L.map('map').setView([23.6, 121], 8); // Default center Taiwan
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(mapRef.current);
+                } else {
+                    // Force resize recalculation when view changes
+                    setTimeout(() => { mapRef.current.invalidateSize(); }, 100);
+                }
+
+                // Clear existing layers
+                mapRef.current.eachLayer((layer) => {
+                    if (layer instanceof L.Marker) {
+                        mapRef.current.removeLayer(layer);
+                    }
+                });
+
+                const markers = [];
+                geotaggedPhotos.forEach(photo => {
+                    const lat = parseFloat(photo.location.lat);
+                    const lng = parseFloat(photo.location.lng);
+
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        const customIcon = L.divIcon({
+                            className: 'custom-icon',
+                            html: `<div class="photo-marker w-12 h-12 rounded-full border-2 border-white shadow-lg overflow-hidden relative bg-white cursor-pointer group">
+                                     <img src="${photo.url}" class="w-full h-full object-cover" />
+                                   </div>`,
+                            iconSize: [48, 48],
+                            iconAnchor: [24, 48],
+                            popupAnchor: [0, -48]
+                        });
+
+                        const marker = L.marker([lat, lng], { icon: customIcon })
+                            .addTo(mapRef.current)
+                            .bindPopup(`
+                                <div class="text-center min-w-[150px]">
+                                    <div class="h-24 w-full mb-2 bg-gray-100 rounded overflow-hidden">
+                                        <img src="${photo.url}" class="w-full h-full object-cover" />
+                                    </div>
+                                    <p class="font-bold text-sm mb-1 text-slate-800">${photo.location.city || ''} ${photo.location.spot || ''}</p>
+                                    <p class="text-xs text-slate-500">${photo.date ? photo.date.split('T')[0] : ''}</p>
+                                    <button class="mt-2 text-indigo-600 text-xs font-bold hover:underline" onclick="window.dispatchEvent(new CustomEvent('openLightbox', {detail: '${photo.id}'}))">查看大圖</button>
+                                </div>
+                            `);
+                        markers.push(marker);
+                    }
+                });
+
+                if (markers.length > 0) {
+                    const group = new L.featureGroup(markers);
+                    mapRef.current.fitBounds(group.getBounds().pad(0.1));
+                }
+            }, [photos]);
+
+            return (
+                <div className="w-full h-[calc(100vh-6rem)] relative bg-slate-100 animate-fade-in-up">
+                    <div id="map" className="w-full h-full z-0"></div>
+                </div>
+            );
+        };
+
         const CalendarView = ({ photos, onSelectDate, onExpand, isAdmin, onEdit, onDelete }) => {
             const [currentDate, setCurrentDate] = useState(new Date());
             const [selectedDate, setSelectedDate] = useState(null);
-            const [showPicker, setShowPicker] = useState(false); // For Year/Month Picker
+            const [showPicker, setShowPicker] = useState(false);
             const photoSectionRef = useRef(null);
 
             const getDaysInMonth = (date) => {
@@ -553,20 +431,22 @@
             const { days, firstDay } = getDaysInMonth(currentDate);
             const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
             
-            // Available Years for Picker
-            const availableYears = useMemo(() => {
-                const years = new Set(photos.map(p => {
+            // Available Years for Picker with Month data
+            const availableData = useMemo(() => {
+                const data = {};
+                photos.forEach(p => {
                     const d = p.exif?.date || p.date;
-                    // Simple logic to extract year
-                    if (!d) return new Date().getFullYear();
-                    // Assuming ISO-like format or at least starting with YYYY
-                    const yearStr = d.substring(0, 4);
-                    const year = parseInt(yearStr);
-                    return isNaN(year) ? new Date().getFullYear() : year;
-                }));
-                years.add(new Date().getFullYear());
-                return Array.from(years).sort((a, b) => b - a);
+                    if (d) {
+                        const year = new Date(d).getFullYear();
+                        const month = new Date(d).getMonth();
+                        if (!data[year]) data[year] = new Set();
+                        data[year].add(month);
+                    }
+                });
+                return data;
             }, [photos]);
+
+            const availableYears = Object.keys(availableData).sort((a, b) => b - a);
 
             const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
             const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -589,41 +469,40 @@
             return (
                 <div className="max-w-6xl mx-auto space-y-8 animate-fade-in-up pb-12">
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-8 relative">
-                        {/* Header & Picker Toggle */}
                         <div className="flex justify-between items-center mb-8">
-                            <button 
-                                onClick={() => setShowPicker(!showPicker)}
-                                className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2 hover:bg-gray-50 px-3 py-1 rounded-lg transition-colors group"
-                            >
+                            <button onClick={() => setShowPicker(!showPicker)} className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2 hover:bg-slate-50 px-3 py-1 rounded-lg transition-colors group">
                                 <span className="bg-indigo-100 text-indigo-600 p-1.5 sm:p-2 rounded-lg group-hover:bg-indigo-200 transition-colors"><CalendarIcon size={20} /></span>
                                 <span>{currentDate.getFullYear()}年 {monthNames[currentDate.getMonth()]}</span>
                                 <ChevronDown size={18} className={`text-gray-400 transition-transform duration-200 ${showPicker ? 'rotate-180' : ''}`} />
                             </button>
                             <div className="flex gap-2">
-                                <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"><ChevronLeft /></button>
-                                <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"><ChevronRight /></button>
+                                <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"><ChevronLeft /></button>
+                                <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"><ChevronRight /></button>
                             </div>
                         </div>
 
-                        {/* Year/Month Picker Overlay */}
                         {showPicker && (
-                            <div className="absolute top-20 left-0 right-0 z-20 bg-white shadow-xl border border-gray-200 rounded-xl p-6 mx-4 sm:mx-8 animate-fade-in-up">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-h-[60vh] overflow-y-auto">
+                            <div className="absolute top-20 left-0 right-0 z-20 bg-white shadow-xl border border-slate-200 rounded-xl p-6 mx-4 sm:mx-8 animate-fade-in-up max-h-[60vh] overflow-y-auto">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     {availableYears.map(year => (
                                         <div key={year} className="space-y-2">
-                                            <h4 className="font-bold text-indigo-600 border-b border-gray-100 pb-1 sticky top-0 bg-white">{year}</h4>
+                                            <h4 className="font-bold text-indigo-600 border-b border-slate-100 pb-1 sticky top-0 bg-white">{year}</h4>
                                             <div className="grid grid-cols-4 gap-2">
-                                                {monthNames.map((m, idx) => (
-                                                    <button 
-                                                        key={idx} 
-                                                        onClick={() => handleJump(year, idx)}
-                                                        className={`text-sm py-2 rounded hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${
-                                                            year === currentDate.getFullYear() && idx === currentDate.getMonth() ? 'bg-indigo-600 text-white hover:bg-indigo-700 font-bold' : 'text-gray-600'
-                                                        }`}
-                                                    >
-                                                        {idx + 1}月
-                                                    </button>
-                                                ))}
+                                                {monthNames.map((m, idx) => {
+                                                    const hasPhotos = availableData[year]?.has(idx);
+                                                    return (
+                                                        <button 
+                                                            key={idx} 
+                                                            onClick={() => handleJump(year, idx)}
+                                                            className={`text-sm py-2 rounded transition-colors relative ${
+                                                                year == currentDate.getFullYear() && idx === currentDate.getMonth() ? 'bg-indigo-600 text-white font-bold' : 'text-slate-600 hover:bg-indigo-50'
+                                                            }`}
+                                                        >
+                                                            {idx + 1}月
+                                                            {hasPhotos && <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-400 rounded-full"></span>}
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     ))}
@@ -631,13 +510,13 @@
                             </div>
                         )}
 
-                        <div className="grid grid-cols-7 gap-1 sm:gap-4 mb-4 text-center text-gray-400 font-bold text-xs uppercase tracking-wider">
+                        <div className="grid grid-cols-7 gap-1 sm:gap-4 mb-4 text-center text-slate-400 font-bold text-xs uppercase tracking-wider">
                             <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
                         </div>
                         
                         {/* Responsive Grid: Mobile (Compact) vs Desktop (Detailed) */}
                         <div className="grid grid-cols-7 gap-1 sm:gap-4">
-                            {Array.from({ length: firstDay }).map((_, i) => (<div key={`empty-${i}`} className="h-14 sm:h-32 rounded-lg sm:rounded-2xl bg-gray-50/50 border border-transparent"></div>))}
+                            {Array.from({ length: firstDay }).map((_, i) => (<div key={`empty-${i}`} className="h-14 sm:h-32 rounded-lg sm:rounded-2xl bg-slate-50/50 border border-transparent"></div>))}
                             {Array.from({ length: days }).map((_, i) => {
                                 const day = i + 1;
                                 const dateStr = getFormattedDate(day);
@@ -651,7 +530,7 @@
                                         onClick={() => count > 0 && handleDateClick(dateStr)}
                                         className={`
                                             h-14 sm:h-32 flex flex-col justify-between p-1 sm:p-3 rounded-lg sm:rounded-2xl transition-all relative border group
-                                            ${count > 0 ? 'cursor-pointer hover:shadow-lg hover:-translate-y-1 border-gray-200 bg-white' : 'border-transparent bg-gray-50 text-gray-300'}
+                                            ${count > 0 ? 'cursor-pointer hover:shadow-lg hover:-translate-y-1 border-slate-200 bg-white' : 'border-transparent bg-slate-50 text-slate-300'}
                                             ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-1 sm:ring-offset-2 border-indigo-200' : ''}
                                         `}
                                     >
@@ -669,7 +548,7 @@
                                         {/* Desktop: Image Preview */}
                                         {count > 0 && (
                                             <div className="hidden sm:flex flex-col items-center gap-2">
-                                                <div className="w-full h-12 rounded-lg overflow-hidden bg-gray-100 relative">
+                                                <div className="w-full h-12 rounded-lg overflow-hidden bg-slate-100 relative">
                                                      <img src={dayPhotos[0].url} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" loading="lazy" />
                                                      {count > 1 && <div className="absolute top-1 right-1 bg-black/50 text-white text-[10px] font-bold px-1.5 rounded-full backdrop-blur-sm">+{count-1}</div>}
                                                 </div>
@@ -681,13 +560,13 @@
                         </div>
                     </div>
                     {selectedDate && selectedPhotos.length > 0 && (
-                        <div ref={photoSectionRef} className="pt-8 border-t-2 border-dashed border-gray-200 animate-fade-in-up">
+                        <div ref={photoSectionRef} className="pt-8 border-t-2 border-dashed border-slate-200 animate-fade-in-up">
                             <div className="flex justify-between items-center mb-8 px-2">
-                                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
+                                <h3 className="text-xl font-bold text-slate-800 flex items-center gap-3">
                                     <span className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg text-sm">{selectedDate}</span>
                                     的照片
                                 </h3>
-                                <button onClick={() => setSelectedDate(null)} className="p-2 hover:bg-gray-200 rounded-full text-slate-500"><XCircle size={24} /></button>
+                                <button onClick={() => setSelectedDate(null)} className="p-2 hover:bg-slate-200 rounded-full text-slate-500"><XCircle size={24} /></button>
                             </div>
                             <div className="masonry-grid">
                                 {selectedPhotos.map(photo => (<PhotoCard key={photo.id} photo={photo} onExpand={onExpand} isAdmin={isAdmin} onEdit={onEdit} onDelete={onDelete} />))}
@@ -698,10 +577,78 @@
             );
         };
 
+        const ShareButtons = ({ photo, minimal = false }) => {
+            const shareText = `${photo.thoughts_shooting || '分享一張照片'} \n\n#Linkc ${photo.tags.map(t=>'#'+t).join(' ')}`;
+            const handleIG = async (e) => { e.stopPropagation(); copyToClipboard(shareText); await downloadWithWatermark(photo.url, photo.id, e); };
+            const handleObsidian = (e) => { e.stopPropagation(); const altText = photo.tags.length > 0 ? photo.tags.join(', ') : 'Linkc Photo'; const markdown = `![${altText}](${photo.url})`; copyToClipboard(markdown); alert("已複製 Obsidian 語法！"); };
+            const btnClass = minimal ? "text-slate-400 hover:text-slate-700 transition-colors p-1" : "text-slate-500 hover:bg-slate-100 p-2 rounded-full transition-all";
+            return (
+                <div className="flex items-center gap-1">
+                    <button onClick={(e) => {e.stopPropagation(); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(photo.url)}`, '_blank')}} className={`${btnClass} hover:text-[#1877F2]`}><Facebook size={minimal ? 16 : 18} strokeWidth={1.5} /></button>
+                    <button onClick={(e) => {e.stopPropagation(); window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(photo.url)}`, '_blank')}} className={`${btnClass} hover:text-[#06c755]`}><MessageCircle size={minimal ? 16 : 18} strokeWidth={1.5} /></button>
+                    <button onClick={handleIG} className={`${btnClass} hover:text-[#E1306C]`}><Instagram size={minimal ? 16 : 18} strokeWidth={1.5} /></button>
+                    <button onClick={handleObsidian} className={`${btnClass} hover:text-purple-600`}><FileCode size={minimal ? 16 : 18} strokeWidth={1.5} /></button>
+                </div>
+            );
+        };
+
+        const Lightbox = ({ photo, onClose, isAdmin, onEdit, onDelete }) => {
+            if (!photo) return null;
+            return (
+                <div className="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fade-in-up" onClick={onClose}>
+                    <button onClick={onClose} className="absolute top-6 right-6 text-white/50 hover:text-white p-2 z-50 transition-colors"><X size={32} strokeWidth={1} /></button>
+                    {isAdmin && (
+                        <div className="absolute top-6 left-6 flex gap-4 z-50">
+                            <button onClick={(e) => { e.stopPropagation(); onEdit(photo); }} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium transition-all flex items-center gap-2"><Edit size={14}/> 編輯</button>
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(photo.id); onClose(); }} className="bg-red-500/80 hover:bg-red-600 text-white px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium transition-all flex items-center gap-2"><Trash2 size={14}/> 刪除</button>
+                        </div>
+                    )}
+                    <div className="relative max-w-7xl max-h-[85vh] w-full flex flex-col items-center justify-center" onClick={e => e.stopPropagation()}>
+                        <img src={photo.url} className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-sm" loading="eager" decoding="async" />
+                        <div className="mt-6 flex flex-col items-center gap-3 text-white/90">
+                            <div className="flex items-center gap-6 text-sm font-light tracking-wide bg-black/40 px-6 py-2 rounded-full backdrop-blur-md border border-white/10">
+                                <span className="flex items-center gap-2"><Clock size={14} className="text-indigo-400"/> {photo.date ? photo.date.replace('T', ' ') : ''}</span>
+                                <span className="w-px h-3 bg-white/20"></span>
+                                <span className="flex items-center gap-2"><MapPin size={14} className="text-indigo-400"/> {photo.location.city} {photo.location.spot && `· ${photo.location.spot}`}</span>
+                                <span className="w-px h-3 bg-white/20"></span>
+                                <button onClick={(e) => downloadWithWatermark(photo.url, photo.id, e)} className="hover:text-indigo-300 transition-colors flex items-center gap-2"><Download size={14} /> 下載</button>
+                            </div>
+                            <div className="text-xs text-white/50 font-mono tracking-wider space-x-3">
+                                {photo.exif.camera && <span>{photo.exif.camera}</span>}
+                                {photo.exif.lens && <span>| {photo.exif.lens}</span>}
+                                <span>| {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso} {photo.exif.focalLength ? `· ${photo.exif.focalLength}` : ''} {photo.exif.ev ? `· EV ${photo.exif.ev}` : ''}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const PhotoCard = ({ photo, onExpand, isAdmin, onEdit, onDelete }) => (
+            <div className="masonry-item group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 break-inside-avoid">
+                <div className="relative overflow-hidden cursor-zoom-in" onClick={() => onExpand(photo)}>
+                    <img src={photo.url} className="w-full h-auto object-cover" loading="lazy" decoding="async" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                        <div className="flex justify-between items-end">
+                            <div className="text-white text-xs font-medium drop-shadow-md"><p className="flex items-center gap-1"><CalendarIcon size={12}/> {photo.date ? photo.date.split('T')[0] : ''}</p></div>
+                            <div className="bg-white/90 backdrop-blur-md rounded-full px-2 py-1 shadow-lg"><ShareButtons photo={photo} minimal={true} /></div>
+                        </div>
+                    </div>
+                    {isAdmin && (<div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"><button onClick={(e) => { e.stopPropagation(); onEdit(photo); }} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-600 shadow-sm"><Edit size={14}/></button><button onClick={(e) => { e.stopPropagation(); onDelete(photo.id); }} className="bg-white/90 p-1.5 rounded-full hover:bg-red-50 text-red-500 shadow-sm"><Trash2 size={14}/></button></div>)}
+                </div>
+                <div className="p-4 flex flex-col gap-3">
+                    <div><div className="flex items-baseline justify-between mb-1"><h3 className="font-bold text-slate-800 text-lg leading-tight">{photo.location.city}</h3><span className="text-xs text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded-md">{photo.location.country}</span></div>{photo.location.spot && <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><MapPin size={10} className="text-indigo-500"/> {photo.location.spot}</p>}</div>
+                    <div className="space-y-2">{photo.thoughts_shooting && (<div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100"><span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wide">Shooting</span>{photo.thoughts_shooting}</div>)}{photo.thoughts_viewing && (<div className="text-sm text-slate-600 leading-relaxed bg-indigo-50/50 p-3 rounded-xl border border-indigo-100"><span className="block text-[10px] font-bold text-indigo-400 mb-1 uppercase tracking-wide">Reflection</span>{photo.thoughts_viewing}</div>)}</div>
+                    {photo.tags && photo.tags.length > 0 && (<div className="flex flex-wrap gap-1.5">{photo.tags.map(tag => (<span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-md uppercase tracking-wide">#{tag}</span>))}</div>)}
+                    <div className="pt-3 mt-1 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-mono"><span className="flex items-center gap-1"><Aperture size={10}/> {photo.exif.aperture}</span><span>{photo.exif.shutter}</span><span className="flex items-center gap-1">ISO {photo.exif.iso}</span></div>
+                </div>
+            </div>
+        );
+
         const PhotoForm = ({ onSave, onCancel, initialData, isSaving }) => {
             const isEditMode = !!initialData;
             const getNowString = () => { const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); return now.toISOString().slice(0, 16); };
-            const [formData, setFormData] = useState(initialData || { url: '', tags: '', thoughts_shooting: '', thoughts_viewing: '', exif: { shutter: '', aperture: 'f/', iso: '', date: getNowString(), camera: '', lens: '', focalLength: '', ev: '' }, location: { country: '', city: '', spot: '' } });
+            const [formData, setFormData] = useState(initialData || { url: '', tags: '', thoughts_shooting: '', thoughts_viewing: '', exif: { shutter: '', aperture: 'f/', iso: '', date: getNowString(), camera: '', lens: '', focalLength: '', ev: '' }, location: { country: '', city: '', spot: '', lat: '', lng: '' } });
             const [status, setStatus] = useState('');
             const [uploadFile, setUploadFile] = useState(null);
             const [exifStatus, setExifStatus] = useState(''); 
@@ -716,7 +663,6 @@
                     const previewUrl = URL.createObjectURL(file);
                     setFormData(prev => ({ ...prev, url: previewUrl }));
                     EXIF.getData(file, async function() {
-                        // ... Same EXIF logic ...
                         const extractedShutter = EXIF.getTag(this, "ExposureTime");
                         const extractedFNumber = EXIF.getTag(this, "FNumber");
                         const extractedISO = EXIF.getTag(this, "ISOSpeedRatings");
@@ -763,12 +709,12 @@
                             if (decimalLat && decimalLon) {
                                 setExifStatus('定位中...');
                                 const address = await reverseGeocode(decimalLat, decimalLon);
+                                locationUpdate.lat = decimalLat;
+                                locationUpdate.lng = decimalLon;
                                 if (address) {
-                                    locationUpdate = {
-                                        country: address.country || "",
-                                        city: address.city || address.county || address.town || address.state || "",
-                                        spot: address.suburb || address.village || address.road || address.pedestrian || ""
-                                    };
+                                    locationUpdate.country = address.country || "";
+                                    locationUpdate.city = address.city || address.county || address.town || address.state || "";
+                                    locationUpdate.spot = address.suburb || address.village || address.road || address.pedestrian || "";
                                     extraStatus = " + GPS";
                                 } else { extraStatus = " (GPS 失敗)"; }
                             }
@@ -820,7 +766,15 @@
                             </div>
                             <div className="md:col-span-3 space-y-8">
                                 <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Tag size={14} className="text-indigo-500"/> 內容描述</h4><input type="text" placeholder="標籤 (例如: 風景, 台灣)" className="block w-full border-slate-200 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" value={formData.tags} onChange={(e) => handleChange(null, 'tags', e.target.value)} /><textarea rows="3" placeholder="拍攝當下的想法..." className="block w-full border-slate-200 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none" value={formData.thoughts_shooting} onChange={(e) => handleChange(null, 'thoughts_shooting', e.target.value)} /><textarea rows="2" placeholder="事後欣賞的感受..." className="block w-full border-slate-200 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none text-slate-600" value={formData.thoughts_viewing} onChange={(e) => handleChange(null, 'thoughts_viewing', e.target.value)} /></div>
-                                <div className="grid grid-cols-2 gap-6"><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><MapPin size={14} className="text-indigo-500"/> 地點資訊</h4><input type="text" placeholder="國家" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.country} onChange={(e) => handleChange('location', 'country', e.target.value)} /><input type="text" placeholder="城市" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.city} onChange={(e) => handleChange('location', 'city', e.target.value)} /><input type="text" placeholder="景點/街道" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.spot} onChange={(e) => handleChange('location', 'spot', e.target.value)} /></div><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Aperture size={14} className="text-indigo-500"/> 拍攝參數</h4><input type="datetime-local" className="block w-full border-slate-200 rounded-lg p-2 text-xs text-slate-600 mb-2" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /><div className="grid grid-cols-2 gap-2"><input type="text" placeholder="相機" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} /><input type="text" placeholder="鏡頭" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /><input type="text" placeholder="快門" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /><input type="text" placeholder="光圈" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /><input type="text" placeholder="ISO" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /><input type="text" placeholder="EV" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.ev} onChange={(e) => handleChange('exif', 'ev', e.target.value)} /></div></div></div>
+                                <div className="grid grid-cols-2 gap-6"><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><MapPin size={14} className="text-indigo-500"/> 地點資訊</h4>
+                                <input type="text" placeholder="國家" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.country} onChange={(e) => handleChange('location', 'country', e.target.value)} />
+                                <input type="text" placeholder="城市" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.city} onChange={(e) => handleChange('location', 'city', e.target.value)} />
+                                <input type="text" placeholder="景點/街道" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.spot} onChange={(e) => handleChange('location', 'spot', e.target.value)} />
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <input type="number" step="any" placeholder="Latitude (緯度)" className="block w-full border-slate-200 rounded-lg p-2 text-xs focus:border-indigo-500 outline-none" value={formData.location.lat} onChange={(e) => handleChange('location', 'lat', e.target.value)} />
+                                    <input type="number" step="any" placeholder="Longitude (經度)" className="block w-full border-slate-200 rounded-lg p-2 text-xs focus:border-indigo-500 outline-none" value={formData.location.lng} onChange={(e) => handleChange('location', 'lng', e.target.value)} />
+                                </div>
+                                </div><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Aperture size={14} className="text-indigo-500"/> 拍攝參數</h4><input type="datetime-local" className="block w-full border-slate-200 rounded-lg p-2 text-xs text-slate-600 mb-2" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /><div className="grid grid-cols-2 gap-2"><input type="text" placeholder="相機" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} /><input type="text" placeholder="鏡頭" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /><input type="text" placeholder="快門" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /><input type="text" placeholder="光圈" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /><input type="text" placeholder="ISO" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /><input type="text" placeholder="EV" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.ev} onChange={(e) => handleChange('exif', 'ev', e.target.value)} /></div></div></div>
                             </div>
                         </div>
                         <div className="flex justify-end gap-4 pt-8 border-t border-slate-100"><button type="button" onClick={onCancel} disabled={isSaving || status === 'uploading'} className="px-6 py-3 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-medium transition-colors">取消</button><button type="submit" disabled={isSaving || status === 'uploading'} className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 font-medium flex items-center gap-2 disabled:opacity-50 transition-all hover:-translate-y-0.5">{(isSaving || status === 'uploading') ? <RefreshCw className="animate-spin" size={20} /> : (isEditMode ? <Edit size={20}/> : <Upload size={20}/>)}{isEditMode ? '更新照片' : '發佈照片'}</button></div>
@@ -829,8 +783,27 @@
             );
         };
 
+        const AdminLogin = ({ onLogin, onCancel }) => {
+            const [password, setPassword] = useState('');
+            const handleSubmit = (e) => { e.preventDefault(); if (password === '590123') onLogin(); else setPassword(''); };
+            return (
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in-up">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border border-slate-100">
+                        <div className="text-center mb-6">
+                            <div className="mx-auto bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mb-4"><Lock className="text-indigo-600 w-8 h-8" /></div>
+                            <h3 className="text-xl font-bold text-slate-800">管理員登入</h3>
+                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <input type="password" placeholder="Passcode" className="w-full text-center tracking-widest border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-lg" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
+                            <div className="flex gap-3"><button type="button" onClick={onCancel} className="flex-1 py-3 text-slate-500 hover:bg-slate-50 rounded-xl transition-colors font-medium">取消</button><button type="submit" className="flex-1 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 font-medium">解鎖</button></div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
         function App() {
-            const [view, setView] = useState('gallery');
+            const [view, setView] = useState('gallery'); // 'gallery', 'calendar', 'upload', 'map'
             const [photos, setPhotos] = useState([]);
             const [searchQuery, setSearchQuery] = useState('');
             const [activeTag, setActiveTag] = useState(null);
@@ -902,6 +875,17 @@
             };
 
             const startEdit = (photo) => { setEditingPhoto(photo); setView('upload'); if (selectedPhoto) setSelectedPhoto(null); };
+
+            // Handle lightbox open event from map marker popup
+            useEffect(() => {
+                const handleOpenLightbox = (e) => {
+                    const photoId = e.detail;
+                    const photo = photos.find(p => p.id === photoId);
+                    if (photo) setSelectedPhoto(photo);
+                };
+                window.addEventListener('openLightbox', handleOpenLightbox);
+                return () => window.removeEventListener('openLightbox', handleOpenLightbox);
+            }, [photos]);
 
             if (!isConfigConfigured) return <ConfigError />;
             if (authError) return <AuthError message={authError} />;
@@ -996,7 +980,12 @@
                 {selectedPhoto && (<Lightbox photo={selectedPhoto} onClose={() => setSelectedPhoto(null)} isAdmin={isAdmin} onEdit={startEdit} onDelete={handleDeletePhoto} />)}
 
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                    {view === 'calendar' ? (
+                    {view === 'map' ? (
+                        <MapView 
+                            photos={photos} 
+                            onSelectPhoto={(p) => setSelectedPhoto(p)} 
+                        />
+                    ) : view === 'calendar' ? (
                         <CalendarView 
                             photos={photos} 
                             onSelectDate={(d) => { setDateFilter(d); setView('gallery'); }} 
