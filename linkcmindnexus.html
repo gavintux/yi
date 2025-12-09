@@ -3,7 +3,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { 
     getFirestore, collection, addDoc, updateDoc, deleteDoc, 
-    doc, onSnapshot, query, orderBy, where, serverTimestamp
+    doc, onSnapshot, query, orderBy, where, serverTimestamp 
 } from 'firebase/firestore';
 import { 
     LayoutGrid, Share2, Image, BarChart, BookOpen, Globe, 
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
+// Using the configuration provided in your files
 const firebaseConfig = {
     apiKey: "AIzaSyDwXsplXePeD1wU1GG4BwQBR6iSMd3_5nY",
     authDomain: "linkcphoto.firebaseapp.com",
@@ -25,7 +26,7 @@ const firebaseConfig = {
     measurementId: "G-902H2EHVFF"
 };
 
-// Initialize Firebase
+// Initialize Firebase outside the component
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -128,11 +129,20 @@ const AdminModal = ({ onLogin, onClose }) => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
                 <div className="text-center mb-6">
-                    <div className="mx-auto bg-slate-100 w-12 h-12 rounded-full flex items-center justify-center mb-3 text-slate-600"><Lock size={24}/></div>
+                    <div className="mx-auto bg-slate-100 w-12 h-12 rounded-full flex items-center justify-center mb-3 text-slate-600">
+                        <Lock size={24}/>
+                    </div>
                     <h3 className="text-lg font-bold text-slate-800">管理員驗證</h3>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <input type="password" autoFocus placeholder="請輸入通行碼" className="w-full text-center text-lg tracking-widest border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none" value={input} onChange={e => setInput(e.target.value)} />
+                    <input 
+                        type="password" 
+                        autoFocus 
+                        placeholder="請輸入通行碼" 
+                        className="w-full text-center text-lg tracking-widest border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none" 
+                        value={input} 
+                        onChange={e => setInput(e.target.value)} 
+                    />
                     <div className="flex gap-2">
                         <button type="button" onClick={onClose} className="flex-1 py-2.5 text-slate-500 hover:bg-slate-100 rounded-xl font-medium transition-colors">取消</button>
                         <button type="submit" className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors">解鎖</button>
@@ -143,7 +153,6 @@ const AdminModal = ({ onLogin, onClose }) => {
     );
 };
 
-// Markdown 渲染器 (含 Frontmatter 隱藏)
 const MarkdownViewer = ({ content, onLinkClick }) => {
     const { contentBody } = parseFrontmatter(content || '');
     
@@ -152,7 +161,16 @@ const MarkdownViewer = ({ content, onLinkClick }) => {
         return parts.map((part, i) => {
             if (part.startsWith('[[') && part.endsWith(']]')) {
                 const title = part.slice(2, -2);
-                return <span key={i} onClick={() => onLinkClick(title)} className="text-blue-600 underline underline-offset-2 cursor-pointer font-medium hover:text-blue-800 hover:bg-blue-50 transition-colors px-0.5 rounded" title="跳轉到筆記">{title}</span>;
+                return (
+                    <span 
+                        key={i} 
+                        onClick={() => onLinkClick(title)} 
+                        className="text-blue-600 underline underline-offset-2 cursor-pointer font-medium hover:text-blue-800 hover:bg-blue-50 transition-colors px-0.5 rounded" 
+                        title="跳轉到筆記"
+                    >
+                        {title}
+                    </span>
+                );
             }
             const boldParts = part.split(/(\*\*.*?\*\*)/g);
             return boldParts.map((bp, j) => {
@@ -163,7 +181,6 @@ const MarkdownViewer = ({ content, onLinkClick }) => {
     };
 
     const renderLine = (line, idx) => {
-        // Checkbox
         const taskMatch = line.match(/^(- \[( |x)\])(.*)/);
         if (taskMatch) {
             const isChecked = taskMatch[2] === 'x';
@@ -176,28 +193,21 @@ const MarkdownViewer = ({ content, onLinkClick }) => {
                 </div>
             );
         }
-        // Headers
         if (line.startsWith('# ')) return <h1 key={idx} className="text-2xl font-bold mb-3 pb-2 border-b border-slate-200 text-slate-800 mt-6">{renderInline(line.slice(2))}</h1>;
         if (line.startsWith('## ')) return <h2 key={idx} className="text-xl font-bold mb-2 text-slate-700 mt-5">{renderInline(line.slice(3))}</h2>;
         if (line.startsWith('### ')) return <h3 key={idx} className="text-lg font-bold mb-1 text-slate-600 mt-4">{renderInline(line.slice(4))}</h3>;
-        // List
         if (line.trim().startsWith('- ')) return <li key={idx} className="ml-5 text-slate-700 list-disc marker:text-slate-400 pl-1">{renderInline(line.replace('- ', ''))}</li>;
-        // Blockquote
-        if (line.trim().startsWith('> ')) return <blockquote key={idx} className="border-l-4 border-slate-200 pl-4 text-slate-500 italic my-2">{renderInline(line.slice(2))}</blockquote>;
-        // Empty
         if (line.trim() === '') return <div key={idx} className="h-4"></div>;
-        // Paragraph
         return <p key={idx} className="text-slate-700 mb-2 leading-relaxed whitespace-pre-wrap">{renderInline(line)}</p>;
     };
 
     return <div className="markdown-preview p-4">{contentBody.split('\n').map((line, idx) => renderLine(line, idx))}</div>;
 };
 
-// 月曆視圖
+// Month Calendar View
 const CalendarView = ({ notes, onSelectDate }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     
-    // 取得當月天數與第一天星期幾
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -206,12 +216,10 @@ const CalendarView = ({ notes, onSelectDate }) => {
     const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
     const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
-    // 產生日期格
     const days = [];
     for (let i = 0; i < firstDay; i++) days.push(null);
     for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
 
-    // 檢查某日是否有筆記 (檢查 noteDate 屬性 或 createdAt)
     const getNotesForDay = (date) => {
         if (!date) return [];
         // Local timezone fix for date comparison
@@ -221,13 +229,11 @@ const CalendarView = ({ notes, onSelectDate }) => {
         const dateStr = `${year}-${month}-${day}`;
 
         return notes.filter(n => {
-            // 優先使用屬性中的 date
             const props = parseFrontmatter(n.content).properties;
             if (props.date === dateStr) return true;
             
-            // 否則使用建立日期 (fallback)
             if (!props.date && n.createdAt) {
-                const created = n.createdAt.toDate(); // Firestore timestamp
+                const created = n.createdAt.toDate ? n.createdAt.toDate() : new Date(n.createdAt);
                 const cYear = created.getFullYear();
                 const cMonth = String(created.getMonth() + 1).padStart(2, '0');
                 const cDay = String(created.getDate()).padStart(2, '0');
@@ -245,7 +251,7 @@ const CalendarView = ({ notes, onSelectDate }) => {
                     {year}年 {month + 1}月
                 </h2>
                 <div className="flex gap-2">
-                    <button onClick={handlePrevMonth} className="p-2 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors"><ArrowLeft size={20} /></button>
+                    <button onClick={handlePrevMonth} className="p-2 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors"><ArrowLeft size={20} className="rotate-180" /></button>
                     <button onClick={() => setCurrentDate(new Date())} className="px-4 py-2 hover:bg-slate-100 rounded-xl border border-slate-200 text-sm font-medium transition-colors">今天</button>
                     <button onClick={handleNextMonth} className="p-2 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors"><ChevronRight size={20} /></button>
                 </div>
@@ -292,7 +298,11 @@ export default function App() {
     const [viewMode, setViewMode] = useState('portal'); // 'portal', 'view', 'edit', 'tasks', 'calendar'
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isAdmin, setIsAdmin] = useState(() => {
-        try { return localStorage.getItem('linkc_admin_auth') === 'true'; } catch { return false; }
+        try {
+            return localStorage.getItem('linkc_admin_auth') === 'true';
+        } catch {
+            return false;
+        }
     });
     const [showLogin, setShowLogin] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -318,6 +328,9 @@ export default function App() {
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetchedNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setNotes(fetchedNotes);
+            setLoading(false);
+        }, (error) => {
+            console.error("Firestore Error", error);
             setLoading(false);
         });
         return () => unsubscribe();
@@ -370,43 +383,44 @@ export default function App() {
     
     const handleCreateNote = async () => {
         if (!isAdmin) { setShowLogin(true); return; }
-        // Default today as YYYY-MM-DD
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const todayStr = `${year}-${month}-${day}`;
-
+        const todayStr = new Date().toISOString().split('T')[0];
         const newNote = { 
             title: '未命名筆記', 
             content: `---\ndate: ${todayStr}\ntags: []\n---\n\n# 新筆記\n`, 
             updatedAt: serverTimestamp(),
             createdAt: serverTimestamp()
         };
-        const docRef = await addDoc(collection(db, COLLECTION_NAME), newNote);
-        setActiveNoteId(docRef.id);
-        setViewMode('edit');
+        try {
+            const docRef = await addDoc(collection(db, COLLECTION_NAME), newNote);
+            setActiveNoteId(docRef.id);
+            setViewMode('edit');
+        } catch (err) {
+            console.error("Create note failed", err);
+            alert("Create failed: " + err.message);
+        }
     };
 
     const saveNote = async () => {
         if(!isAdmin || !activeNoteId) return;
-        const noteRef = doc(db, COLLECTION_NAME, activeNoteId);
-        await updateDoc(noteRef, { 
-            title: editTitle, 
-            content: editContent, 
-            updatedAt: serverTimestamp() 
-        });
-        setViewMode('view');
+        try {
+            const noteRef = doc(db, COLLECTION_NAME, activeNoteId);
+            await updateDoc(noteRef, { 
+                title: editTitle, 
+                content: editContent, 
+                updatedAt: serverTimestamp() 
+            });
+            setViewMode('view');
+        } catch (err) {
+            console.error("Save failed", err);
+            alert("Save failed");
+        }
     };
 
     const handlePropertyChange = (key, value) => {
         const newProps = { ...properties, [key]: value };
         setProperties(newProps);
-        
-        // Reconstruct content with new frontmatter
         const { contentBody } = parseFrontmatter(editContent);
-        const newFrontmatter = stringifyFrontmatter(newProps);
-        setEditContent(newFrontmatter + contentBody);
+        setEditContent(stringifyFrontmatter(newProps) + contentBody);
     };
 
     const insertText = (text) => {
@@ -451,7 +465,18 @@ export default function App() {
                 <div className="divide-y divide-slate-100">
                     {allTasks.filter(t => !t.completed).map((task, i) => (
                         <div key={i} className="flex items-start p-4 hover:bg-blue-50/50 transition-colors group">
-                            <input type="checkbox" disabled={!isAdmin} className="mt-1 mr-4 cursor-pointer w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" onChange={() => { if(!isAdmin) return; const note = notes.find(n => n.id === task.noteId); const lines = note.content.split('\n'); lines[task.lineIndex] = lines[task.lineIndex].replace('[ ]', '[x]'); updateDoc(doc(db, COLLECTION_NAME, task.noteId), { content: lines.join('\n'), updatedAt: serverTimestamp() }); }} />
+                            <input 
+                                type="checkbox" 
+                                disabled={!isAdmin} 
+                                className="mt-1 mr-4 cursor-pointer w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
+                                onChange={() => { 
+                                    if(!isAdmin) return; 
+                                    const note = notes.find(n => n.id === task.noteId); 
+                                    const lines = note.content.split('\n'); 
+                                    lines[task.lineIndex] = lines[task.lineIndex].replace('[ ]', '[x]'); 
+                                    updateDoc(doc(db, COLLECTION_NAME, task.noteId), { content: lines.join('\n'), updatedAt: serverTimestamp() }); 
+                                }} 
+                            />
                             <div className="flex-1"><div className="text-slate-800 font-medium">{task.text}</div><div className="text-xs text-blue-500 cursor-pointer hover:underline mt-1 flex items-center gap-1" onClick={() => handleNoteClick(task.noteId)}><FileText size={10}/> 來自: {task.noteTitle}</div></div>
                         </div>
                     ))}
@@ -464,8 +489,6 @@ export default function App() {
     return (
         <div className="flex h-screen bg-slate-50 text-slate-800 overflow-hidden font-sans">
             {showLogin && <AdminModal onLogin={handleLogin} onClose={() => setShowLogin(false)} />}
-            
-            {/* Sidebar */}
             <aside className={`fixed md:static inset-y-0 left-0 z-30 w-72 bg-white/95 backdrop-blur-md border-r border-slate-200 flex flex-col transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:w-0 md:overflow-hidden'}`}>
                 <div className="p-5 border-b border-slate-200/60 flex items-center justify-between">
                     <div className="font-bold text-xl text-slate-800 flex items-center gap-2 cursor-pointer" onClick={() => setViewMode('portal')}>
@@ -491,11 +514,8 @@ export default function App() {
                     {isAdmin ? <button onClick={handleLogout} className="flex items-center justify-center w-full gap-2 text-xs font-medium text-red-500 hover:bg-red-50 py-2 rounded-lg transition-colors"><LogOut size={14}/> 管理員 (登出)</button> : <button onClick={() => setShowLogin(true)} className="flex items-center justify-center w-full gap-2 text-xs font-medium text-slate-400 hover:text-slate-600 hover:bg-slate-50 py-2 rounded-lg transition-colors"><Lock size={14}/> 訪客模式 (登入)</button>}
                 </div>
             </aside>
-
-            {/* Main Content */}
             <main className="flex-1 flex flex-col h-full overflow-hidden bg-white relative">
                 <button className={`md:hidden absolute top-4 left-4 z-20 bg-white/80 backdrop-blur p-2 rounded-lg shadow-sm border border-slate-200 text-slate-600 ${isSidebarOpen ? 'hidden' : 'block'}`} onClick={() => setIsSidebarOpen(true)}><Menu size={20} /></button>
-
                 {viewMode === 'portal' ? <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50"><PortalView /></div> : 
                  viewMode === 'tasks' ? <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50"><TaskDashboard /></div> :
                  viewMode === 'calendar' ? <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50"><CalendarView notes={notes} onSelectDate={handleNoteClick} /></div> :
@@ -520,28 +540,19 @@ export default function App() {
                                 {isAdmin && <button onClick={() => deleteDoc(doc(db, COLLECTION_NAME, activeNote.id)).then(() => { setViewMode('portal'); setActiveNoteId(null); })} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={18} /></button>}
                             </div>
                         </div>
-
                         {viewMode === 'edit' ? (
                             <div className="flex-1 overflow-hidden flex flex-col">
-                                {/* Properties Bar */}
                                 <div className="border-b border-slate-100 bg-slate-50 transition-all duration-300">
                                     <button onClick={() => setShowProperties(!showProperties)} className="flex items-center gap-2 px-6 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider hover:text-blue-600 w-full">
                                         {showProperties ? <ChevronDown size={14}/> : <ChevronRight size={14}/>} Properties (屬性)
                                     </button>
                                     {showProperties && (
                                         <div className="px-6 pb-4 grid grid-cols-2 gap-4 animate-in slide-in-from-top-2">
-                                            <div>
-                                                <label className="text-xs text-slate-400 block mb-1">Date (日期)</label>
-                                                <input type="date" value={properties.date || ''} onChange={(e) => handlePropertyChange('date', e.target.value)} className="w-full text-sm border border-slate-200 rounded p-2 bg-white focus:ring-1 focus:ring-blue-500 outline-none" />
-                                            </div>
-                                            <div>
-                                                <label className="text-xs text-slate-400 block mb-1">Tags (標籤 - 用逗號分隔)</label>
-                                                <input type="text" value={Array.isArray(properties.tags) ? properties.tags.join(', ') : properties.tags || ''} onChange={(e) => handlePropertyChange('tags', e.target.value.split(',').map(t=>t.trim()))} className="w-full text-sm border border-slate-200 rounded p-2 bg-white focus:ring-1 focus:ring-blue-500 outline-none" placeholder="work, idea" />
-                                            </div>
+                                            <div><label className="text-xs text-slate-400 block mb-1">Date (日期)</label><input type="date" value={properties.date || ''} onChange={(e) => handlePropertyChange('date', e.target.value)} className="w-full text-sm border border-slate-200 rounded p-2 bg-white focus:ring-1 focus:ring-blue-500 outline-none" /></div>
+                                            <div><label className="text-xs text-slate-400 block mb-1">Tags (標籤)</label><input type="text" value={Array.isArray(properties.tags) ? properties.tags.join(', ') : properties.tags || ''} onChange={(e) => handlePropertyChange('tags', e.target.value.split(',').map(t=>t.trim()))} className="w-full text-sm border border-slate-200 rounded p-2 bg-white focus:ring-1 focus:ring-blue-500 outline-none" placeholder="work, idea" /></div>
                                         </div>
                                     )}
                                 </div>
-                                {/* Toolbar */}
                                 <div className="flex items-center gap-1 px-4 py-2 border-b border-slate-100 bg-white shadow-sm z-10">
                                     <button onClick={() => insertText('**粗體** ')} className="p-1.5 hover:bg-slate-100 rounded text-slate-600" title="Bold"><Bold size={16}/></button>
                                     <button onClick={() => insertText('*斜體* ')} className="p-1.5 hover:bg-slate-100 rounded text-slate-600" title="Italic"><Italic size={16}/></button>
@@ -550,43 +561,18 @@ export default function App() {
                                     <button onClick={() => insertText('- 列表 ')} className="p-1.5 hover:bg-slate-100 rounded text-slate-600" title="List"><List size={16}/></button>
                                 </div>
                                 <div className="flex-1 flex overflow-hidden">
-                                    <textarea 
-                                        value={editContent} 
-                                        onChange={(e) => setEditContent(e.target.value)} 
-                                        className="flex-1 h-full resize-none border-none focus:ring-0 text-slate-700 leading-relaxed font-mono text-base bg-slate-50/30 p-6 outline-none custom-scrollbar" 
-                                        spellCheck="false" 
-                                        placeholder="開始寫作..."
-                                    />
-                                    {/* Live Preview Side (Hidden on mobile) */}
-                                    <div className="hidden md:block flex-1 h-full overflow-y-auto border-l border-slate-100 bg-white custom-scrollbar">
-                                        <MarkdownViewer content={editContent} onLinkClick={() => {}} />
-                                    </div>
+                                    <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className="flex-1 h-full resize-none border-none focus:ring-0 text-slate-700 leading-relaxed font-mono text-base bg-slate-50/30 p-6 outline-none custom-scrollbar" spellCheck="false" placeholder="開始寫作..." />
+                                    <div className="hidden md:block flex-1 h-full overflow-y-auto border-l border-slate-100 bg-white custom-scrollbar"><MarkdownViewer content={editContent} onLinkClick={() => {}} /></div>
                                 </div>
                             </div>
                         ) : (
                             <div className="flex-1 overflow-y-auto custom-scrollbar">
                                 <div className="max-w-3xl mx-auto px-6 sm:px-8 py-8 min-h-[500px]">
-                                    {/* Frontmatter Display in View Mode (Optional, usually hidden but properties shown) */}
                                     <div className="flex flex-wrap gap-2 mb-6">
-                                        {parseFrontmatter(activeNote.content).properties.date && (
-                                            <span className="flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                                                <CalendarIcon size={12}/> {parseFrontmatter(activeNote.content).properties.date}
-                                            </span>
-                                        )}
-                                        {Array.isArray(parseFrontmatter(activeNote.content).properties.tags) && parseFrontmatter(activeNote.content).properties.tags.map(tag => (
-                                            <span key={tag} className="flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">
-                                                <Tag size={12}/> {tag}
-                                            </span>
-                                        ))}
+                                        {parseFrontmatter(activeNote.content).properties.date && (<span className="flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded"><CalendarIcon size={12}/> {parseFrontmatter(activeNote.content).properties.date}</span>)}
+                                        {Array.isArray(parseFrontmatter(activeNote.content).properties.tags) && parseFrontmatter(activeNote.content).properties.tags.map(tag => (<span key={tag} className="flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100"><Tag size={12}/> {tag}</span>))}
                                     </div>
-
-                                    <MarkdownViewer content={activeNote.content} onLinkClick={(title) => {
-                                        const target = notes.find(n => n.title === title);
-                                        if (target) { setActiveNoteId(target.id); } 
-                                        else { alert('筆記不存在'); }
-                                    }} />
-                                    
-                                    {/* Backlinks */}
+                                    <MarkdownViewer content={activeNote.content} onLinkClick={(title) => { const target = notes.find(n => n.title === title); if (target) { setActiveNoteId(target.id); } else { alert('筆記不存在'); } }} />
                                     {notes.filter(n => n.id !== activeNote.id && n.content.includes(`[[${activeNote.title}]]`)).length > 0 && (
                                         <div className="mt-16 pt-8 border-t border-slate-100">
                                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center"><ExternalLink size={12} className="mr-2"/> 反向連結 (Backlinks)</h3>
@@ -605,10 +591,7 @@ export default function App() {
                         )}
                     </>
                 ) : (
-                    <div className="flex-1 flex items-center justify-center text-slate-300 flex-col">
-                        <LayoutGrid size={48} className="mb-4 opacity-20" />
-                        <p>選擇一個筆記或傳送門</p>
-                    </div>
+                    <div className="flex-1 flex items-center justify-center text-slate-300 flex-col"><LayoutGrid size={48} className="mb-4 opacity-20" /><p>選擇一個筆記或傳送門</p></div>
                 )}
             </main>
         </div>
