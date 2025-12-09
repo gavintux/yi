@@ -44,9 +44,14 @@
     <!-- 3. 載入 Exif-js -->
     <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
 
-    <!-- 4. 載入 Leaflet (地圖功能) -->
+    <!-- 4. 載入 Leaflet & MarkerCluster (地圖功能核心) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- MarkerCluster CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     <!-- 5. 設定 Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -66,14 +71,25 @@
         @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
         .masonry-item { break-inside: avoid; margin-bottom: 1.5rem; }
         
-        /* Map Styles */
-        .photo-marker {
-            border: 2px solid white;
-            border-radius: 50%;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        /* Map Custom Styles */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 0;
             overflow: hidden;
-            transition: transform 0.2s;
+        }
+        .leaflet-popup-content {
+            margin: 0;
+            width: 200px !important;
+        }
+        .photo-marker {
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             background: white;
+            position: relative;
         }
         .photo-marker:hover {
             transform: scale(1.2);
@@ -85,11 +101,10 @@
             height: 100%;
             object-fit: cover;
         }
-        /* Leaflet Container Fix */
-        .leaflet-container {
-            width: 100%;
-            height: 100%;
-            z-index: 0; 
+        /* Custom Cluster Icon */
+        .custom-cluster-icon {
+            background: none;
+            border: none;
         }
     </style>
 </head>
@@ -338,12 +353,12 @@
             </header>
         );
 
-        // Map View Component (Fix: Ensure coordinates are numbers)
-        const MapView = ({ photos, onSelectPhoto }) => {
+        // Optimized Map View with Clustering
+        const MapView = ({ photos }) => {
             const mapRef = useRef(null);
+            const clusterGroupRef = useRef(null);
             
             useEffect(() => {
-                // IMPORTANT: Filter photos with valid coordinates and ensure they are numbers
                 const geotaggedPhotos = photos.filter(p => {
                     const lat = parseFloat(p.location?.lat);
                     const lng = parseFloat(p.location?.lng);
@@ -353,23 +368,37 @@
                 if (!document.getElementById('map')) return;
 
                 if (!mapRef.current) {
-                    mapRef.current = L.map('map').setView([23.6, 121], 8); // Default center Taiwan
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; OpenStreetMap contributors'
+                    mapRef.current = L.map('map').setView([23.6, 121], 8);
+                    
+                    // CartoDB Voyager Tiles (Clean & Beautiful)
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                        subdomains: 'abcd',
+                        maxZoom: 19
                     }).addTo(mapRef.current);
+
+                    // Initialize Cluster Group
+                    clusterGroupRef.current = L.markerClusterGroup({
+                        showCoverageOnHover: false,
+                        maxClusterRadius: 40,
+                        iconCreateFunction: function(cluster) {
+                            const count = cluster.getChildCount();
+                            return L.divIcon({
+                                html: `<div class="flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-full font-bold shadow-lg border-2 border-white text-sm">${count}</div>`,
+                                className: 'custom-cluster-icon',
+                                iconSize: L.point(40, 40)
+                            });
+                        }
+                    });
+                    mapRef.current.addLayer(clusterGroupRef.current);
                 } else {
-                    // Force resize recalculation when view changes
                     setTimeout(() => { mapRef.current.invalidateSize(); }, 100);
                 }
 
-                // Clear existing layers
-                mapRef.current.eachLayer((layer) => {
-                    if (layer instanceof L.Marker) {
-                        mapRef.current.removeLayer(layer);
-                    }
-                });
-
+                // Update Markers via Cluster
+                clusterGroupRef.current.clearLayers();
                 const markers = [];
+
                 geotaggedPhotos.forEach(photo => {
                     const lat = parseFloat(photo.location.lat);
                     const lng = parseFloat(photo.location.lng);
@@ -377,7 +406,7 @@
                     if (!isNaN(lat) && !isNaN(lng)) {
                         const customIcon = L.divIcon({
                             className: 'custom-icon',
-                            html: `<div class="photo-marker w-12 h-12 rounded-full border-2 border-white shadow-lg overflow-hidden relative bg-white cursor-pointer group">
+                            html: `<div class="photo-marker w-12 h-12 rounded-full border-2 border-white shadow-lg overflow-hidden relative bg-white cursor-pointer group hover:border-indigo-500 transition-colors">
                                      <img src="${photo.url}" class="w-full h-full object-cover" />
                                    </div>`,
                             iconSize: [48, 48],
@@ -385,30 +414,35 @@
                             popupAnchor: [0, -48]
                         });
 
-                        const marker = L.marker([lat, lng], { icon: customIcon })
-                            .addTo(mapRef.current)
-                            .bindPopup(`
-                                <div class="text-center min-w-[150px]">
-                                    <div class="h-24 w-full mb-2 bg-gray-100 rounded overflow-hidden">
-                                        <img src="${photo.url}" class="w-full h-full object-cover" />
-                                    </div>
-                                    <p class="font-bold text-sm mb-1 text-slate-800">${photo.location.city || ''} ${photo.location.spot || ''}</p>
-                                    <p class="text-xs text-slate-500">${photo.date ? photo.date.split('T')[0] : ''}</p>
-                                    <button class="mt-2 text-indigo-600 text-xs font-bold hover:underline" onclick="window.dispatchEvent(new CustomEvent('openLightbox', {detail: '${photo.id}'}))">查看大圖</button>
+                        const marker = L.marker([lat, lng], { icon: customIcon });
+                        
+                        // Styled Popup
+                        const popupContent = `
+                            <div class="text-center min-w-[200px] font-sans p-2">
+                                <div class="h-32 w-full mb-3 bg-slate-100 rounded-lg overflow-hidden">
+                                    <img src="${photo.url}" class="w-full h-full object-cover" />
                                 </div>
-                            `);
+                                <p class="font-bold text-base mb-1 text-slate-800">${photo.location.city || ''} ${photo.location.spot || ''}</p>
+                                <p class="text-xs text-slate-500 mb-2">${photo.date ? photo.date.split('T')[0] : ''}</p>
+                                <button class="w-full py-2 bg-indigo-50 text-indigo-600 rounded-md text-xs font-bold hover:bg-indigo-100 transition-colors" onclick="window.dispatchEvent(new CustomEvent('openLightbox', {detail: '${photo.id}'}))">
+                                    查看完整照片
+                                </button>
+                            </div>
+                        `;
+                        marker.bindPopup(popupContent);
                         markers.push(marker);
                     }
                 });
 
                 if (markers.length > 0) {
-                    const group = new L.featureGroup(markers);
-                    mapRef.current.fitBounds(group.getBounds().pad(0.1));
+                    clusterGroupRef.current.addLayers(markers);
+                    // Optional: Fit bounds to show all markers initially
+                    // if (geotaggedPhotos.length > 0) mapRef.current.fitBounds(clusterGroupRef.current.getBounds().pad(0.1));
                 }
             }, [photos]);
 
             return (
-                <div className="w-full h-[calc(100vh-6rem)] relative bg-slate-100 animate-fade-in-up">
+                <div className="w-full h-[calc(100vh-6rem)] relative bg-slate-50 animate-fade-in-up">
                     <div id="map" className="w-full h-full z-0"></div>
                 </div>
             );
@@ -431,7 +465,6 @@
             const { days, firstDay } = getDaysInMonth(currentDate);
             const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
             
-            // Available Years for Picker with Month data
             const availableData = useMemo(() => {
                 const data = {};
                 photos.forEach(p => {
@@ -447,7 +480,6 @@
             }, [photos]);
 
             const availableYears = Object.keys(availableData).sort((a, b) => b - a);
-
             const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
             const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
             
@@ -468,7 +500,7 @@
 
             return (
                 <div className="max-w-6xl mx-auto space-y-8 animate-fade-in-up pb-12">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-8 relative">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8 relative">
                         <div className="flex justify-between items-center mb-8">
                             <button onClick={() => setShowPicker(!showPicker)} className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2 hover:bg-slate-50 px-3 py-1 rounded-lg transition-colors group">
                                 <span className="bg-indigo-100 text-indigo-600 p-1.5 sm:p-2 rounded-lg group-hover:bg-indigo-200 transition-colors"><CalendarIcon size={20} /></span>
@@ -499,7 +531,7 @@
                                                             }`}
                                                         >
                                                             {idx + 1}月
-                                                            {hasPhotos && <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-400 rounded-full"></span>}
+                                                            {hasPhotos && <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-400 rounded-full border border-white"></span>}
                                                         </button>
                                                     );
                                                 })}
@@ -514,7 +546,6 @@
                             <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
                         </div>
                         
-                        {/* Responsive Grid: Mobile (Compact) vs Desktop (Detailed) */}
                         <div className="grid grid-cols-7 gap-1 sm:gap-4">
                             {Array.from({ length: firstDay }).map((_, i) => (<div key={`empty-${i}`} className="h-14 sm:h-32 rounded-lg sm:rounded-2xl bg-slate-50/50 border border-transparent"></div>))}
                             {Array.from({ length: days }).map((_, i) => {
@@ -537,15 +568,9 @@
                                         <div className="flex justify-center sm:justify-between items-start">
                                             <span className={`text-xs sm:text-sm font-bold ${isToday ? 'bg-indigo-600 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-md' : ''}`}>{day}</span>
                                         </div>
-                                        
-                                        {/* Mobile: Dot Indicator */}
                                         {count > 0 && (
-                                            <div className="sm:hidden flex justify-center">
-                                                <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-500' : 'bg-indigo-300'}`}></div>
-                                            </div>
+                                            <div className="sm:hidden flex justify-center"><div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-500' : 'bg-indigo-300'}`}></div></div>
                                         )}
-
-                                        {/* Desktop: Image Preview */}
                                         {count > 0 && (
                                             <div className="hidden sm:flex flex-col items-center gap-2">
                                                 <div className="w-full h-12 rounded-lg overflow-hidden bg-slate-100 relative">
@@ -640,7 +665,7 @@
                     <div><div className="flex items-baseline justify-between mb-1"><h3 className="font-bold text-slate-800 text-lg leading-tight">{photo.location.city}</h3><span className="text-xs text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded-md">{photo.location.country}</span></div>{photo.location.spot && <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><MapPin size={10} className="text-indigo-500"/> {photo.location.spot}</p>}</div>
                     <div className="space-y-2">{photo.thoughts_shooting && (<div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100"><span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wide">Shooting</span>{photo.thoughts_shooting}</div>)}{photo.thoughts_viewing && (<div className="text-sm text-slate-600 leading-relaxed bg-indigo-50/50 p-3 rounded-xl border border-indigo-100"><span className="block text-[10px] font-bold text-indigo-400 mb-1 uppercase tracking-wide">Reflection</span>{photo.thoughts_viewing}</div>)}</div>
                     {photo.tags && photo.tags.length > 0 && (<div className="flex flex-wrap gap-1.5">{photo.tags.map(tag => (<span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-md uppercase tracking-wide">#{tag}</span>))}</div>)}
-                    <div className="pt-3 mt-1 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-mono"><span className="flex items-center gap-1"><Aperture size={10}/> {photo.exif.aperture}</span><span>{photo.exif.shutter}</span><span className="flex items-center gap-1">ISO {photo.exif.iso}</span></div>
+                    <div className="pt-3 mt-1 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-mono"><span className="flex items-center gap-1"><Aperture size={10}/> {photo.exif.aperture}</span><span>{photo.exif.shutter}</span><span className="flex items-center gap-1">ISO {photo.exif.iso}</span><span className="flex items-center gap-1">{photo.exif.ev && `EV ${photo.exif.ev}`}</span></div>
                 </div>
             </div>
         );
