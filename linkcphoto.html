@@ -323,34 +323,41 @@
         const Header = ({ setView, isAdmin, onLoginClick, onLogout, currentView }) => (
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <a href="https://2blog.ilc.edu.tw/linkc/" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity" title="前往 Linkc Blog">
-                        <img src="https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f" alt="Linkc Logo" className="h-16 w-auto mr-2" />
+                {/* Logo & Title Section - Shrink disabled to prevent logo squeeze */}
+                <div className="flex items-center gap-2 min-w-0 shrink-0">
+                    <a href="https://2blog.ilc.edu.tw/linkc/" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity shrink-0" title="前往 Linkc Blog">
+                        {/* 修正：加入 shrink-0 防止 Logo 被擠壓，並設定 object-contain */}
+                        <img src="https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f" alt="Linkc Logo" className="h-16 w-auto mr-2 object-contain shrink-0" />
                     </a>
-                    <div className="flex items-center cursor-pointer gap-2" onClick={() => setView('gallery')}>
-                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight hidden sm:block">Linkc <span className="text-indigo-600 font-light">Gallery</span></h1>
+                    
+                    <div className="flex items-center cursor-pointer gap-2 shrink-0" onClick={() => setView('gallery')}>
+                        {/* 修正：移除 hidden sm:block，改為 text-lg 在手機上顯示，text-2xl 在電腦上顯示 */}
+                        <h1 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight whitespace-nowrap">Linkc <span className="text-indigo-600 font-light">Gallery</span></h1>
                     </div>
-                    {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2">ADMIN</span>}
+                    
+                    {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2 shrink-0">ADMIN</span>}
                 </div>
-                <div className="flex items-center gap-3">
-                    <a href="https://gavintux.github.io/yi/" target="_blank" rel="noopener noreferrer" className="p-2.5 rounded-xl transition-all text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="Zen's Portal">
+
+                {/* Right Actions Section - Gap adjusted for mobile */}
+                <div className="flex items-center gap-1 sm:gap-3 shrink-0 ml-2">
+                    <a href="https://gavintux.github.io/yi/" target="_blank" rel="noopener noreferrer" className="p-2 sm:p-2.5 rounded-xl transition-all text-gray-400 hover:text-gray-700 hover:bg-gray-100 hidden sm:block" title="Zen's Portal">
                         <Globe size={20} />
                     </a>
-                    <button onClick={() => setView('map')} className={`p-2.5 rounded-xl transition-all ${currentView === 'map' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100'}`} title="地圖模式">
+                    <button onClick={() => setView('map')} className={`p-2 sm:p-2.5 rounded-xl transition-all ${currentView === 'map' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100'}`} title="地圖模式">
                         <MapIcon size={20} />
                     </button>
-                    <button onClick={() => setView('calendar')} className={`p-2.5 rounded-xl transition-all ${currentView === 'calendar' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100'}`} title="日曆模式">
+                    <button onClick={() => setView('calendar')} className={`p-2 sm:p-2.5 rounded-xl transition-all ${currentView === 'calendar' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100'}`} title="日曆模式">
                         <CalendarIcon size={20} />
                     </button>
 
                     {isAdmin ? (
-                        <button onClick={onLogout} className="p-2.5 text-gray-500 hover:text-red-600 transition-colors" title="登出"><LogOut size={20} /></button>
+                        <button onClick={onLogout} className="p-2 sm:p-2.5 text-gray-500 hover:text-red-600 transition-colors" title="登出"><LogOut size={20} /></button>
                     ) : (
-                        <button onClick={onLoginClick} className="p-2.5 text-gray-400 hover:text-indigo-600 transition-colors" title="登入"><Lock size={20} /></button>
+                        <button onClick={onLoginClick} className="p-2 sm:p-2.5 text-gray-400 hover:text-indigo-600 transition-colors" title="登入"><Lock size={20} /></button>
                     )}
                     {isAdmin && (
-                        <button onClick={() => setView('upload')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium text-sm">
-                            <Upload size={18} /><span className="hidden sm:inline">新增照片</span>
+                        <button onClick={() => setView('upload')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium text-sm">
+                            <Upload size={18} /><span className="hidden sm:inline">新增</span>
                         </button>
                     )}
                 </div>
@@ -615,6 +622,7 @@
                                             <span className={`text-xs sm:text-sm font-bold ${isToday ? 'bg-indigo-600 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-md' : ''}`}>{day}</span>
                                         </div>
                                         
+                                        {/* Mobile: Dot Indicator */}
                                         {count > 0 && (
                                             <div className="sm:hidden flex justify-center"><div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-500' : 'bg-indigo-300'}`}></div></div>
                                         )}
