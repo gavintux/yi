@@ -323,22 +323,15 @@
         const Header = ({ setView, isAdmin, onLoginClick, onLogout, currentView }) => (
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
-                {/* Logo & Title Section - Shrink disabled to prevent logo squeeze */}
                 <div className="flex items-center gap-2 min-w-0 shrink-0">
                     <a href="https://2blog.ilc.edu.tw/linkc/" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity shrink-0" title="前往 Linkc Blog">
-                        {/* 修正：加入 shrink-0 防止 Logo 被擠壓，並設定 object-contain */}
                         <img src="https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f" alt="Linkc Logo" className="h-16 w-auto mr-2 object-contain shrink-0" />
                     </a>
-                    
                     <div className="flex items-center cursor-pointer gap-2 shrink-0" onClick={() => setView('gallery')}>
-                        {/* 修正：移除 hidden sm:block，改為 text-lg 在手機上顯示，text-2xl 在電腦上顯示 */}
                         <h1 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight whitespace-nowrap">Linkc <span className="text-indigo-600 font-light">Gallery</span></h1>
                     </div>
-                    
                     {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2 shrink-0">ADMIN</span>}
                 </div>
-
-                {/* Right Actions Section - Gap adjusted for mobile */}
                 <div className="flex items-center gap-1 sm:gap-3 shrink-0 ml-2">
                     <a href="https://gavintux.github.io/yi/" target="_blank" rel="noopener noreferrer" className="p-2 sm:p-2.5 rounded-xl transition-all text-gray-400 hover:text-gray-700 hover:bg-gray-100 hidden sm:block" title="Zen's Portal">
                         <Globe size={20} />
@@ -365,14 +358,12 @@
             </header>
         );
 
-        // Updated Map View with Style Selector
         const MapView = ({ photos }) => {
             const mapRef = useRef(null);
             const clusterGroupRef = useRef(null);
             const tileLayerRef = useRef(null);
             const [currentStyle, setCurrentStyle] = useState('voyager');
 
-            // Map Style Definitions
             const mapStyles = {
                 voyager: { name: '探險 (Voyager)', url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' },
                 osm: { name: '標準 (OSM)', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' },
@@ -381,15 +372,12 @@
                 satellite: { name: '衛星 (Satellite)', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}' }
             };
             
-            // Init Map (Run once)
             useEffect(() => {
                 if (!document.getElementById('map')) return;
                 
                 if (!mapRef.current) {
-                    // Fix: Set maxZoom in L.map options
                     mapRef.current = L.map('map', { maxZoom: 18 }).setView([23.6, 121], 8);
                     
-                    // Initialize Cluster Group
                     clusterGroupRef.current = L.markerClusterGroup({
                         showCoverageOnHover: false,
                         maxClusterRadius: 40,
@@ -406,13 +394,9 @@
                 }
             }, []);
 
-            // Update Tile Layer when style changes
             useEffect(() => {
                 if (!mapRef.current) return;
-                
-                if (tileLayerRef.current) {
-                    mapRef.current.removeLayer(tileLayerRef.current);
-                }
+                if (tileLayerRef.current) mapRef.current.removeLayer(tileLayerRef.current);
 
                 const style = mapStyles[currentStyle];
                 tileLayerRef.current = L.tileLayer(style.url, {
@@ -420,13 +404,9 @@
                     maxZoom: 19
                 }).addTo(mapRef.current);
                 
-                // Keep cluster on top
-                if (clusterGroupRef.current) {
-                    clusterGroupRef.current.bringToFront();
-                }
+                if (clusterGroupRef.current) clusterGroupRef.current.bringToFront();
             }, [currentStyle]);
 
-            // Update Markers when photos change
             useEffect(() => {
                 if (!mapRef.current || !clusterGroupRef.current) return;
 
@@ -455,7 +435,6 @@
                         });
 
                         const marker = L.marker([lat, lng], { icon: customIcon });
-                        
                         const popupContent = `
                             <div class="text-center min-w-[200px] font-sans p-2">
                                 <div class="h-32 w-full mb-3 bg-slate-100 rounded-lg overflow-hidden">
@@ -475,7 +454,6 @@
 
                 if (markers.length > 0) {
                     clusterGroupRef.current.addLayers(markers);
-                    // Force resize recalculation
                     setTimeout(() => { mapRef.current.invalidateSize(); }, 100);
                 }
             }, [photos]);
@@ -483,18 +461,10 @@
             return (
                 <div className="w-full h-[calc(100vh-6rem)] relative bg-slate-50 animate-fade-in-up">
                     <div id="map" className="w-full h-full z-0"></div>
-                    
-                    {/* Style Selector */}
                     <div className="absolute top-4 right-4 z-[1000] bg-white p-1 rounded-lg shadow-md border border-slate-200 flex items-center gap-2">
                         <Layers size={16} className="text-slate-400 ml-2" />
-                        <select 
-                            value={currentStyle} 
-                            onChange={(e) => setCurrentStyle(e.target.value)}
-                            className="text-sm text-slate-700 bg-transparent border-none focus:ring-0 cursor-pointer py-1 pr-8"
-                        >
-                            {Object.entries(mapStyles).map(([key, style]) => (
-                                <option key={key} value={key}>{style.name}</option>
-                            ))}
+                        <select value={currentStyle} onChange={(e) => setCurrentStyle(e.target.value)} className="text-sm text-slate-700 bg-transparent border-none focus:ring-0 cursor-pointer py-1 pr-8">
+                            {Object.entries(mapStyles).map(([key, style]) => (<option key={key} value={key}>{style.name}</option>))}
                         </select>
                     </div>
                 </div>
@@ -621,8 +591,6 @@
                                         <div className="flex justify-center sm:justify-between items-start">
                                             <span className={`text-xs sm:text-sm font-bold ${isToday ? 'bg-indigo-600 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-md' : ''}`}>{day}</span>
                                         </div>
-                                        
-                                        {/* Mobile: Dot Indicator */}
                                         {count > 0 && (
                                             <div className="sm:hidden flex justify-center"><div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-500' : 'bg-indigo-300'}`}></div></div>
                                         )}
@@ -706,15 +674,29 @@
 
         const PhotoCard = ({ photo, onExpand, isAdmin, onEdit, onDelete }) => (
             <div className="masonry-item group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 break-inside-avoid">
-                <div className="relative overflow-hidden cursor-zoom-in" onClick={() => onExpand(photo)}>
-                    <img src={photo.url} className="w-full h-auto object-cover" loading="lazy" decoding="async" />
+                <div className="relative overflow-hidden cursor-zoom-in min-h-[150px] bg-slate-50" onClick={() => onExpand(photo)}>
+                    {photo.url ? (
+                        <img src={photo.url} className="w-full h-auto object-cover" loading="lazy" decoding="async" />
+                    ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-slate-100">
+                            <ImageIcon size={32} className="mb-2 opacity-50" />
+                            <span className="text-xs font-medium">無影像</span>
+                        </div>
+                    )}
+                    
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                         <div className="flex justify-between items-end">
                             <div className="text-white text-xs font-medium drop-shadow-md"><p className="flex items-center gap-1"><CalendarIcon size={12}/> {photo.date ? photo.date.split('T')[0] : ''}</p></div>
                             <div className="bg-white/90 backdrop-blur-md rounded-full px-2 py-1 shadow-lg"><ShareButtons photo={photo} minimal={true} /></div>
                         </div>
                     </div>
-                    {isAdmin && (<div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"><button onClick={(e) => { e.stopPropagation(); onEdit(photo); }} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-600 shadow-sm"><Edit size={14}/></button><button onClick={(e) => { e.stopPropagation(); onDelete(photo.id); }} className="bg-white/90 p-1.5 rounded-full hover:bg-red-50 text-red-500 shadow-sm"><Trash2 size={14}/></button></div>)}
+                    {/* Always ensure delete button is accessible for admins, even if image breaks */}
+                    {isAdmin && (
+                        <div className="absolute top-2 right-2 flex gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={(e) => { e.stopPropagation(); onEdit(photo); }} className="bg-white/90 p-1.5 rounded-full hover:bg-white text-slate-600 shadow-sm"><Edit size={14}/></button>
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(photo.id); }} className="bg-white/90 p-1.5 rounded-full hover:bg-red-50 text-red-500 shadow-sm"><Trash2 size={14}/></button>
+                        </div>
+                    )}
                 </div>
                 <div className="p-4 flex flex-col gap-3">
                     <div><div className="flex items-baseline justify-between mb-1"><h3 className="font-bold text-slate-800 text-lg leading-tight">{photo.location.city}</h3><span className="text-xs text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded-md">{photo.location.country}</span></div>{photo.location.spot && <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><MapPin size={10} className="text-indigo-500"/> {photo.location.spot}</p>}</div>
@@ -735,90 +717,109 @@
 
             useEffect(() => { if (initialData && Array.isArray(initialData.tags)) { setFormData(prev => ({ ...prev, tags: initialData.tags.join(', ') })); } }, [initialData]);
             const handleChange = (section, field, value) => { if (section) { setFormData(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } })); } else { setFormData(prev => ({ ...prev, [field]: value })); } };
+            
             const handleFileChange = (e) => {
                 const file = e.target.files[0];
                 if (file) {
                     setUploadFile(file);
-                    setExifStatus('分析中...');
+                    
+                    // 1. 设置预览图 (立即执行，不等待 EXIF)
                     const previewUrl = URL.createObjectURL(file);
                     setFormData(prev => ({ ...prev, url: previewUrl }));
-                    EXIF.getData(file, async function() {
-                        const extractedShutter = EXIF.getTag(this, "ExposureTime");
-                        const extractedFNumber = EXIF.getTag(this, "FNumber");
-                        const extractedISO = EXIF.getTag(this, "ISOSpeedRatings");
-                        const extractedDate = EXIF.getTag(this, "DateTimeOriginal");
-                        const extractedFocalLength = EXIF.getTag(this, "FocalLength");
-                        const extractedBias = EXIF.getTag(this, "ExposureBiasValue");
-                        const make = EXIF.getTag(this, "Make");
-                        const model = EXIF.getTag(this, "Model");
-                        const allTags = EXIF.getAllTags(this);
-                        let lensModel = findLensNameInAllTags(allTags);
-                        if (lensModel && typeof lensModel === 'string') {
-                            lensModel = lensModel.replace(/\0/g, '').trim();
-                            const lensMake = EXIF.getTag(this, "LensMake");
-                            if (lensMake && !lensModel.toLowerCase().includes(lensMake.toLowerCase())) lensModel = `${lensMake} ${lensModel}`;
-                        }
-                        const lat = EXIF.getTag(this, "GPSLatitude");
-                        const latRef = EXIF.getTag(this, "GPSLatitudeRef");
-                        const lon = EXIF.getTag(this, "GPSLongitude");
-                        const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
-                        let formattedShutter = "";
-                        const shutterVal = getExifValue(extractedShutter);
-                        if (shutterVal > 0) formattedShutter = shutterVal < 1 ? "1/" + Math.round(1/shutterVal) : shutterVal.toString();
-                        const apertureVal = getExifValue(extractedFNumber);
-                        const formattedAperture = apertureVal ? "f/" + apertureVal : "";
-                        const formattedEV = formatExposureBias(extractedBias);
-                        let formattedDate = "";
-                        if (extractedDate) {
-                            const parts = extractedDate.split(" ");
-                            if (parts.length >= 2) formattedDate = `${parts[0].replace(/:/g, "-")}T${parts[1].substring(0, 5)}`;
-                            else if (parts.length === 1) formattedDate = parts[0].replace(/:/g, "-");
-                        }
-                        let formattedCamera = "";
-                        if (make && model) formattedCamera = model.toLowerCase().includes(make.toLowerCase()) ? model : `${make} ${model}`;
-                        else formattedCamera = model || make || "";
-                        if (formattedCamera) formattedCamera = formattedCamera.replace(/\0/g, '').trim();
-                        let formattedFocalLength = "";
-                        const focalVal = getExifValue(extractedFocalLength);
-                        if (focalVal) formattedFocalLength = `${focalVal}mm`;
-                        let locationUpdate = { ...formData.location };
-                        let extraStatus = "";
-                        if (lat && lon) {
-                            const decimalLat = convertDMSToDD(lat, latRef || 'N');
-                            const decimalLon = convertDMSToDD(lon, lonRef || 'E');
-                            if (decimalLat && decimalLon) {
-                                setExifStatus('定位中...');
-                                const address = await reverseGeocode(decimalLat, decimalLon);
-                                locationUpdate.lat = decimalLat;
-                                locationUpdate.lng = decimalLon;
-                                if (address) {
-                                    locationUpdate.country = address.country || "";
-                                    locationUpdate.city = address.city || address.county || address.town || address.state || "";
-                                    locationUpdate.spot = address.suburb || address.village || address.road || address.pedestrian || "";
-                                    extraStatus = " + GPS";
-                                } else { extraStatus = " (GPS 失敗)"; }
+                    
+                    setExifStatus('分析中...');
+                    
+                    // 2. 尝试读取 EXIF (即使失败也不影响上傳)
+                    try {
+                        EXIF.getData(file, async function() {
+                            const extractedShutter = EXIF.getTag(this, "ExposureTime");
+                            const extractedFNumber = EXIF.getTag(this, "FNumber");
+                            const extractedISO = EXIF.getTag(this, "ISOSpeedRatings");
+                            const extractedDate = EXIF.getTag(this, "DateTimeOriginal");
+                            const extractedFocalLength = EXIF.getTag(this, "FocalLength");
+                            const extractedBias = EXIF.getTag(this, "ExposureBiasValue");
+                            const make = EXIF.getTag(this, "Make");
+                            const model = EXIF.getTag(this, "Model");
+                            const allTags = EXIF.getAllTags(this);
+                            let lensModel = findLensNameInAllTags(allTags);
+                            if (lensModel && typeof lensModel === 'string') {
+                                lensModel = lensModel.replace(/\0/g, '').trim();
+                                const lensMake = EXIF.getTag(this, "LensMake");
+                                if (lensMake && !lensModel.toLowerCase().includes(lensMake.toLowerCase())) lensModel = `${lensMake} ${lensModel}`;
                             }
-                        }
-                        setFormData(prev => ({
-                            ...prev,
-                            exif: {
-                                shutter: formattedShutter || prev.exif.shutter,
-                                aperture: formattedAperture || prev.exif.aperture,
-                                iso: extractedISO ? extractedISO.toString() : prev.exif.iso,
-                                date: formattedDate || prev.exif.date,
-                                camera: formattedCamera || prev.exif.camera,
-                                lens: lensModel || prev.exif.lens,
-                                focalLength: formattedFocalLength || prev.exif.focalLength,
-                                ev: formattedEV || prev.exif.ev
-                            },
-                            location: locationUpdate
-                        }));
-                        setExifStatus(`EXIF 完成 ${extraStatus}`);
-                    });
+                            const lat = EXIF.getTag(this, "GPSLatitude");
+                            const latRef = EXIF.getTag(this, "GPSLatitudeRef");
+                            const lon = EXIF.getTag(this, "GPSLongitude");
+                            const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
+                            let formattedShutter = "";
+                            const shutterVal = getExifValue(extractedShutter);
+                            if (shutterVal > 0) formattedShutter = shutterVal < 1 ? "1/" + Math.round(1/shutterVal) : shutterVal.toString();
+                            const apertureVal = getExifValue(extractedFNumber);
+                            const formattedAperture = apertureVal ? "f/" + apertureVal : "";
+                            const formattedEV = formatExposureBias(extractedBias);
+                            let formattedDate = "";
+                            if (extractedDate) {
+                                const parts = extractedDate.split(" ");
+                                if (parts.length >= 2) formattedDate = `${parts[0].replace(/:/g, "-")}T${parts[1].substring(0, 5)}`;
+                                else if (parts.length === 1) formattedDate = parts[0].replace(/:/g, "-");
+                            }
+                            let formattedCamera = "";
+                            if (make && model) formattedCamera = model.toLowerCase().includes(make.toLowerCase()) ? model : `${make} ${model}`;
+                            else formattedCamera = model || make || "";
+                            if (formattedCamera) formattedCamera = formattedCamera.replace(/\0/g, '').trim();
+                            let formattedFocalLength = "";
+                            const focalVal = getExifValue(extractedFocalLength);
+                            if (focalVal) formattedFocalLength = `${focalVal}mm`;
+                            let locationUpdate = { ...formData.location };
+                            let extraStatus = "";
+                            if (lat && lon) {
+                                const decimalLat = convertDMSToDD(lat, latRef || 'N');
+                                const decimalLon = convertDMSToDD(lon, lonRef || 'E');
+                                if (decimalLat && decimalLon) {
+                                    setExifStatus('定位中...');
+                                    const address = await reverseGeocode(decimalLat, decimalLon);
+                                    locationUpdate.lat = decimalLat;
+                                    locationUpdate.lng = decimalLon;
+                                    if (address) {
+                                        locationUpdate.country = address.country || "";
+                                        locationUpdate.city = address.city || address.county || address.town || address.state || "";
+                                        locationUpdate.spot = address.suburb || address.village || address.road || address.pedestrian || "";
+                                        extraStatus = " + GPS";
+                                    } else { extraStatus = " (GPS 失敗)"; }
+                                }
+                            }
+                            setFormData(prev => ({
+                                ...prev,
+                                exif: {
+                                    shutter: formattedShutter || prev.exif.shutter,
+                                    aperture: formattedAperture || prev.exif.aperture,
+                                    iso: extractedISO ? extractedISO.toString() : prev.exif.iso,
+                                    date: formattedDate || prev.exif.date,
+                                    camera: formattedCamera || prev.exif.camera,
+                                    lens: lensModel || prev.exif.lens,
+                                    focalLength: formattedFocalLength || prev.exif.focalLength,
+                                    ev: formattedEV || prev.exif.ev
+                                },
+                                location: locationUpdate
+                            }));
+                            setExifStatus(`EXIF 完成 ${extraStatus}`);
+                        });
+                    } catch (exifErr) {
+                        console.warn("EXIF extraction failed", exifErr);
+                        setExifStatus('EXIF 讀取失敗，但可繼續上傳');
+                    }
                 }
             };
+
             const handleSubmit = async (e) => { 
                 e.preventDefault();
+                
+                // 驗證檢查
+                if (!uploadFile && !formData.url) {
+                    alert("請選擇照片檔案或輸入連結！");
+                    return;
+                }
+
                 setStatus('uploading');
                 let finalUrl = formData.url;
                 try {
@@ -890,6 +891,7 @@
             const [sortOrder, setSortOrder] = useState('newest'); 
             const [dateFilter, setDateFilter] = useState(null); 
             const [isTagsExpanded, setIsTagsExpanded] = useState(false);
+            const [visibleCount, setVisibleCount] = useState(12);
             
             // 狀態初始化：從 localStorage 讀取管理員狀態
             const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('linkc_admin_auth') === 'true');
@@ -903,6 +905,11 @@
             
             // Debounce search query
             const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+            // Reset visible count when filters change
+            useEffect(() => {
+                setVisibleCount(12);
+            }, [debouncedSearchQuery, activeTag, dateFilter, sortOrder]);
 
             useEffect(() => {
                 if (!isConfigConfigured) return; 
@@ -1052,6 +1059,10 @@
                 });
             }, [filteredPhotos, sortOrder]);
 
+            // Pagination Logic
+            const visiblePhotos = sortedPhotos.slice(0, visibleCount);
+            const hasMorePhotos = visibleCount < sortedPhotos.length;
+
             return (
                 <div className="min-h-screen font-sans text-slate-800 pb-20 bg-slate-50">
                 <Header setView={(v) => { setView(v); setEditingPhoto(null); setDateFilter(null); }} isAdmin={isAdmin} onLoginClick={() => setShowLogin(true)} onLogout={handleAdminLogout} currentView={view} />
@@ -1130,12 +1141,24 @@
                             )}
                         </div>
 
-                        {sortedPhotos.length > 0 ? (
-                        <div className="masonry-grid animate-fade-in-up">
-                            {sortedPhotos.map(photo => (
-                                <PhotoCard key={photo.id} photo={photo} onExpand={setSelectedPhoto} isAdmin={isAdmin} onEdit={startEdit} onDelete={handleDeletePhoto} />
-                            ))}
-                        </div>
+                        {visiblePhotos.length > 0 ? (
+                            <>
+                                <div className="masonry-grid animate-fade-in-up">
+                                    {visiblePhotos.map(photo => (
+                                        <PhotoCard key={photo.id} photo={photo} onExpand={setSelectedPhoto} isAdmin={isAdmin} onEdit={startEdit} onDelete={handleDeletePhoto} />
+                                    ))}
+                                </div>
+                                {hasMorePhotos && (
+                                    <div className="mt-12 flex justify-center">
+                                        <button 
+                                            onClick={() => setVisibleCount(prev => prev + 12)}
+                                            className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-full shadow-sm hover:shadow-md hover:text-indigo-600 hover:border-indigo-200 transition-all font-medium flex items-center gap-2"
+                                        >
+                                            <ArrowDownWideNarrow size={18} /> 載入更多照片 ({sortedPhotos.length - visibleCount})
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         ) : (
                         <div className="text-center py-32 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center gap-4">
                             <div className="bg-slate-50 p-6 rounded-full"><Cloud className="h-12 w-12 text-slate-300" /></div>
