@@ -11,7 +11,7 @@
                 title: "Linkc Photo Space",        // 瀏覽器標籤標題
                 siteName: "Linkc Gallery",         // 網站名稱 (顯示在 Header)
                 description: "Linkc 的個人攝影空間，紀錄生活與旅行的瞬間。", // 網站描述 (給搜尋引擎看)
-                keywords: "攝影, 旅行, 生活, Linkc, 相簿, 作品集",     // 關鍵字
+                keywords: "攝影, 旅行, 生活, Linkc, 相簿, 作品集, Olympus, TG-6",     // 關鍵字
                 author: "Linkc",                   // 作者名稱
                 logoImage: "https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f", // Logo 圖片網址
                 logoLink: "https://2blog.ilc.edu.tw/linkc/", // 點擊 Logo 跳轉的網址
@@ -98,10 +98,12 @@
                             600: SITE_CONFIG.theme.primaryColor,
                             50:  SITE_CONFIG.theme.primaryColor + '10', // 10% opacity hex approximation
                             100: SITE_CONFIG.theme.primaryColor + '20',
+                            900: '#312e81', //保留深色
                         },
                         slate: {
                             50: SITE_CONFIG.theme.backgroundColor, // 網站背景
                             800: SITE_CONFIG.theme.textColor,      // 主要文字
+                            900: '#0f172a', //保留深色
                         }
                     },
                     animation: {
@@ -237,68 +239,52 @@
             return Number.isInteger(val) ? `${sign}${val}` : `${sign}${val.toFixed(1)}`;
         };
 
-// --- Helpers (輔助函式 更新版) ---
+        // --- 強化的鏡頭資訊與高度解析 ---
+        const parseLensInfo = (lensInfo, allTags) => {
+            // 策略 A: 直接讀取 LensModel (最準確)
+            if (allTags.LensModel && typeof allTags.LensModel === 'string' && allTags.LensModel.trim() !== '') {
+                return allTags.LensModel.replace(/\0/g, '').trim();
+            }
+            
+            // 策略 B: 讀取 Lens (某些相機用這個 tag)
+            if (allTags.Lens && typeof allTags.Lens === 'string') {
+                return allTags.Lens.replace(/\0/g, '').trim();
+            }
 
-// (保留原本的 useDebounce, getExifValue, formatExposureBias)
+            // 策略 C: 從 LensInfo (四個數值) 拼湊 (MinFocal, MaxFocal, MinF, MaxF)
+            // 注意：exif-js 有時會把這個放在 'UndefinedTag:0xA432'
+            const info = lensInfo || allTags['UndefinedTag:0xA432'];
+            
+            if (!info || info.length < 4) return "";
 
-// 1. 強化的鏡頭資訊解析
-const parseLensInfo = (lensInfo, allTags) => {
-    // 策略 A: 直接讀取 LensModel (最準確)
-    if (allTags.LensModel && typeof allTags.LensModel === 'string' && allTags.LensModel.trim() !== '') {
-        return allTags.LensModel.replace(/\0/g, '').trim();
-    }
-    
-    // 策略 B: 讀取 Lens (某些相機用這個 tag)
-    if (allTags.Lens && typeof allTags.Lens === 'string') {
-        return allTags.Lens.replace(/\0/g, '').trim();
-    }
+            const minFocal = getExifValue(info[0]);
+            const maxFocal = getExifValue(info[1]);
+            const minF = getExifValue(info[2]);
+            const maxF = getExifValue(info[3]);
 
-    // 策略 C: 從 LensInfo (四個數值) 拼湊 (MinFocal, MaxFocal, MinF, MaxF)
-    // 很多時候 exif-js 讀不到 LensModel，但讀得到這個陣列
-    // 注意：exif-js 有時會把這個放在 'UndefinedTag:0xA432'
-    const info = lensInfo || allTags['UndefinedTag:0xA432'];
-    
-    if (!info || info.length < 4) return "";
+            if (!minFocal) return "";
 
-    const minFocal = getExifValue(info[0]);
-    const maxFocal = getExifValue(info[1]);
-    const minF = getExifValue(info[2]);
-    const maxF = getExifValue(info[3]);
+            let focalStr = (minFocal === maxFocal) ? `${minFocal}mm` : `${minFocal}-${maxFocal}mm`;
+            let apertureStr = "";
+            if (minF > 0) {
+                apertureStr = (minF === maxF || !maxF) ? `f/${minF}` : `f/${minF}-${maxF}`;
+            }
 
-    if (!minFocal) return "";
-
-    let focalStr = (minFocal === maxFocal) ? `${minFocal}mm` : `${minFocal}-${maxFocal}mm`;
-    let apertureStr = "";
-    if (minF > 0) {
-        apertureStr = (minF === maxF || !maxF) ? `f/${minF}` : `f/${minF}-${maxF}`;
-    }
-
-    return `${focalStr} ${apertureStr}`.trim();
-};
-
-// 2. 新增：高度計算 (GPSAltitude)
-const getAltitude = (alt, ref) => {
-    const value = getExifValue(alt);
-    if (!value && value !== 0) return null;
-    
-    // Ref: 0 = Above Sea Level, 1 = Below Sea Level
-    const isBelowSea = ref === 1 || ref === '1'; 
-    return isBelowSea ? -value : value;
-};
+            return `${focalStr} ${apertureStr}`.trim();
+        };
 
         const findLensNameInAllTags = (allTags) => {
-            const candidates = [allTags.LensModel, allTags.Lens, allTags.LensID, allTags.LensInfo];
-            for (const c of candidates) { if (c && typeof c === 'string' && c.trim().length > 0 && !c.toLowerCase().includes("undefined")) return c; }
-            for (const key in allTags) {
-                const val = allTags[key];
-                if (typeof val === 'string' && val.length > 3 && key.includes('Lens')) {
-                    if (val.toLowerCase().includes('unknown') || val.toLowerCase().includes('defined')) continue;
-                    return val;
-                }
-            }
-            if (allTags.LensInfo) return parseLensInfo(allTags.LensInfo);
-            if (allTags['UndefinedTag:0xA432']) return parseLensInfo(allTags['UndefinedTag:0xA432']);
-            return "";
+            // 為了相容性保留此函式入口，但邏輯已強化至 parseLensInfo
+            return parseLensInfo(allTags.LensInfo, allTags);
+        };
+
+        // 高度計算 (GPSAltitude)
+        const getAltitude = (alt, ref) => {
+            const value = getExifValue(alt);
+            if (!value && value !== 0) return null;
+            // Ref: 0 = Above Sea Level, 1 = Below Sea Level
+            const isBelowSea = ref === 1 || ref === '1'; 
+            return isBelowSea ? -value : value;
         };
 
         const convertDMSToDD = (dms, ref) => {
@@ -719,13 +705,16 @@ const getAltitude = (alt, ref) => {
 
             return (
                 <div className="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fade-in-up" onClick={onClose}>
-                    {/* ... (Close, Edit, Delete buttons 保持不變) ... */}
-                    
+                    <button onClick={onClose} className="absolute top-6 right-6 text-white/50 hover:text-white p-2 z-50 transition-colors"><X size={32} strokeWidth={1} /></button>
+                    {isAdmin && (
+                        <div className="absolute top-6 left-6 flex gap-4 z-50">
+                            <button onClick={(e) => { e.stopPropagation(); onEdit(photo); }} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium transition-all flex items-center gap-2"><Edit size={14}/> 編輯</button>
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(photo.id); onClose(); }} className="bg-red-500/80 hover:bg-red-600 text-white px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium transition-all flex items-center gap-2"><Trash2 size={14}/> 刪除</button>
+                        </div>
+                    )}
                     <div className="relative max-w-7xl max-h-[85vh] w-full flex flex-col items-center justify-center" onClick={e => e.stopPropagation()}>
                         <img src={photo.url} className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-sm" loading="eager" decoding="async" />
-                        
                         <div className="mt-6 flex flex-col items-center gap-3 text-white/90">
-                            {/* 第一排：時間、地點、下載 */}
                             <div className="flex items-center gap-6 text-sm font-light tracking-wide bg-black/40 px-6 py-2 rounded-full backdrop-blur-md border border-white/10">
                                 <span className="flex items-center gap-2"><Clock size={14} className="text-indigo-400"/> {photo.date ? photo.date.replace('T', ' ') : ''}</span>
                                 <span className="w-px h-3 bg-white/20"></span>
@@ -733,15 +722,13 @@ const getAltitude = (alt, ref) => {
                                 <span className="w-px h-3 bg-white/20"></span>
                                 <button onClick={(e) => downloadWithWatermark(photo.url, photo.id, e)} className="hover:text-indigo-300 transition-colors flex items-center gap-2"><Download size={14} /> 下載</button>
                             </div>
-
-                            {/* 第二排：相機與鏡頭參數 */}
                             <div className="text-xs text-white/50 font-mono tracking-wider space-x-3">
                                 {photo.exif.camera && <span>{photo.exif.camera}</span>}
                                 {photo.exif.lens && <span>| {photo.exif.lens}</span>}
                                 <span>| {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso} {photo.exif.focalLength ? `· ${photo.exif.focalLength}` : ''} {photo.exif.ev ? `· EV ${photo.exif.ev}` : ''}</span>
                             </div>
-
-                            {/* 第三排 (新增)：環境數據 (只在有資料時顯示) */}
+                            
+                            {/* 環境數據 (新增) */}
                             {hasEnvData && (
                                 <div className="flex gap-4 text-xs text-indigo-300 font-medium bg-indigo-900/30 px-4 py-1 rounded-lg border border-indigo-500/20">
                                     {photo.exif.altitude && <span className="flex items-center gap-1"><ArrowUpNarrowWide size={12}/> 海拔 {photo.exif.altitude}</span>}
@@ -790,32 +777,29 @@ const getAltitude = (alt, ref) => {
             </div>
         );
 
-        // 在 PhotoForm component 開頭
-const [formData, setFormData] = useState(initialData || { 
-    url: '', 
-    tags: '', 
-    thoughts_shooting: '', 
-    thoughts_viewing: '', 
-    exif: { 
-        shutter: '', 
-        aperture: 'f/', 
-        iso: '', 
-        date: getNowString(), 
-        camera: '', 
-        lens: '', 
-        focalLength: '', 
-        ev: '',
-        // 新增這三項
-        altitude: '',
-        temp: '',
-        pressure: ''
-    }, 
-    location: { country: '', city: '', spot: '', lat: '', lng: '' } 
-});
         const PhotoForm = ({ onSave, onCancel, initialData, isSaving }) => {
             const isEditMode = !!initialData;
             const getNowString = () => { const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); return now.toISOString().slice(0, 16); };
-            const [formData, setFormData] = useState(initialData || { url: '', tags: '', thoughts_shooting: '', thoughts_viewing: '', exif: { shutter: '', aperture: 'f/', iso: '', date: getNowString(), camera: '', lens: '', focalLength: '', ev: '' }, location: { country: '', city: '', spot: '', lat: '', lng: '' } });
+            const [formData, setFormData] = useState(initialData || { 
+                url: '', 
+                tags: '', 
+                thoughts_shooting: '', 
+                thoughts_viewing: '', 
+                exif: { 
+                    shutter: '', 
+                    aperture: 'f/', 
+                    iso: '', 
+                    date: getNowString(), 
+                    camera: '', 
+                    lens: '', 
+                    focalLength: '', 
+                    ev: '',
+                    altitude: '', // 新增
+                    temp: '',     // 新增
+                    pressure: ''  // 新增
+                }, 
+                location: { country: '', city: '', spot: '', lat: '', lng: '' } 
+            });
             const [status, setStatus] = useState('');
             const [uploadFile, setUploadFile] = useState(null);
             const [exifStatus, setExifStatus] = useState(''); 
@@ -827,17 +811,19 @@ const [formData, setFormData] = useState(initialData || {
                 const file = e.target.files[0];
                 if (file) {
                     setUploadFile(file);
+                    
+                    // 1. 设置预览图 (立即执行，不等待 EXIF)
                     const previewUrl = URL.createObjectURL(file);
                     setFormData(prev => ({ ...prev, url: previewUrl }));
                     
                     setExifStatus('分析中...');
                     
+                    // 2. 嘗試讀取 EXIF
                     try {
                         EXIF.getData(file, async function() {
                             const allTags = EXIF.getAllTags(this);
-                            console.log("Full EXIF Dump:", allTags); // 方便除錯，可以在 Console 看到所有抓到的資料
+                            console.log("Full EXIF Dump:", allTags); // 除錯用
 
-                            // --- 基礎曝光數據 ---
                             const extractedShutter = EXIF.getTag(this, "ExposureTime");
                             const extractedFNumber = EXIF.getTag(this, "FNumber");
                             const extractedISO = EXIF.getTag(this, "ISOSpeedRatings");
@@ -864,9 +850,7 @@ const [formData, setFormData] = useState(initialData || {
                             const altitudeVal = getAltitude(alt, altRef);
                             let formattedAltitude = altitudeVal !== null ? `${Math.round(altitudeVal)}m` : "";
 
-                            // 嘗試讀取 Olympus 壓力與溫度 (注意：exif-js 對 MakerNote 支援不佳，不一定能讀到)
-                            // 這裡嘗試讀取標準欄位，若 TG-6 寫入標準欄位則有機會
-                            // 許多 TG-6 的數據藏在 MakerNote，若 exif-js 讀不到，這裡會是空的
+                            // 嘗試讀取 Olympus 壓力與溫度
                             let pressure = allTags.Pressure || allTags.AmbientPressure || ""; 
                             let temp = allTags.Temperature || allTags.CameraTemperature || "";
 
@@ -874,46 +858,29 @@ const [formData, setFormData] = useState(initialData || {
                             let formattedShutter = "";
                             const shutterVal = getExifValue(extractedShutter);
                             if (shutterVal > 0) formattedShutter = shutterVal < 1 ? "1/" + Math.round(1/shutterVal) : shutterVal.toString();
-                            
                             const apertureVal = getExifValue(extractedFNumber);
                             const formattedAperture = apertureVal ? "f/" + apertureVal : "";
-                            
                             const formattedEV = formatExposureBias(extractedBias);
-                            
                             let formattedDate = "";
                             if (extractedDate) {
                                 const parts = extractedDate.split(" ");
                                 if (parts.length >= 2) formattedDate = `${parts[0].replace(/:/g, "-")}T${parts[1].substring(0, 5)}`;
                                 else if (parts.length === 1) formattedDate = parts[0].replace(/:/g, "-");
                             }
-
-                            // 處理相機型號顯示
                             let formattedCamera = "";
-                            if (make && model) {
-                                // 避免重複顯示 "Olympus Olympus TG-6"
-                                if (model.toLowerCase().includes(make.toLowerCase())) {
-                                    formattedCamera = model;
-                                } else {
-                                    formattedCamera = `${make} ${model}`;
-                                }
-                            } else {
-                                formattedCamera = model || make || "";
-                            }
-                            formattedCamera = formattedCamera.replace(/\0/g, '').trim();
-
+                            if (make && model) formattedCamera = model.toLowerCase().includes(make.toLowerCase()) ? model : `${make} ${model}`;
+                            else formattedCamera = model || make || "";
+                            if (formattedCamera) formattedCamera = formattedCamera.replace(/\0/g, '').trim();
                             let formattedFocalLength = "";
                             const focalVal = getExifValue(extractedFocalLength);
                             if (focalVal) formattedFocalLength = `${focalVal}mm`;
-
-                            // --- 定位邏輯 (增加防呆) ---
                             let locationUpdate = { ...formData.location };
                             let extraStatus = "";
-
+                            
                             // 只要有經緯度陣列，就算 Ref 讀不到，預設 N/E (常見情況)
                             if (lat && lat.length === 3 && lon && lon.length === 3) {
                                 const decimalLat = convertDMSToDD(lat, latRef || 'N');
                                 const decimalLon = convertDMSToDD(lon, lonRef || 'E');
-                                
                                 if (decimalLat && decimalLon) {
                                     setExifStatus('定位中...');
                                     const address = await reverseGeocode(decimalLat, decimalLon);
@@ -924,13 +891,9 @@ const [formData, setFormData] = useState(initialData || {
                                         locationUpdate.city = address.city || address.county || address.town || address.state || "";
                                         locationUpdate.spot = address.suburb || address.village || address.road || address.pedestrian || "";
                                         extraStatus = " + GPS";
-                                    } else { 
-                                        extraStatus = " (GPS 成功，無地址)"; 
-                                    }
+                                    } else { extraStatus = " (GPS 成功，無地址)"; }
                                 }
                             }
-
-                            // 更新 Form Data
                             setFormData(prev => ({
                                 ...prev,
                                 exif: {
@@ -939,10 +902,9 @@ const [formData, setFormData] = useState(initialData || {
                                     iso: extractedISO ? extractedISO.toString() : prev.exif.iso,
                                     date: formattedDate || prev.exif.date,
                                     camera: formattedCamera || prev.exif.camera,
-                                    lens: lensName || prev.exif.lens, // 更新後的鏡頭名稱
+                                    lens: lensName || prev.exif.lens,
                                     focalLength: formattedFocalLength || prev.exif.focalLength,
                                     ev: formattedEV || prev.exif.ev,
-                                    // 新增環境數據欄位 (若原本 state 沒有這些欄位，React 會自動 merge)
                                     altitude: formattedAltitude,
                                     temp: temp ? `${temp}°C` : "",
                                     pressure: pressure ? `${pressure} hPa` : ""
