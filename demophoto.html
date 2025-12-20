@@ -348,6 +348,7 @@
             </div>
         );
 
+        // 修改後的 Header 元件
         const Header = ({ setView, isAdmin, onLoginClick, onLogout, currentView }) => (
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
@@ -365,7 +366,8 @@
                     <div className="flex items-center cursor-pointer gap-2 shrink-0" onClick={() => setView('gallery')}>
                         <h1 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight whitespace-nowrap">{SITE_CONFIG.seo.siteName}</h1>
                     </div>
-                    {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2 shrink-0">ADMIN</span>}
+                    {/* ADMIN 標籤：手機版隱藏，避免擠壓空間 */}
+                    {isAdmin && <span className="hidden sm:inline-flex text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2 shrink-0">ADMIN</span>}
                 </div>
                 {/* 右側按鈕區：不再包含登入登出按鈕 */}
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
@@ -379,9 +381,9 @@
                         <CalendarIcon size={20} />
                     </button>
 
-                    {/* 新增按鈕 (僅管理員顯示) */}
+                    {/* 新增按鈕 (僅管理員顯示)：手機版只顯示 ICON，調整 padding 以節省寬度 */}
                     {isAdmin && (
-                        <button onClick={() => setView('upload')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium text-sm ml-2">
+                        <button onClick={() => setView('upload')} className="flex items-center gap-0 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 sm:px-5 sm:py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium text-sm ml-2">
                             <Upload size={18} /><span className="hidden sm:inline">新增</span>
                         </button>
                     )}
