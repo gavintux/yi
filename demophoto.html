@@ -57,7 +57,6 @@
         // 🚀 自動化初始化腳本
         // =============================================================================
         (function applySiteConfig() {
-            // 1. 設定 SEO Meta Tags
             document.title = SITE_CONFIG.seo.title;
             const setMeta = (name, content) => {
                 let meta = document.querySelector(`meta[name="${name}"]`);
@@ -72,7 +71,6 @@
             setMeta('keywords', SITE_CONFIG.seo.keywords);
             setMeta('author', SITE_CONFIG.seo.author);
 
-            // 2. 設定 Favicon (瀏覽器小圖示)
             let link = document.querySelector("link[rel~='icon']");
             if (!link) {
                 link = document.createElement('link');
@@ -81,7 +79,6 @@
             }
             link.href = SITE_CONFIG.seo.logoImage;
 
-            // 3. 注入 CSS 變數
             const root = document.documentElement;
             root.style.setProperty('--primary-color', SITE_CONFIG.theme.primaryColor);
             root.style.setProperty('--bg-color', SITE_CONFIG.theme.backgroundColor);
@@ -355,6 +352,13 @@
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0 shrink-0">
+                    {/* 登入/登出按鈕移至最左側 (Logo左邊) */}
+                    {isAdmin ? (
+                        <button onClick={onLogout} className="p-2 text-gray-500 hover:text-red-600 transition-colors mr-1 sm:mr-2" title="登出"><LogOut size={20} /></button>
+                    ) : (
+                        <button onClick={onLoginClick} className="p-2 text-gray-400 hover:text-indigo-600 transition-colors mr-1 sm:mr-2" title="登入"><Lock size={20} /></button>
+                    )}
+
                     <a href={SITE_CONFIG.seo.logoLink} target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity shrink-0" title="前往 Blog">
                         <img src={SITE_CONFIG.seo.logoImage} alt="Logo" className="h-16 w-auto mr-2 object-contain shrink-0" />
                     </a>
@@ -363,8 +367,8 @@
                     </div>
                     {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2 shrink-0">ADMIN</span>}
                 </div>
-                {/* 手機版按鈕間距調整: gap-1 改為 gap-3 */}
-                <div className="flex items-center gap-3 sm:gap-3 shrink-0 ml-2">
+                {/* 右側按鈕區：不再包含登入登出按鈕 */}
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
                     <a href={SITE_CONFIG.seo.portalLink} target="_blank" rel="noopener noreferrer" className="p-2 sm:p-2.5 rounded-xl transition-all text-gray-400 hover:text-gray-700 hover:bg-gray-100 hidden sm:block" title="Portal">
                         <Globe size={20} />
                     </a>
@@ -375,16 +379,9 @@
                         <CalendarIcon size={20} />
                     </button>
 
-                    {/* 分隔線，避免誤按 */}
-                    <div className="h-6 w-px bg-slate-200 mx-1"></div>
-
-                    {isAdmin ? (
-                        <button onClick={onLogout} className="p-2 sm:p-2.5 text-gray-500 hover:text-red-600 transition-colors" title="登出"><LogOut size={20} /></button>
-                    ) : (
-                        <button onClick={onLoginClick} className="p-2 sm:p-2.5 text-gray-400 hover:text-indigo-600 transition-colors" title="登入"><Lock size={20} /></button>
-                    )}
+                    {/* 新增按鈕 (僅管理員顯示) */}
                     {isAdmin && (
-                        <button onClick={() => setView('upload')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium text-sm">
+                        <button onClick={() => setView('upload')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium text-sm ml-2">
                             <Upload size={18} /><span className="hidden sm:inline">新增</span>
                         </button>
                     )}
@@ -683,7 +680,7 @@
                                 <span>| {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso} {photo.exif.focalLength ? `· ${photo.exif.focalLength}` : ''} {photo.exif.ev ? `· EV ${photo.exif.ev}` : ''}</span>
                             </div>
                             
-                            {/* 環境數據 (底色修正：改為半透明白色 bg-white/10) */}
+                            {/* 環境數據 */}
                             {hasEnvData && (
                                 <div className="flex gap-4 text-xs text-indigo-300 font-medium bg-white/10 px-4 py-1 rounded-lg border border-white/10">
                                     {photo.exif.altitude && <span className="flex items-center gap-1"><ArrowUpNarrowWide size={12}/> 海拔 {photo.exif.altitude}</span>}
@@ -725,7 +722,11 @@
                 </div>
                 <div className="p-4 flex flex-col gap-3">
                     <div><div className="flex items-baseline justify-between mb-1"><h3 className="font-bold text-slate-800 text-lg leading-tight">{photo.location.city}</h3><span className="text-xs text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded-md">{photo.location.country}</span></div>{photo.location.spot && <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><MapPin size={10} className="text-indigo-500"/> {photo.location.spot}</p>}</div>
-                    <div className="space-y-2">{photo.thoughts_shooting && (<div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100"><span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wide">Shooting</span>{photo.thoughts_shooting}</div>)}{photo.thoughts_viewing && (<div className="text-sm text-slate-600 leading-relaxed bg-indigo-50/50 p-3 rounded-xl border border-indigo-100"><span className="block text-[10px] font-bold text-indigo-400 mb-1 uppercase tracking-wide">Reflection</span>{photo.thoughts_viewing}</div>)}</div>
+                    <div className="space-y-2">
+                        {photo.thoughts_shooting && (<div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100"><span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wide">Shooting</span>{photo.thoughts_shooting}</div>)}
+                        {/* Reflection (Viewing) 區塊：背景色改為與 Shooting 相同 (bg-slate-50)，移除原本的藍色調 */}
+                        {photo.thoughts_viewing && (<div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100"><span className="block text-[10px] font-bold text-indigo-400 mb-1 uppercase tracking-wide">Reflection</span>{photo.thoughts_viewing}</div>)}
+                    </div>
                     {photo.tags && photo.tags.length > 0 && (<div className="flex flex-wrap gap-1.5">{photo.tags.map(tag => (<span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-md uppercase tracking-wide">#{tag}</span>))}</div>)}
                     <div className="pt-3 mt-1 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-mono"><span className="flex items-center gap-1"><Aperture size={10}/> {photo.exif.aperture}</span><span>{photo.exif.shutter}</span><span className="flex items-center gap-1">ISO {photo.exif.iso}</span><span className="flex items-center gap-1">{photo.exif.ev && `EV ${photo.exif.ev}`}</span></div>
                 </div>
@@ -848,7 +849,6 @@
                                     iso: extractedISO ? extractedISO.toString() : prev.exif.iso,
                                     date: formattedDate || prev.exif.date,
                                     camera: formattedCamera || prev.exif.camera,
-                                    // 關鍵修改：如果抓不到鏡頭名稱，不要清空原本的（如果有的話），也不要覆蓋為空
                                     lens: lensName || prev.exif.lens,
                                     focalLength: formattedFocalLength || prev.exif.focalLength,
                                     ev: formattedEV || prev.exif.ev,
@@ -869,8 +869,6 @@
 
             const handleSubmit = async (e) => { 
                 e.preventDefault();
-                
-                // 驗證檢查
                 if (!uploadFile && !formData.url) {
                     alert("請選擇照片檔案或輸入連結！");
                     return;
@@ -903,7 +901,15 @@
                             </div>
                             <div className="md:col-span-3 space-y-8">
                                 <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Tag size={14} className="text-indigo-500"/> 內容描述</h4><input type="text" placeholder="標籤 (例如: 風景, 台灣)" className="block w-full border-slate-200 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" value={formData.tags} onChange={(e) => handleChange(null, 'tags', e.target.value)} /><textarea rows="3" placeholder="拍攝當下的想法..." className="block w-full border-slate-200 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none" value={formData.thoughts_shooting} onChange={(e) => handleChange(null, 'thoughts_shooting', e.target.value)} /><textarea rows="2" placeholder="事後欣賞的感受..." className="block w-full border-slate-200 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none text-slate-600" value={formData.thoughts_viewing} onChange={(e) => handleChange(null, 'thoughts_viewing', e.target.value)} /></div>
-                                <div className="grid grid-cols-2 gap-6"><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Aperture size={14} className="text-indigo-500"/> 拍攝參數</h4><input type="datetime-local" className="block w-full border-slate-200 rounded-lg p-2 text-xs text-slate-600 mb-2" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /><div className="grid grid-cols-2 gap-2"><input type="text" placeholder="相機" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} />
+                                <div className="grid grid-cols-2 gap-6"><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><MapPin size={14} className="text-indigo-500"/> 地點資訊</h4>
+                                <input type="text" placeholder="國家" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.country} onChange={(e) => handleChange('location', 'country', e.target.value)} />
+                                <input type="text" placeholder="城市" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.city} onChange={(e) => handleChange('location', 'city', e.target.value)} />
+                                <input type="text" placeholder="景點/街道" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.spot} onChange={(e) => handleChange('location', 'spot', e.target.value)} />
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <input type="number" step="any" placeholder="Latitude (緯度)" className="block w-full border-slate-200 rounded-lg p-2 text-xs focus:border-indigo-500 outline-none" value={formData.location.lat} onChange={(e) => handleChange('location', 'lat', e.target.value)} />
+                                    <input type="number" step="any" placeholder="Longitude (經度)" className="block w-full border-slate-200 rounded-lg p-2 text-xs focus:border-indigo-500 outline-none" value={formData.location.lng} onChange={(e) => handleChange('location', 'lng', e.target.value)} />
+                                </div>
+                                </div><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Aperture size={14} className="text-indigo-500"/> 拍攝參數</h4><input type="datetime-local" className="block w-full border-slate-200 rounded-lg p-2 text-xs text-slate-600 mb-2" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /><div className="grid grid-cols-2 gap-2"><input type="text" placeholder="相機" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} />
                                 <div className="relative"><input type="text" placeholder="鏡頭 (若自動抓不到請手動輸入)" className="w-full border-slate-200 rounded p-1 text-xs" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /></div>
                                 <input type="text" placeholder="快門" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /><input type="text" placeholder="光圈" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /><input type="text" placeholder="ISO" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /><input type="text" placeholder="EV" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.ev} onChange={(e) => handleChange('exif', 'ev', e.target.value)} /></div></div></div>
                             </div>
