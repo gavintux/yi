@@ -3,25 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Linkc Photo Space</title>
     
-    <!-- 1. 載入 Tailwind CSS -->
+    <script>
+        const SITE_CONFIG = {
+            // 1. 網站基本資訊與 SEO
+            seo: {
+                title: "Linkc Photo Space",
+                siteName: "Linkc Gallery",
+                description: "Linkc 的個人攝影空間，紀錄生活與旅行的瞬間。",
+                keywords: "攝影, 旅行, 生活, Linkc, 相簿, 作品集, Olympus, TG-6,Nikon",
+                author: "Linkc",
+                // Logo 圖片網址 (也會被自動用作瀏覽器 Favicon)
+                logoImage: "https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f", 
+                logoLink: "https://2blog.ilc.edu.tw/linkc/",
+                portalLink: "https://gavintux.github.io/yi/"
+            },
+
+            // 2. 外觀主題設定
+            theme: {
+                primaryColor: '#4f46e5',      // Indigo-600
+                secondaryColor: '#6366f1',    // Indigo-500
+                backgroundColor: '#f8fafc',   // Slate-50
+                textColor: '#1e293b',         // Slate-800
+                fontFamily: 'Inter, system-ui, sans-serif'
+            },
+
+            // 3. Firebase 設定
+            firebase: {
+                apiKey: "AIzaSyDwXsplXePeD1wU1GG4BwQBR6iSMd3_5nY",
+                authDomain: "linkcphoto.firebaseapp.com",
+                projectId: "linkcphoto",
+                storageBucket: "linkcphoto.firebasestorage.app",
+                messagingSenderId: "841541302440",
+                appId: "1:841541302440:web:a2b3dfef70a32bb345ea9d",
+                measurementId: "G-902H2EHVFF"
+            },
+            
+            // 4. 系統設定
+            system: {
+                collectionName: 'linkc_photos_v1',
+                adminPasscode: '590123',
+                itemsPerPage: 12,
+            },
+
+            // 5. 地圖設定
+            map: {
+                defaultCenter: [23.6, 121], 
+                defaultZoom: 8
+            }
+        };
+
+        // =============================================================================
+        // 🚀 自動化初始化腳本
+        // =============================================================================
+        (function applySiteConfig() {
+            document.title = SITE_CONFIG.seo.title;
+            const setMeta = (name, content) => {
+                let meta = document.querySelector(`meta[name="${name}"]`);
+                if (!meta) {
+                    meta = document.createElement('meta');
+                    meta.name = name;
+                    document.head.appendChild(meta);
+                }
+                meta.content = content;
+            };
+            setMeta('description', SITE_CONFIG.seo.description);
+            setMeta('keywords', SITE_CONFIG.seo.keywords);
+            setMeta('author', SITE_CONFIG.seo.author);
+
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.head.appendChild(link);
+            }
+            link.href = SITE_CONFIG.seo.logoImage;
+
+            const root = document.documentElement;
+            root.style.setProperty('--primary-color', SITE_CONFIG.theme.primaryColor);
+            root.style.setProperty('--bg-color', SITE_CONFIG.theme.backgroundColor);
+            root.style.setProperty('--text-color', SITE_CONFIG.theme.textColor);
+            root.style.setProperty('--font-family', SITE_CONFIG.theme.fontFamily);
+        })();
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        sans: SITE_CONFIG.theme.fontFamily.split(','),
                         serif: ['"Noto Serif TC"', 'serif'],
                     },
                     colors: {
-                        slate: {
-                            50: '#f8fafc',
-                            100: '#f1f5f9', 800: '#1e293b', 900: '#0f172a',
-                        },
                         indigo: {
-                            500: '#6366f1', 600: '#4f46e5',
+                            500: SITE_CONFIG.theme.secondaryColor, 
+                            600: SITE_CONFIG.theme.primaryColor,
+                            50:  SITE_CONFIG.theme.primaryColor + '10',
+                            100: SITE_CONFIG.theme.primaryColor + '20',
+                            900: '#312e81',
+                        },
+                        slate: {
+                            50: SITE_CONFIG.theme.backgroundColor,
+                            800: SITE_CONFIG.theme.textColor,
+                            900: '#0f172a',
                         }
                     },
                     animation: {
@@ -38,30 +124,23 @@
         }
     </script>
     
-    <!-- 2. 載入 Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- 3. 載入 Exif-js -->
     <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
 
-    <!-- 4. 載入 Leaflet & MarkerCluster (地圖功能核心) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    
-    <!-- MarkerCluster CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
-    <!-- 5. 設定 Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- 6. CSS -->
     <style>
-        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; -webkit-font-smoothing: antialiased; }
-        .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; color: #4f46e5; font-weight: 500; letter-spacing: 0.05em; }
+        body { margin: 0; font-family: var(--font-family); background-color: var(--bg-color); color: var(--text-color); -webkit-font-smoothing: antialiased; }
+        .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--primary-color); font-weight: 500; letter-spacing: 0.05em; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
@@ -70,60 +149,26 @@
         @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
         @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
         .masonry-item { break-inside: avoid; margin-bottom: 1.5rem; }
-        
-        /* Map Custom Styles */
-        .leaflet-popup-content-wrapper {
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            padding: 0;
-            overflow: hidden;
-        }
-        .leaflet-popup-content {
-            margin: 0;
-            width: 200px !important;
-        }
-        .photo-marker {
-            border: 3px solid white;
-            border-radius: 50%;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            background: white;
-            position: relative;
-        }
-        .photo-marker:hover {
-            transform: scale(1.2);
-            z-index: 1000 !important;
-            border-color: #6366f1;
-        }
-        .photo-marker img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        /* Custom Cluster Icon */
-        .custom-cluster-icon {
-            background: none;
-            border: none;
-        }
-        /* Leaflet Controls */
-        .leaflet-top.leaflet-right {
-            margin-top: 10px;
-            margin-right: 10px;
-        }
+        .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); padding: 0; overflow: hidden; }
+        .leaflet-popup-content { margin: 0; width: 200px !important; }
+        .photo-marker { border: 3px solid white; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.2); overflow: hidden; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: white; position: relative; }
+        .photo-marker:hover { transform: scale(1.2); z-index: 1000 !important; border-color: var(--primary-color); }
+        .photo-marker img { width: 100%; height: 100%; object-fit: cover; }
+        .custom-cluster-icon { background: none; border: none; }
+        .cluster-marker-inner { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background-color: var(--primary-color); color: white; border-radius: 50%; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 2px solid white; font-size: 0.875rem; }
+        .leaflet-top.leaflet-right { margin-top: 10px; margin-right: 10px; }
     </style>
 </head>
 <body>
     <div id="root">
         <div class="loading-screen">
             <div class="flex flex-col items-center gap-4">
-                <div class="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                <span class="text-sm uppercase tracking-widest text-slate-400">Loading Gallery...</span>
+                <div class="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style="border-color: var(--primary-color); border-top-color: transparent;"></div>
+                <span class="text-sm uppercase tracking-widest" style="color: #94a3b8;">Loading Gallery...</span>
             </div>
         </div>
     </div>
 
-    <!-- 7. React App -->
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect, useRef, useMemo } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
@@ -142,27 +187,16 @@
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
-        // -----------------------------------------------------------------------------
-        // 設定區
-        // -----------------------------------------------------------------------------
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyDwXsplXePeD1wU1GG4BwQBR6iSMd3_5nY",
-            authDomain: "linkcphoto.firebaseapp.com",
-            projectId: "linkcphoto",
-            storageBucket: "linkcphoto.firebasestorage.app",
-            messagingSenderId: "841541302440",
-            appId: "1:841541302440:web:a2b3dfef70a32bb345ea9d",
-            measurementId: "G-902H2EHVFF"
-        };
+        // =============================================================================
+        // 🚀 APP LOGIC
+        // =============================================================================
 
-        const isConfigConfigured = !firebaseConfig.apiKey.includes("您的API_KEY");
-        const COLLECTION_NAME = 'linkc_photos_v1';
+        const isConfigConfigured = !SITE_CONFIG.firebase.apiKey.includes("您的API_KEY");
 
         let app, auth, db, storage;
         if (isConfigConfigured) {
             try {
-                app = initializeApp(firebaseConfig);
+                app = initializeApp(SITE_CONFIG.firebase);
                 auth = getAuth(app);
                 db = getFirestore(app);
                 storage = getStorage(app);
@@ -171,10 +205,7 @@
             }
         }
 
-        // -----------------------------------------------------------------------------
-        // Helpers
-        // -----------------------------------------------------------------------------
-
+        // --- Helpers ---
         function useDebounce(value, delay) {
             const [debouncedValue, setDebouncedValue] = useState(value);
             useEffect(() => { const h = setTimeout(() => setDebouncedValue(value), delay); return () => clearTimeout(h); }, [value, delay]);
@@ -200,32 +231,31 @@
             return Number.isInteger(val) ? `${sign}${val}` : `${sign}${val.toFixed(1)}`;
         };
 
-        const parseLensInfo = (lensInfo) => {
-            if (!lensInfo || lensInfo.length < 2) return null;
-            const minFocal = getExifValue(lensInfo[0]);
-            const maxFocal = getExifValue(lensInfo[1]);
-            const minF = getExifValue(lensInfo[2]);
-            const maxF = getExifValue(lensInfo[3]);
-            if (!minFocal) return null;
-            let focalStr = minFocal === maxFocal ? `${minFocal}mm` : `${minFocal}-${maxFocal}mm`;
+        const parseLensInfo = (lensInfo, allTags) => {
+            if (allTags.LensModel && typeof allTags.LensModel === 'string' && allTags.LensModel.trim() !== '') {
+                return allTags.LensModel.replace(/\0/g, '').trim();
+            }
+            if (allTags.Lens && typeof allTags.Lens === 'string') {
+                return allTags.Lens.replace(/\0/g, '').trim();
+            }
+            const info = lensInfo || allTags['UndefinedTag:0xA432'];
+            if (!info || info.length < 4) return "";
+            const minFocal = getExifValue(info[0]);
+            const maxFocal = getExifValue(info[1]);
+            const minF = getExifValue(info[2]);
+            const maxF = getExifValue(info[3]);
+            if (!minFocal) return "";
+            let focalStr = (minFocal === maxFocal) ? `${minFocal}mm` : `${minFocal}-${maxFocal}mm`;
             let apertureStr = "";
             if (minF > 0) apertureStr = (minF === maxF || !maxF) ? `f/${minF}` : `f/${minF}-${maxF}`;
             return `${focalStr} ${apertureStr}`.trim();
         };
 
-        const findLensNameInAllTags = (allTags) => {
-            const candidates = [allTags.LensModel, allTags.Lens, allTags.LensID, allTags.LensInfo];
-            for (const c of candidates) { if (c && typeof c === 'string' && c.trim().length > 0 && !c.toLowerCase().includes("undefined")) return c; }
-            for (const key in allTags) {
-                const val = allTags[key];
-                if (typeof val === 'string' && val.length > 3 && key.includes('Lens')) {
-                    if (val.toLowerCase().includes('unknown') || val.toLowerCase().includes('defined')) continue;
-                    return val;
-                }
-            }
-            if (allTags.LensInfo) return parseLensInfo(allTags.LensInfo);
-            if (allTags['UndefinedTag:0xA432']) return parseLensInfo(allTags['UndefinedTag:0xA432']);
-            return "";
+        const getAltitude = (alt, ref) => {
+            const value = getExifValue(alt);
+            if (!value && value !== 0) return null;
+            const isBelowSea = ref === 1 || ref === '1'; 
+            return isBelowSea ? -value : value;
         };
 
         const convertDMSToDD = (dms, ref) => {
@@ -281,9 +311,9 @@
                         ctx.shadowOffsetX = 2;
                         ctx.shadowOffsetY = 2;
                         const padding = fontSize;
-                        ctx.fillText('Linkc', canvas.width - padding, canvas.height - padding);
+                        ctx.fillText(SITE_CONFIG.seo.author, canvas.width - padding, canvas.height - padding);
                         const link = document.createElement('a');
-                        link.download = `Linkc_${filename}.jpg`;
+                        link.download = `${SITE_CONFIG.seo.author}_${filename}.jpg`;
                         link.href = canvas.toDataURL('image/jpeg', 0.9);
                         document.body.appendChild(link);
                         link.click();
@@ -295,16 +325,14 @@
             });
         };
 
-        // -----------------------------------------------------------------------------
-        // Components
-        // -----------------------------------------------------------------------------
+        // --- Components ---
 
         const ConfigError = () => (
             <div className="error-container bg-slate-50">
                 <div className="error-box border border-slate-200 shadow-md">
                     <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
                     <h3 className="error-title text-slate-900">尚未設定 Firebase</h3>
-                    <p className="text-slate-600 mb-4">請編輯 index.html 並填入您的 Firebase Config。</p>
+                    <p className="text-slate-600 mb-4">請編輯 HTML 檔案頂部的 SITE_CONFIG 區塊。</p>
                 </div>
             </div>
         );
@@ -320,20 +348,30 @@
             </div>
         );
 
+        // 修改後的 Header 元件
         const Header = ({ setView, isAdmin, onLoginClick, onLogout, currentView }) => (
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0 shrink-0">
-                    <a href="https://2blog.ilc.edu.tw/linkc/" target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity shrink-0" title="前往 Linkc Blog">
-                        <img src="https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f" alt="Linkc Logo" className="h-16 w-auto mr-2 object-contain shrink-0" />
+                    {/* 登入/登出按鈕移至最左側 (Logo左邊) */}
+                    {isAdmin ? (
+                        <button onClick={onLogout} className="p-2 text-gray-500 hover:text-red-600 transition-colors mr-1 sm:mr-2" title="登出"><LogOut size={20} /></button>
+                    ) : (
+                        <button onClick={onLoginClick} className="p-2 text-gray-400 hover:text-indigo-600 transition-colors mr-1 sm:mr-2" title="登入"><Lock size={20} /></button>
+                    )}
+
+                    <a href={SITE_CONFIG.seo.logoLink} target="_blank" rel="noopener noreferrer" className="flex items-center hover:opacity-80 transition-opacity shrink-0" title="前往 Blog">
+                        <img src={SITE_CONFIG.seo.logoImage} alt="Logo" className="h-16 w-auto mr-2 object-contain shrink-0" />
                     </a>
                     <div className="flex items-center cursor-pointer gap-2 shrink-0" onClick={() => setView('gallery')}>
-                        <h1 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight whitespace-nowrap">Linkc <span className="text-indigo-600 font-light">Gallery</span></h1>
+                        <h1 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight whitespace-nowrap">{SITE_CONFIG.seo.siteName}</h1>
                     </div>
-                    {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2 shrink-0">ADMIN</span>}
+                    {/* ADMIN 標籤：手機版隱藏，避免擠壓空間 */}
+                    {isAdmin && <span className="hidden sm:inline-flex text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2 shrink-0">ADMIN</span>}
                 </div>
-                <div className="flex items-center gap-1 sm:gap-3 shrink-0 ml-2">
-                    <a href="https://gavintux.github.io/yi/" target="_blank" rel="noopener noreferrer" className="p-2 sm:p-2.5 rounded-xl transition-all text-gray-400 hover:text-gray-700 hover:bg-gray-100 hidden sm:block" title="Zen's Portal">
+                {/* 右側按鈕區：不再包含登入登出按鈕 */}
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
+                    <a href={SITE_CONFIG.seo.portalLink} target="_blank" rel="noopener noreferrer" className="p-2 sm:p-2.5 rounded-xl transition-all text-gray-400 hover:text-gray-700 hover:bg-gray-100 hidden sm:block" title="Portal">
                         <Globe size={20} />
                     </a>
                     <button onClick={() => setView('map')} className={`p-2 sm:p-2.5 rounded-xl transition-all ${currentView === 'map' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100'}`} title="地圖模式">
@@ -343,13 +381,9 @@
                         <CalendarIcon size={20} />
                     </button>
 
-                    {isAdmin ? (
-                        <button onClick={onLogout} className="p-2 sm:p-2.5 text-gray-500 hover:text-red-600 transition-colors" title="登出"><LogOut size={20} /></button>
-                    ) : (
-                        <button onClick={onLoginClick} className="p-2 sm:p-2.5 text-gray-400 hover:text-indigo-600 transition-colors" title="登入"><Lock size={20} /></button>
-                    )}
+                    {/* 新增按鈕 (僅管理員顯示)：手機版只顯示 ICON，調整 padding 以節省寬度 */}
                     {isAdmin && (
-                        <button onClick={() => setView('upload')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium text-sm">
+                        <button onClick={() => setView('upload')} className="flex items-center gap-0 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 sm:px-5 sm:py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium text-sm ml-2">
                             <Upload size={18} /><span className="hidden sm:inline">新增</span>
                         </button>
                     )}
@@ -376,7 +410,7 @@
                 if (!document.getElementById('map')) return;
                 
                 if (!mapRef.current) {
-                    mapRef.current = L.map('map', { maxZoom: 18 }).setView([23.6, 121], 8);
+                    mapRef.current = L.map('map', { maxZoom: 18 }).setView(SITE_CONFIG.map.defaultCenter, SITE_CONFIG.map.defaultZoom);
                     
                     clusterGroupRef.current = L.markerClusterGroup({
                         showCoverageOnHover: false,
@@ -384,7 +418,7 @@
                         iconCreateFunction: function(cluster) {
                             const count = cluster.getChildCount();
                             return L.divIcon({
-                                html: `<div class="flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-full font-bold shadow-lg border-2 border-white text-sm">${count}</div>`,
+                                html: `<div class="cluster-marker-inner">${count}</div>`,
                                 className: 'custom-cluster-icon',
                                 iconSize: L.point(40, 40)
                             });
@@ -397,61 +431,43 @@
             useEffect(() => {
                 if (!mapRef.current) return;
                 if (tileLayerRef.current) mapRef.current.removeLayer(tileLayerRef.current);
-
                 const style = mapStyles[currentStyle];
-                tileLayerRef.current = L.tileLayer(style.url, {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                    maxZoom: 19
-                }).addTo(mapRef.current);
-                
+                tileLayerRef.current = L.tileLayer(style.url, { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19 }).addTo(mapRef.current);
                 if (clusterGroupRef.current) clusterGroupRef.current.bringToFront();
             }, [currentStyle]);
 
             useEffect(() => {
                 if (!mapRef.current || !clusterGroupRef.current) return;
-
                 const geotaggedPhotos = photos.filter(p => {
                     const lat = parseFloat(p.location?.lat);
                     const lng = parseFloat(p.location?.lng);
                     return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
                 });
-
                 clusterGroupRef.current.clearLayers();
                 const markers = [];
-
                 geotaggedPhotos.forEach(photo => {
                     const lat = parseFloat(photo.location.lat);
                     const lng = parseFloat(photo.location.lng);
-
                     if (!isNaN(lat) && !isNaN(lng)) {
                         const customIcon = L.divIcon({
                             className: 'custom-icon',
-                            html: `<div class="photo-marker w-12 h-12 rounded-full border-2 border-white shadow-lg overflow-hidden relative bg-white cursor-pointer group hover:border-indigo-500 transition-colors">
-                                     <img src="${photo.url}" class="w-full h-full object-cover" />
-                                   </div>`,
+                            html: `<div class="photo-marker w-12 h-12 rounded-full border-2 border-white shadow-lg overflow-hidden relative bg-white cursor-pointer group hover:border-indigo-500 transition-colors"><img src="${photo.url}" class="w-full h-full object-cover" /></div>`,
                             iconSize: [48, 48],
                             iconAnchor: [24, 48],
                             popupAnchor: [0, -48]
                         });
-
                         const marker = L.marker([lat, lng], { icon: customIcon });
                         const popupContent = `
                             <div class="text-center min-w-[200px] font-sans p-2">
-                                <div class="h-32 w-full mb-3 bg-slate-100 rounded-lg overflow-hidden">
-                                    <img src="${photo.url}" class="w-full h-full object-cover" />
-                                </div>
+                                <div class="h-32 w-full mb-3 bg-slate-100 rounded-lg overflow-hidden"><img src="${photo.url}" class="w-full h-full object-cover" /></div>
                                 <p class="font-bold text-base mb-1 text-slate-800">${photo.location.city || ''} ${photo.location.spot || ''}</p>
                                 <p class="text-xs text-slate-500 mb-2">${photo.date ? photo.date.split('T')[0] : ''}</p>
-                                <button class="w-full py-2 bg-indigo-50 text-indigo-600 rounded-md text-xs font-bold hover:bg-indigo-100 transition-colors" onclick="window.dispatchEvent(new CustomEvent('openLightbox', {detail: '${photo.id}'}))">
-                                    查看完整照片
-                                </button>
-                            </div>
-                        `;
+                                <button class="w-full py-2 bg-indigo-50 text-indigo-600 rounded-md text-xs font-bold hover:bg-indigo-100 transition-colors" onclick="window.dispatchEvent(new CustomEvent('openLightbox', {detail: '${photo.id}'}))">查看完整照片</button>
+                            </div>`;
                         marker.bindPopup(popupContent);
                         markers.push(marker);
                     }
                 });
-
                 if (markers.length > 0) {
                     clusterGroupRef.current.addLayers(markers);
                     setTimeout(() => { mapRef.current.invalidateSize(); }, 100);
@@ -505,12 +521,7 @@
             const availableYears = Object.keys(availableData).sort((a, b) => b - a);
             const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
             const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-            
-            const handleJump = (year, monthIndex) => {
-                setCurrentDate(new Date(year, monthIndex, 1));
-                setShowPicker(false);
-            };
-
+            const handleJump = (year, monthIndex) => { setCurrentDate(new Date(year, monthIndex, 1)); setShowPicker(false); };
             const getFormattedDate = (day) => {
                 const y = currentDate.getFullYear();
                 const m = String(currentDate.getMonth() + 1).padStart(2, '0');
@@ -626,9 +637,9 @@
         };
 
         const ShareButtons = ({ photo, minimal = false }) => {
-            const shareText = `${photo.thoughts_shooting || '分享一張照片'} \n\n#Linkc ${photo.tags.map(t=>'#'+t).join(' ')}`;
+            const shareText = `${photo.thoughts_shooting || '分享一張照片'} \n\n#${SITE_CONFIG.seo.siteName} ${photo.tags.map(t=>'#'+t).join(' ')}`;
             const handleIG = async (e) => { e.stopPropagation(); copyToClipboard(shareText); await downloadWithWatermark(photo.url, photo.id, e); };
-            const handleObsidian = (e) => { e.stopPropagation(); const altText = photo.tags.length > 0 ? photo.tags.join(', ') : 'Linkc Photo'; const markdown = `![${altText}](${photo.url})`; copyToClipboard(markdown); alert("已複製 Obsidian 語法！"); };
+            const handleObsidian = (e) => { e.stopPropagation(); const altText = photo.tags.length > 0 ? photo.tags.join(', ') : SITE_CONFIG.seo.siteName; const markdown = `![${altText}](${photo.url})`; copyToClipboard(markdown); alert("已複製 Obsidian 語法！"); };
             const btnClass = minimal ? "text-slate-400 hover:text-slate-700 transition-colors p-1" : "text-slate-500 hover:bg-slate-100 p-2 rounded-full transition-all";
             return (
                 <div className="flex items-center gap-1">
@@ -642,6 +653,10 @@
 
         const Lightbox = ({ photo, onClose, isAdmin, onEdit, onDelete }) => {
             if (!photo) return null;
+            
+            // 判斷是否有環境數據
+            const hasEnvData = photo.exif.altitude || photo.exif.temp || photo.exif.pressure;
+
             return (
                 <div className="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fade-in-up" onClick={onClose}>
                     <button onClick={onClose} className="absolute top-6 right-6 text-white/50 hover:text-white p-2 z-50 transition-colors"><X size={32} strokeWidth={1} /></button>
@@ -666,6 +681,15 @@
                                 {photo.exif.lens && <span>| {photo.exif.lens}</span>}
                                 <span>| {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso} {photo.exif.focalLength ? `· ${photo.exif.focalLength}` : ''} {photo.exif.ev ? `· EV ${photo.exif.ev}` : ''}</span>
                             </div>
+                            
+                            {/* 環境數據 */}
+                            {hasEnvData && (
+                                <div className="flex gap-4 text-xs text-indigo-300 font-medium bg-white/10 px-4 py-1 rounded-lg border border-white/10">
+                                    {photo.exif.altitude && <span className="flex items-center gap-1"><ArrowUpNarrowWide size={12}/> 海拔 {photo.exif.altitude}</span>}
+                                    {photo.exif.temp && <span className="flex items-center gap-1"><Sparkles size={12}/> {photo.exif.temp}</span>}
+                                    {photo.exif.pressure && <span className="flex items-center gap-1"><Gauge size={12}/> {photo.exif.pressure}</span>}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -700,7 +724,11 @@
                 </div>
                 <div className="p-4 flex flex-col gap-3">
                     <div><div className="flex items-baseline justify-between mb-1"><h3 className="font-bold text-slate-800 text-lg leading-tight">{photo.location.city}</h3><span className="text-xs text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded-md">{photo.location.country}</span></div>{photo.location.spot && <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><MapPin size={10} className="text-indigo-500"/> {photo.location.spot}</p>}</div>
-                    <div className="space-y-2">{photo.thoughts_shooting && (<div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100"><span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wide">Shooting</span>{photo.thoughts_shooting}</div>)}{photo.thoughts_viewing && (<div className="text-sm text-slate-600 leading-relaxed bg-indigo-50/50 p-3 rounded-xl border border-indigo-100"><span className="block text-[10px] font-bold text-indigo-400 mb-1 uppercase tracking-wide">Reflection</span>{photo.thoughts_viewing}</div>)}</div>
+                    <div className="space-y-2">
+                        {photo.thoughts_shooting && (<div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100"><span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wide">Shooting</span>{photo.thoughts_shooting}</div>)}
+                        {/* Reflection (Viewing) 區塊：背景色改為與 Shooting 相同 (bg-slate-50)，移除原本的藍色調 */}
+                        {photo.thoughts_viewing && (<div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100"><span className="block text-[10px] font-bold text-indigo-400 mb-1 uppercase tracking-wide">Reflection</span>{photo.thoughts_viewing}</div>)}
+                    </div>
                     {photo.tags && photo.tags.length > 0 && (<div className="flex flex-wrap gap-1.5">{photo.tags.map(tag => (<span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-md uppercase tracking-wide">#{tag}</span>))}</div>)}
                     <div className="pt-3 mt-1 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-mono"><span className="flex items-center gap-1"><Aperture size={10}/> {photo.exif.aperture}</span><span>{photo.exif.shutter}</span><span className="flex items-center gap-1">ISO {photo.exif.iso}</span><span className="flex items-center gap-1">{photo.exif.ev && `EV ${photo.exif.ev}`}</span></div>
                 </div>
@@ -710,7 +738,26 @@
         const PhotoForm = ({ onSave, onCancel, initialData, isSaving }) => {
             const isEditMode = !!initialData;
             const getNowString = () => { const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); return now.toISOString().slice(0, 16); };
-            const [formData, setFormData] = useState(initialData || { url: '', tags: '', thoughts_shooting: '', thoughts_viewing: '', exif: { shutter: '', aperture: 'f/', iso: '', date: getNowString(), camera: '', lens: '', focalLength: '', ev: '' }, location: { country: '', city: '', spot: '', lat: '', lng: '' } });
+            const [formData, setFormData] = useState(initialData || { 
+                url: '', 
+                tags: '', 
+                thoughts_shooting: '', 
+                thoughts_viewing: '', 
+                exif: { 
+                    shutter: '', 
+                    aperture: 'f/', 
+                    iso: '', 
+                    date: getNowString(), 
+                    camera: '', 
+                    lens: '', 
+                    focalLength: '', 
+                    ev: '',
+                    altitude: '', 
+                    temp: '',     
+                    pressure: ''  
+                }, 
+                location: { country: '', city: '', spot: '', lat: '', lng: '' } 
+            });
             const [status, setStatus] = useState('');
             const [uploadFile, setUploadFile] = useState(null);
             const [exifStatus, setExifStatus] = useState(''); 
@@ -723,15 +770,16 @@
                 if (file) {
                     setUploadFile(file);
                     
-                    // 1. 设置预览图 (立即执行，不等待 EXIF)
                     const previewUrl = URL.createObjectURL(file);
                     setFormData(prev => ({ ...prev, url: previewUrl }));
                     
                     setExifStatus('分析中...');
                     
-                    // 2. 尝试读取 EXIF (即使失败也不影响上傳)
                     try {
                         EXIF.getData(file, async function() {
+                            const allTags = EXIF.getAllTags(this);
+                            console.log("Full EXIF Dump:", allTags); 
+
                             const extractedShutter = EXIF.getTag(this, "ExposureTime");
                             const extractedFNumber = EXIF.getTag(this, "FNumber");
                             const extractedISO = EXIF.getTag(this, "ISOSpeedRatings");
@@ -740,17 +788,23 @@
                             const extractedBias = EXIF.getTag(this, "ExposureBiasValue");
                             const make = EXIF.getTag(this, "Make");
                             const model = EXIF.getTag(this, "Model");
-                            const allTags = EXIF.getAllTags(this);
-                            let lensModel = findLensNameInAllTags(allTags);
-                            if (lensModel && typeof lensModel === 'string') {
-                                lensModel = lensModel.replace(/\0/g, '').trim();
-                                const lensMake = EXIF.getTag(this, "LensMake");
-                                if (lensMake && !lensModel.toLowerCase().includes(lensMake.toLowerCase())) lensModel = `${lensMake} ${lensModel}`;
-                            }
+
+                            const extractedLensInfo = EXIF.getTag(this, "LensInfo") || EXIF.getTag(this, "LensSpecification");
+                            const lensName = parseLensInfo(extractedLensInfo, allTags);
+
                             const lat = EXIF.getTag(this, "GPSLatitude");
                             const latRef = EXIF.getTag(this, "GPSLatitudeRef");
                             const lon = EXIF.getTag(this, "GPSLongitude");
                             const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
+                            
+                            const alt = EXIF.getTag(this, "GPSAltitude");
+                            const altRef = EXIF.getTag(this, "GPSAltitudeRef"); 
+                            const altitudeVal = getAltitude(alt, altRef);
+                            let formattedAltitude = altitudeVal !== null ? `${Math.round(altitudeVal)}m` : "";
+
+                            let pressure = allTags.Pressure || allTags.AmbientPressure || ""; 
+                            let temp = allTags.Temperature || allTags.CameraTemperature || "";
+
                             let formattedShutter = "";
                             const shutterVal = getExifValue(extractedShutter);
                             if (shutterVal > 0) formattedShutter = shutterVal < 1 ? "1/" + Math.round(1/shutterVal) : shutterVal.toString();
@@ -772,7 +826,8 @@
                             if (focalVal) formattedFocalLength = `${focalVal}mm`;
                             let locationUpdate = { ...formData.location };
                             let extraStatus = "";
-                            if (lat && lon) {
+                            
+                            if (lat && lat.length === 3 && lon && lon.length === 3) {
                                 const decimalLat = convertDMSToDD(lat, latRef || 'N');
                                 const decimalLon = convertDMSToDD(lon, lonRef || 'E');
                                 if (decimalLat && decimalLon) {
@@ -785,7 +840,7 @@
                                         locationUpdate.city = address.city || address.county || address.town || address.state || "";
                                         locationUpdate.spot = address.suburb || address.village || address.road || address.pedestrian || "";
                                         extraStatus = " + GPS";
-                                    } else { extraStatus = " (GPS 失敗)"; }
+                                    } else { extraStatus = " (GPS 成功，無地址)"; }
                                 }
                             }
                             setFormData(prev => ({
@@ -796,9 +851,12 @@
                                     iso: extractedISO ? extractedISO.toString() : prev.exif.iso,
                                     date: formattedDate || prev.exif.date,
                                     camera: formattedCamera || prev.exif.camera,
-                                    lens: lensModel || prev.exif.lens,
+                                    lens: lensName || prev.exif.lens,
                                     focalLength: formattedFocalLength || prev.exif.focalLength,
-                                    ev: formattedEV || prev.exif.ev
+                                    ev: formattedEV || prev.exif.ev,
+                                    altitude: formattedAltitude,
+                                    temp: temp ? `${temp}°C` : "",
+                                    pressure: pressure ? `${pressure} hPa` : ""
                                 },
                                 location: locationUpdate
                             }));
@@ -813,8 +871,6 @@
 
             const handleSubmit = async (e) => { 
                 e.preventDefault();
-                
-                // 驗證檢查
                 if (!uploadFile && !formData.url) {
                     alert("請選擇照片檔案或輸入連結！");
                     return;
@@ -855,7 +911,9 @@
                                     <input type="number" step="any" placeholder="Latitude (緯度)" className="block w-full border-slate-200 rounded-lg p-2 text-xs focus:border-indigo-500 outline-none" value={formData.location.lat} onChange={(e) => handleChange('location', 'lat', e.target.value)} />
                                     <input type="number" step="any" placeholder="Longitude (經度)" className="block w-full border-slate-200 rounded-lg p-2 text-xs focus:border-indigo-500 outline-none" value={formData.location.lng} onChange={(e) => handleChange('location', 'lng', e.target.value)} />
                                 </div>
-                                </div><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Aperture size={14} className="text-indigo-500"/> 拍攝參數</h4><input type="datetime-local" className="block w-full border-slate-200 rounded-lg p-2 text-xs text-slate-600 mb-2" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /><div className="grid grid-cols-2 gap-2"><input type="text" placeholder="相機" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} /><input type="text" placeholder="鏡頭" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /><input type="text" placeholder="快門" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /><input type="text" placeholder="光圈" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /><input type="text" placeholder="ISO" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /><input type="text" placeholder="EV" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.ev} onChange={(e) => handleChange('exif', 'ev', e.target.value)} /></div></div></div>
+                                </div><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Aperture size={14} className="text-indigo-500"/> 拍攝參數</h4><input type="datetime-local" className="block w-full border-slate-200 rounded-lg p-2 text-xs text-slate-600 mb-2" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /><div className="grid grid-cols-2 gap-2"><input type="text" placeholder="相機" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} />
+                                <div className="relative"><input type="text" placeholder="鏡頭 (若自動抓不到請手動輸入)" className="w-full border-slate-200 rounded p-1 text-xs" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /></div>
+                                <input type="text" placeholder="快門" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /><input type="text" placeholder="光圈" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /><input type="text" placeholder="ISO" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /><input type="text" placeholder="EV" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.ev} onChange={(e) => handleChange('exif', 'ev', e.target.value)} /></div></div></div>
                             </div>
                         </div>
                         <div className="flex justify-end gap-4 pt-8 border-t border-slate-100"><button type="button" onClick={onCancel} disabled={isSaving || status === 'uploading'} className="px-6 py-3 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-medium transition-colors">取消</button><button type="submit" disabled={isSaving || status === 'uploading'} className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 font-medium flex items-center gap-2 disabled:opacity-50 transition-all hover:-translate-y-0.5">{(isSaving || status === 'uploading') ? <RefreshCw className="animate-spin" size={20} /> : (isEditMode ? <Edit size={20}/> : <Upload size={20}/>)}{isEditMode ? '更新照片' : '發佈照片'}</button></div>
@@ -866,7 +924,7 @@
 
         const AdminLogin = ({ onLogin, onCancel }) => {
             const [password, setPassword] = useState('');
-            const handleSubmit = (e) => { e.preventDefault(); if (password === '590123') onLogin(); else setPassword(''); };
+            const handleSubmit = (e) => { e.preventDefault(); if (password === SITE_CONFIG.system.adminPasscode) onLogin(); else setPassword(''); };
             return (
                 <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in-up">
                     <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border border-slate-100">
@@ -891,9 +949,8 @@
             const [sortOrder, setSortOrder] = useState('newest'); 
             const [dateFilter, setDateFilter] = useState(null); 
             const [isTagsExpanded, setIsTagsExpanded] = useState(false);
-            const [visibleCount, setVisibleCount] = useState(12);
+            const [visibleCount, setVisibleCount] = useState(SITE_CONFIG.system.itemsPerPage || 12);
             
-            // 狀態初始化：從 localStorage 讀取管理員狀態
             const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('linkc_admin_auth') === 'true');
             const [showLogin, setShowLogin] = useState(false);
             
@@ -903,12 +960,10 @@
             const [currentUser, setCurrentUser] = useState(null);
             const [authError, setAuthError] = useState(null);
             
-            // Debounce search query
             const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-            // Reset visible count when filters change
             useEffect(() => {
-                setVisibleCount(12);
+                setVisibleCount(SITE_CONFIG.system.itemsPerPage || 12);
             }, [debouncedSearchQuery, activeTag, dateFilter, sortOrder]);
 
             useEffect(() => {
@@ -920,29 +975,18 @@
 
             useEffect(() => {
                 if (!currentUser || !db) return;
-                const q = query(collection(db, COLLECTION_NAME), orderBy('timestamp', 'desc'));
+                const q = query(collection(db, SITE_CONFIG.system.collectionName), orderBy('timestamp', 'desc'));
                 onSnapshot(q, (snapshot) => { setPhotos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); });
             }, [currentUser]);
 
-            // 管理員登入邏輯
-            const handleAdminLogin = () => {
-                setIsAdmin(true);
-                localStorage.setItem('linkc_admin_auth', 'true'); // 儲存狀態
-                setShowLogin(false);
-            };
-
-            // 管理員登出邏輯
-            const handleAdminLogout = () => {
-                setIsAdmin(false);
-                localStorage.removeItem('linkc_admin_auth'); // 清除狀態
-                alert("已登出");
-            };
+            const handleAdminLogin = () => { setIsAdmin(true); localStorage.setItem('linkc_admin_auth', 'true'); setShowLogin(false); };
+            const handleAdminLogout = () => { setIsAdmin(false); localStorage.removeItem('linkc_admin_auth'); alert("已登出"); };
 
             const handleSavePhoto = async (photoData) => {
                 if (!currentUser) return;
                 setIsSaving(true);
                 try {
-                    const collectionRef = collection(db, COLLECTION_NAME);
+                    const collectionRef = collection(db, SITE_CONFIG.system.collectionName);
                     if (editingPhoto) {
                         await updateDoc(doc(collectionRef, photoData.id), { ...photoData });
                         setEditingPhoto(null);
@@ -957,13 +1001,12 @@
             const handleDeletePhoto = async (id) => {
                 if (!currentUser) return;
                 if(window.confirm('確定要永久刪除？')) {
-                    try { await deleteDoc(doc(db, COLLECTION_NAME, id)); } catch(e) { alert("刪除失敗"); }
+                    try { await deleteDoc(doc(db, SITE_CONFIG.system.collectionName, id)); } catch(e) { alert("刪除失敗"); }
                 }
             };
 
             const startEdit = (photo) => { setEditingPhoto(photo); setView('upload'); if (selectedPhoto) setSelectedPhoto(null); };
 
-            // Handle lightbox open event from map marker popup
             useEffect(() => {
                 const handleOpenLightbox = (e) => {
                     const photoId = e.detail;
@@ -977,7 +1020,6 @@
             if (!isConfigConfigured) return <ConfigError />;
             if (authError) return <AuthError message={authError} />;
 
-            // Use useMemo for heavy calculations
             const allTags = useMemo(() => [...new Set(photos.flatMap(p => p.tags))], [photos]);
             
             const tagCounts = useMemo(() => {
@@ -994,7 +1036,6 @@
             const visibleTags = isTagsExpanded ? sortedTags : sortedTags.slice(0, 10);
             const hasMoreTags = sortedTags.length > 10;
 
-            // Advanced Search & Filter Logic with Boolean Operators
             const filteredPhotos = useMemo(() => {
                 return photos.filter(photo => {
                     if (dateFilter) {
@@ -1059,12 +1100,11 @@
                 });
             }, [filteredPhotos, sortOrder]);
 
-            // Pagination Logic
             const visiblePhotos = sortedPhotos.slice(0, visibleCount);
             const hasMorePhotos = visibleCount < sortedPhotos.length;
 
             return (
-                <div className="min-h-screen font-sans text-slate-800 pb-20 bg-slate-50">
+                <div className="min-h-screen font-sans pb-20 bg-slate-50 text-slate-800">
                 <Header setView={(v) => { setView(v); setEditingPhoto(null); setDateFilter(null); }} isAdmin={isAdmin} onLoginClick={() => setShowLogin(true)} onLogout={handleAdminLogout} currentView={view} />
                 
                 {showLogin && (<AdminLogin onLogin={handleAdminLogin} onCancel={() => setShowLogin(false)} />)}
@@ -1164,7 +1204,6 @@
                             <div className="bg-slate-50 p-6 rounded-full"><Cloud className="h-12 w-12 text-slate-300" /></div>
                             <h3 className="text-xl font-bold text-slate-700">沒有符合條件的照片</h3>
                             <p className="text-slate-500">試著調整搜尋條件{isAdmin ? '，或上傳一張新照片吧！' : '。'}</p>
-                            {/* Hide upload button for strangers in empty state too */}
                             {isAdmin && (
                                 <button onClick={() => setView('upload')} className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl shadow-lg shadow-indigo-200 transition-all font-medium flex items-center gap-2">
                                     <Upload size={18}/> 上傳照片
@@ -1179,7 +1218,7 @@
                 </main>
                 <footer className="border-t border-slate-200 mt-16 py-12 text-center bg-white">
                     <div className="max-w-7xl mx-auto px-4 flex flex-col items-center gap-4">
-                        <p className="text-xs text-slate-400 font-medium tracking-widest uppercase">© {new Date().getFullYear()} Linkc Photo Space. All rights reserved.</p>
+                        <p className="text-xs text-slate-400 font-medium tracking-widest uppercase">© {new Date().getFullYear()} {SITE_CONFIG.seo.siteName}. All rights reserved.</p>
                     </div>
                 </footer>
                 </div>
