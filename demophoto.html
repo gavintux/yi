@@ -6,28 +6,29 @@
     
     <script>
         const SITE_CONFIG = {
-            // 1. 網站基本資訊與 SEO (Search Engine Optimization)
+            // 1. 網站基本資訊與 SEO
             seo: {
-                title: "Linkc Photo Space",        // 瀏覽器標籤標題
-                siteName: "Linkc Gallery",         // 網站名稱 (顯示在 Header)
-                description: "Linkc 的個人攝影空間，紀錄生活與旅行的瞬間。", // 網站描述 (給搜尋引擎看)
-                keywords: "攝影, 旅行, 生活, Linkc, 相簿, 作品集, Olympus, TG-6",     // 關鍵字
-                author: "Linkc",                   // 作者名稱
-                logoImage: "https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f", // Logo 圖片網址
-                logoLink: "https://2blog.ilc.edu.tw/linkc/", // 點擊 Logo 跳轉的網址
-                portalLink: "https://gavintux.github.io/yi/" // 地球圖示 (Portal) 連結
+                title: "Linkc Photo Space",
+                siteName: "Linkc Gallery",
+                description: "Linkc 的個人攝影空間，紀錄生活與旅行的瞬間。",
+                keywords: "攝影, 旅行, 生活, Linkc, 相簿, 作品集, Olympus, TG-6",
+                author: "Linkc",
+                // Logo 圖片網址 (也會被自動用作瀏覽器 Favicon)
+                logoImage: "https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f", 
+                logoLink: "https://2blog.ilc.edu.tw/linkc/",
+                portalLink: "https://gavintux.github.io/yi/"
             },
 
-            // 2. 外觀主題設定 (Theme & Colors)
+            // 2. 外觀主題設定
             theme: {
-                primaryColor: '#4f46e5',      // 主色調 (按鈕、重點文字) - 預設 Indigo-600
-                secondaryColor: '#6366f1',    // 次要色調 (Hover 效果等) - 預設 Indigo-500
-                backgroundColor: '#f8fafc',   // 網站背景顏色 - 預設 Slate-50
-                textColor: '#1e293b',         // 主要文字顏色 - 預設 Slate-800
-                fontFamily: 'Inter, system-ui, sans-serif' // 字體設定
+                primaryColor: '#4f46e5',      // Indigo-600
+                secondaryColor: '#6366f1',    // Indigo-500
+                backgroundColor: '#f8fafc',   // Slate-50
+                textColor: '#1e293b',         // Slate-800
+                fontFamily: 'Inter, system-ui, sans-serif'
             },
 
-            // 3. Firebase 設定 (請在此填入您的 Firebase 專案資訊)
+            // 3. Firebase 設定
             firebase: {
                 apiKey: "AIzaSyDwXsplXePeD1wU1GG4BwQBR6iSMd3_5nY",
                 authDomain: "linkcphoto.firebaseapp.com",
@@ -40,25 +41,24 @@
             
             // 4. 系統設定
             system: {
-                collectionName: 'linkc_photos_v1', // Firestore 資料庫集合名稱
-                adminPasscode: '590123',           // 管理員登入密碼
-                itemsPerPage: 12,                  // 每次載入的照片數量
+                collectionName: 'linkc_photos_v1',
+                adminPasscode: '590123',
+                itemsPerPage: 12,
             },
 
             // 5. 地圖設定
             map: {
-                defaultCenter: [23.6, 121], // 預設中心點 [緯度, 經度] (台灣)
-                defaultZoom: 8              // 預設縮放層級
+                defaultCenter: [23.6, 121], 
+                defaultZoom: 8
             }
         };
 
         // =============================================================================
-        // 🚀 自動化初始化腳本 (請勿修改以下內容，除非您知道自己在做什麼)
+        // 🚀 自動化初始化腳本
         // =============================================================================
         (function applySiteConfig() {
             // 1. 設定 SEO Meta Tags
             document.title = SITE_CONFIG.seo.title;
-            
             const setMeta = (name, content) => {
                 let meta = document.querySelector(`meta[name="${name}"]`);
                 if (!meta) {
@@ -72,7 +72,16 @@
             setMeta('keywords', SITE_CONFIG.seo.keywords);
             setMeta('author', SITE_CONFIG.seo.author);
 
-            // 2. 注入 CSS 變數 (給非 Tailwind 的樣式使用，如地圖 Marker, Loading)
+            // 2. 設定 Favicon (瀏覽器小圖示)
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.head.appendChild(link);
+            }
+            link.href = SITE_CONFIG.seo.logoImage;
+
+            // 3. 注入 CSS 變數
             const root = document.documentElement;
             root.style.setProperty('--primary-color', SITE_CONFIG.theme.primaryColor);
             root.style.setProperty('--bg-color', SITE_CONFIG.theme.backgroundColor);
@@ -83,7 +92,6 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // 設定 Tailwind 使用 SITE_CONFIG 的顏色
         tailwind.config = {
             theme: {
                 extend: {
@@ -92,18 +100,17 @@
                         serif: ['"Noto Serif TC"', 'serif'],
                     },
                     colors: {
-                        // 覆寫 indigo 為使用者設定的主色，這樣所有 indigo-* class 都會變色
                         indigo: {
                             500: SITE_CONFIG.theme.secondaryColor, 
                             600: SITE_CONFIG.theme.primaryColor,
-                            50:  SITE_CONFIG.theme.primaryColor + '10', // 10% opacity hex approximation
+                            50:  SITE_CONFIG.theme.primaryColor + '10',
                             100: SITE_CONFIG.theme.primaryColor + '20',
-                            900: '#312e81', //保留深色
+                            900: '#312e81',
                         },
                         slate: {
-                            50: SITE_CONFIG.theme.backgroundColor, // 網站背景
-                            800: SITE_CONFIG.theme.textColor,      // 主要文字
-                            900: '#0f172a', //保留深色
+                            50: SITE_CONFIG.theme.backgroundColor,
+                            800: SITE_CONFIG.theme.textColor,
+                            900: '#0f172a',
                         }
                     },
                     animation: {
@@ -137,32 +144,21 @@
     <style>
         body { margin: 0; font-family: var(--font-family); background-color: var(--bg-color); color: var(--text-color); -webkit-font-smoothing: antialiased; }
         .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--primary-color); font-weight: 500; letter-spacing: 0.05em; }
-        
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
-        
-        /* Masonry Grid */
         .masonry-grid { column-count: 1; column-gap: 1.5rem; }
         @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
         @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
         .masonry-item { break-inside: avoid; margin-bottom: 1.5rem; }
-        
-        /* Map Custom Styles */
         .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); padding: 0; overflow: hidden; }
         .leaflet-popup-content { margin: 0; width: 200px !important; }
-        
-        /* Dynamic Marker Colors */
         .photo-marker { border: 3px solid white; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.2); overflow: hidden; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: white; position: relative; }
         .photo-marker:hover { transform: scale(1.2); z-index: 1000 !important; border-color: var(--primary-color); }
         .photo-marker img { width: 100%; height: 100%; object-fit: cover; }
-        
-        /* Custom Cluster Icon */
         .custom-cluster-icon { background: none; border: none; }
         .cluster-marker-inner { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background-color: var(--primary-color); color: white; border-radius: 50%; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 2px solid white; font-size: 0.875rem; }
-
         .leaflet-top.leaflet-right { margin-top: 10px; margin-right: 10px; }
     </style>
 </head>
@@ -198,7 +194,6 @@
         // 🚀 APP LOGIC
         // =============================================================================
 
-        // 初始化檢查：確認 API Key 是否已填寫
         const isConfigConfigured = !SITE_CONFIG.firebase.apiKey.includes("您的API_KEY");
 
         let app, auth, db, storage;
@@ -213,7 +208,7 @@
             }
         }
 
-        // --- Helpers (輔助函式) ---
+        // --- Helpers ---
         function useDebounce(value, delay) {
             const [debouncedValue, setDebouncedValue] = useState(value);
             useEffect(() => { const h = setTimeout(() => setDebouncedValue(value), delay); return () => clearTimeout(h); }, [value, delay]);
@@ -239,50 +234,29 @@
             return Number.isInteger(val) ? `${sign}${val}` : `${sign}${val.toFixed(1)}`;
         };
 
-        // --- 強化的鏡頭資訊與高度解析 ---
         const parseLensInfo = (lensInfo, allTags) => {
-            // 策略 A: 直接讀取 LensModel (最準確)
             if (allTags.LensModel && typeof allTags.LensModel === 'string' && allTags.LensModel.trim() !== '') {
                 return allTags.LensModel.replace(/\0/g, '').trim();
             }
-            
-            // 策略 B: 讀取 Lens (某些相機用這個 tag)
             if (allTags.Lens && typeof allTags.Lens === 'string') {
                 return allTags.Lens.replace(/\0/g, '').trim();
             }
-
-            // 策略 C: 從 LensInfo (四個數值) 拼湊 (MinFocal, MaxFocal, MinF, MaxF)
-            // 注意：exif-js 有時會把這個放在 'UndefinedTag:0xA432'
             const info = lensInfo || allTags['UndefinedTag:0xA432'];
-            
             if (!info || info.length < 4) return "";
-
             const minFocal = getExifValue(info[0]);
             const maxFocal = getExifValue(info[1]);
             const minF = getExifValue(info[2]);
             const maxF = getExifValue(info[3]);
-
             if (!minFocal) return "";
-
             let focalStr = (minFocal === maxFocal) ? `${minFocal}mm` : `${minFocal}-${maxFocal}mm`;
             let apertureStr = "";
-            if (minF > 0) {
-                apertureStr = (minF === maxF || !maxF) ? `f/${minF}` : `f/${minF}-${maxF}`;
-            }
-
+            if (minF > 0) apertureStr = (minF === maxF || !maxF) ? `f/${minF}` : `f/${minF}-${maxF}`;
             return `${focalStr} ${apertureStr}`.trim();
         };
 
-        const findLensNameInAllTags = (allTags) => {
-            // 為了相容性保留此函式入口，但邏輯已強化至 parseLensInfo
-            return parseLensInfo(allTags.LensInfo, allTags);
-        };
-
-        // 高度計算 (GPSAltitude)
         const getAltitude = (alt, ref) => {
             const value = getExifValue(alt);
             if (!value && value !== 0) return null;
-            // Ref: 0 = Above Sea Level, 1 = Below Sea Level
             const isBelowSea = ref === 1 || ref === '1'; 
             return isBelowSea ? -value : value;
         };
@@ -389,7 +363,8 @@
                     </div>
                     {isAdmin && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2 shrink-0">ADMIN</span>}
                 </div>
-                <div className="flex items-center gap-1 sm:gap-3 shrink-0 ml-2">
+                {/* 手機版按鈕間距調整: gap-1 改為 gap-3 */}
+                <div className="flex items-center gap-3 sm:gap-3 shrink-0 ml-2">
                     <a href={SITE_CONFIG.seo.portalLink} target="_blank" rel="noopener noreferrer" className="p-2 sm:p-2.5 rounded-xl transition-all text-gray-400 hover:text-gray-700 hover:bg-gray-100 hidden sm:block" title="Portal">
                         <Globe size={20} />
                     </a>
@@ -399,6 +374,9 @@
                     <button onClick={() => setView('calendar')} className={`p-2 sm:p-2.5 rounded-xl transition-all ${currentView === 'calendar' ? 'bg-indigo-100 text-indigo-600' : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100'}`} title="日曆模式">
                         <CalendarIcon size={20} />
                     </button>
+
+                    {/* 分隔線，避免誤按 */}
+                    <div className="h-6 w-px bg-slate-200 mx-1"></div>
 
                     {isAdmin ? (
                         <button onClick={onLogout} className="p-2 sm:p-2.5 text-gray-500 hover:text-red-600 transition-colors" title="登出"><LogOut size={20} /></button>
@@ -454,61 +432,43 @@
             useEffect(() => {
                 if (!mapRef.current) return;
                 if (tileLayerRef.current) mapRef.current.removeLayer(tileLayerRef.current);
-
                 const style = mapStyles[currentStyle];
-                tileLayerRef.current = L.tileLayer(style.url, {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                    maxZoom: 19
-                }).addTo(mapRef.current);
-                
+                tileLayerRef.current = L.tileLayer(style.url, { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19 }).addTo(mapRef.current);
                 if (clusterGroupRef.current) clusterGroupRef.current.bringToFront();
             }, [currentStyle]);
 
             useEffect(() => {
                 if (!mapRef.current || !clusterGroupRef.current) return;
-
                 const geotaggedPhotos = photos.filter(p => {
                     const lat = parseFloat(p.location?.lat);
                     const lng = parseFloat(p.location?.lng);
                     return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
                 });
-
                 clusterGroupRef.current.clearLayers();
                 const markers = [];
-
                 geotaggedPhotos.forEach(photo => {
                     const lat = parseFloat(photo.location.lat);
                     const lng = parseFloat(photo.location.lng);
-
                     if (!isNaN(lat) && !isNaN(lng)) {
                         const customIcon = L.divIcon({
                             className: 'custom-icon',
-                            html: `<div class="photo-marker w-12 h-12 rounded-full border-2 border-white shadow-lg overflow-hidden relative bg-white cursor-pointer group hover:border-indigo-500 transition-colors">
-                                     <img src="${photo.url}" class="w-full h-full object-cover" />
-                                   </div>`,
+                            html: `<div class="photo-marker w-12 h-12 rounded-full border-2 border-white shadow-lg overflow-hidden relative bg-white cursor-pointer group hover:border-indigo-500 transition-colors"><img src="${photo.url}" class="w-full h-full object-cover" /></div>`,
                             iconSize: [48, 48],
                             iconAnchor: [24, 48],
                             popupAnchor: [0, -48]
                         });
-
                         const marker = L.marker([lat, lng], { icon: customIcon });
                         const popupContent = `
                             <div class="text-center min-w-[200px] font-sans p-2">
-                                <div class="h-32 w-full mb-3 bg-slate-100 rounded-lg overflow-hidden">
-                                    <img src="${photo.url}" class="w-full h-full object-cover" />
-                                </div>
+                                <div class="h-32 w-full mb-3 bg-slate-100 rounded-lg overflow-hidden"><img src="${photo.url}" class="w-full h-full object-cover" /></div>
                                 <p class="font-bold text-base mb-1 text-slate-800">${photo.location.city || ''} ${photo.location.spot || ''}</p>
                                 <p class="text-xs text-slate-500 mb-2">${photo.date ? photo.date.split('T')[0] : ''}</p>
-                                <button class="w-full py-2 bg-indigo-50 text-indigo-600 rounded-md text-xs font-bold hover:bg-indigo-100 transition-colors" onclick="window.dispatchEvent(new CustomEvent('openLightbox', {detail: '${photo.id}'}))">
-                                    查看完整照片
-                                </button>
-                            </div>
-                        `;
+                                <button class="w-full py-2 bg-indigo-50 text-indigo-600 rounded-md text-xs font-bold hover:bg-indigo-100 transition-colors" onclick="window.dispatchEvent(new CustomEvent('openLightbox', {detail: '${photo.id}'}))">查看完整照片</button>
+                            </div>`;
                         marker.bindPopup(popupContent);
                         markers.push(marker);
                     }
                 });
-
                 if (markers.length > 0) {
                     clusterGroupRef.current.addLayers(markers);
                     setTimeout(() => { mapRef.current.invalidateSize(); }, 100);
@@ -562,12 +522,7 @@
             const availableYears = Object.keys(availableData).sort((a, b) => b - a);
             const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
             const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-            
-            const handleJump = (year, monthIndex) => {
-                setCurrentDate(new Date(year, monthIndex, 1));
-                setShowPicker(false);
-            };
-
+            const handleJump = (year, monthIndex) => { setCurrentDate(new Date(year, monthIndex, 1)); setShowPicker(false); };
             const getFormattedDate = (day) => {
                 const y = currentDate.getFullYear();
                 const m = String(currentDate.getMonth() + 1).padStart(2, '0');
@@ -728,9 +683,9 @@
                                 <span>| {photo.exif.shutter} · {photo.exif.aperture} · ISO {photo.exif.iso} {photo.exif.focalLength ? `· ${photo.exif.focalLength}` : ''} {photo.exif.ev ? `· EV ${photo.exif.ev}` : ''}</span>
                             </div>
                             
-                            {/* 環境數據 (新增) */}
+                            {/* 環境數據 (底色修正：改為半透明白色 bg-white/10) */}
                             {hasEnvData && (
-                                <div className="flex gap-4 text-xs text-indigo-300 font-medium bg-indigo-900/30 px-4 py-1 rounded-lg border border-indigo-500/20">
+                                <div className="flex gap-4 text-xs text-indigo-300 font-medium bg-white/10 px-4 py-1 rounded-lg border border-white/10">
                                     {photo.exif.altitude && <span className="flex items-center gap-1"><ArrowUpNarrowWide size={12}/> 海拔 {photo.exif.altitude}</span>}
                                     {photo.exif.temp && <span className="flex items-center gap-1"><Sparkles size={12}/> {photo.exif.temp}</span>}
                                     {photo.exif.pressure && <span className="flex items-center gap-1"><Gauge size={12}/> {photo.exif.pressure}</span>}
@@ -794,9 +749,9 @@
                     lens: '', 
                     focalLength: '', 
                     ev: '',
-                    altitude: '', // 新增
-                    temp: '',     // 新增
-                    pressure: ''  // 新增
+                    altitude: '', 
+                    temp: '',     
+                    pressure: ''  
                 }, 
                 location: { country: '', city: '', spot: '', lat: '', lng: '' } 
             });
@@ -812,17 +767,15 @@
                 if (file) {
                     setUploadFile(file);
                     
-                    // 1. 设置预览图 (立即执行，不等待 EXIF)
                     const previewUrl = URL.createObjectURL(file);
                     setFormData(prev => ({ ...prev, url: previewUrl }));
                     
                     setExifStatus('分析中...');
                     
-                    // 2. 嘗試讀取 EXIF
                     try {
                         EXIF.getData(file, async function() {
                             const allTags = EXIF.getAllTags(this);
-                            console.log("Full EXIF Dump:", allTags); // 除錯用
+                            console.log("Full EXIF Dump:", allTags); 
 
                             const extractedShutter = EXIF.getTag(this, "ExposureTime");
                             const extractedFNumber = EXIF.getTag(this, "FNumber");
@@ -833,28 +786,22 @@
                             const make = EXIF.getTag(this, "Make");
                             const model = EXIF.getTag(this, "Model");
 
-                            // --- 1. 鏡頭資訊 (強化版) ---
-                            // 優先傳入 LensInfo，如果沒有，parseLensInfo 會自己去 allTags 找
                             const extractedLensInfo = EXIF.getTag(this, "LensInfo") || EXIF.getTag(this, "LensSpecification");
                             const lensName = parseLensInfo(extractedLensInfo, allTags);
 
-                            // --- 2. GPS & 3. 環境數據 (Olympus TG-6) ---
                             const lat = EXIF.getTag(this, "GPSLatitude");
                             const latRef = EXIF.getTag(this, "GPSLatitudeRef");
                             const lon = EXIF.getTag(this, "GPSLongitude");
                             const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
                             
-                            // 高度 (Altitude)
                             const alt = EXIF.getTag(this, "GPSAltitude");
-                            const altRef = EXIF.getTag(this, "GPSAltitudeRef"); // 0=Above, 1=Below
+                            const altRef = EXIF.getTag(this, "GPSAltitudeRef"); 
                             const altitudeVal = getAltitude(alt, altRef);
                             let formattedAltitude = altitudeVal !== null ? `${Math.round(altitudeVal)}m` : "";
 
-                            // 嘗試讀取 Olympus 壓力與溫度
                             let pressure = allTags.Pressure || allTags.AmbientPressure || ""; 
                             let temp = allTags.Temperature || allTags.CameraTemperature || "";
 
-                            // --- 格式化數據 ---
                             let formattedShutter = "";
                             const shutterVal = getExifValue(extractedShutter);
                             if (shutterVal > 0) formattedShutter = shutterVal < 1 ? "1/" + Math.round(1/shutterVal) : shutterVal.toString();
@@ -877,7 +824,6 @@
                             let locationUpdate = { ...formData.location };
                             let extraStatus = "";
                             
-                            // 只要有經緯度陣列，就算 Ref 讀不到，預設 N/E (常見情況)
                             if (lat && lat.length === 3 && lon && lon.length === 3) {
                                 const decimalLat = convertDMSToDD(lat, latRef || 'N');
                                 const decimalLon = convertDMSToDD(lon, lonRef || 'E');
@@ -902,6 +848,7 @@
                                     iso: extractedISO ? extractedISO.toString() : prev.exif.iso,
                                     date: formattedDate || prev.exif.date,
                                     camera: formattedCamera || prev.exif.camera,
+                                    // 關鍵修改：如果抓不到鏡頭名稱，不要清空原本的（如果有的話），也不要覆蓋為空
                                     lens: lensName || prev.exif.lens,
                                     focalLength: formattedFocalLength || prev.exif.focalLength,
                                     ev: formattedEV || prev.exif.ev,
@@ -956,15 +903,9 @@
                             </div>
                             <div className="md:col-span-3 space-y-8">
                                 <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Tag size={14} className="text-indigo-500"/> 內容描述</h4><input type="text" placeholder="標籤 (例如: 風景, 台灣)" className="block w-full border-slate-200 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" value={formData.tags} onChange={(e) => handleChange(null, 'tags', e.target.value)} /><textarea rows="3" placeholder="拍攝當下的想法..." className="block w-full border-slate-200 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none" value={formData.thoughts_shooting} onChange={(e) => handleChange(null, 'thoughts_shooting', e.target.value)} /><textarea rows="2" placeholder="事後欣賞的感受..." className="block w-full border-slate-200 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none text-slate-600" value={formData.thoughts_viewing} onChange={(e) => handleChange(null, 'thoughts_viewing', e.target.value)} /></div>
-                                <div className="grid grid-cols-2 gap-6"><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><MapPin size={14} className="text-indigo-500"/> 地點資訊</h4>
-                                <input type="text" placeholder="國家" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.country} onChange={(e) => handleChange('location', 'country', e.target.value)} />
-                                <input type="text" placeholder="城市" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.city} onChange={(e) => handleChange('location', 'city', e.target.value)} />
-                                <input type="text" placeholder="景點/街道" className="block w-full border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none" value={formData.location.spot} onChange={(e) => handleChange('location', 'spot', e.target.value)} />
-                                <div className="grid grid-cols-2 gap-2 mt-2">
-                                    <input type="number" step="any" placeholder="Latitude (緯度)" className="block w-full border-slate-200 rounded-lg p-2 text-xs focus:border-indigo-500 outline-none" value={formData.location.lat} onChange={(e) => handleChange('location', 'lat', e.target.value)} />
-                                    <input type="number" step="any" placeholder="Longitude (經度)" className="block w-full border-slate-200 rounded-lg p-2 text-xs focus:border-indigo-500 outline-none" value={formData.location.lng} onChange={(e) => handleChange('location', 'lng', e.target.value)} />
-                                </div>
-                                </div><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Aperture size={14} className="text-indigo-500"/> 拍攝參數</h4><input type="datetime-local" className="block w-full border-slate-200 rounded-lg p-2 text-xs text-slate-600 mb-2" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /><div className="grid grid-cols-2 gap-2"><input type="text" placeholder="相機" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} /><input type="text" placeholder="鏡頭" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /><input type="text" placeholder="快門" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /><input type="text" placeholder="光圈" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /><input type="text" placeholder="ISO" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /><input type="text" placeholder="EV" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.ev} onChange={(e) => handleChange('exif', 'ev', e.target.value)} /></div></div></div>
+                                <div className="grid grid-cols-2 gap-6"><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Aperture size={14} className="text-indigo-500"/> 拍攝參數</h4><input type="datetime-local" className="block w-full border-slate-200 rounded-lg p-2 text-xs text-slate-600 mb-2" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /><div className="grid grid-cols-2 gap-2"><input type="text" placeholder="相機" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} />
+                                <div className="relative"><input type="text" placeholder="鏡頭 (若自動抓不到請手動輸入)" className="w-full border-slate-200 rounded p-1 text-xs" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /></div>
+                                <input type="text" placeholder="快門" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /><input type="text" placeholder="光圈" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /><input type="text" placeholder="ISO" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /><input type="text" placeholder="EV" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.ev} onChange={(e) => handleChange('exif', 'ev', e.target.value)} /></div></div></div>
                             </div>
                         </div>
                         <div className="flex justify-end gap-4 pt-8 border-t border-slate-100"><button type="button" onClick={onCancel} disabled={isSaving || status === 'uploading'} className="px-6 py-3 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-medium transition-colors">取消</button><button type="submit" disabled={isSaving || status === 'uploading'} className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 font-medium flex items-center gap-2 disabled:opacity-50 transition-all hover:-translate-y-0.5">{(isSaving || status === 'uploading') ? <RefreshCw className="animate-spin" size={20} /> : (isEditMode ? <Edit size={20}/> : <Upload size={20}/>)}{isEditMode ? '更新照片' : '發佈照片'}</button></div>
@@ -1002,7 +943,6 @@
             const [isTagsExpanded, setIsTagsExpanded] = useState(false);
             const [visibleCount, setVisibleCount] = useState(SITE_CONFIG.system.itemsPerPage || 12);
             
-            // 狀態初始化：從 localStorage 讀取管理員狀態
             const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('linkc_admin_auth') === 'true');
             const [showLogin, setShowLogin] = useState(false);
             
@@ -1012,10 +952,8 @@
             const [currentUser, setCurrentUser] = useState(null);
             const [authError, setAuthError] = useState(null);
             
-            // Debounce search query
             const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-            // Reset visible count when filters change
             useEffect(() => {
                 setVisibleCount(SITE_CONFIG.system.itemsPerPage || 12);
             }, [debouncedSearchQuery, activeTag, dateFilter, sortOrder]);
@@ -1033,19 +971,8 @@
                 onSnapshot(q, (snapshot) => { setPhotos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); });
             }, [currentUser]);
 
-            // 管理員登入邏輯
-            const handleAdminLogin = () => {
-                setIsAdmin(true);
-                localStorage.setItem('linkc_admin_auth', 'true'); // 儲存狀態
-                setShowLogin(false);
-            };
-
-            // 管理員登出邏輯
-            const handleAdminLogout = () => {
-                setIsAdmin(false);
-                localStorage.removeItem('linkc_admin_auth'); // 清除狀態
-                alert("已登出");
-            };
+            const handleAdminLogin = () => { setIsAdmin(true); localStorage.setItem('linkc_admin_auth', 'true'); setShowLogin(false); };
+            const handleAdminLogout = () => { setIsAdmin(false); localStorage.removeItem('linkc_admin_auth'); alert("已登出"); };
 
             const handleSavePhoto = async (photoData) => {
                 if (!currentUser) return;
@@ -1072,7 +999,6 @@
 
             const startEdit = (photo) => { setEditingPhoto(photo); setView('upload'); if (selectedPhoto) setSelectedPhoto(null); };
 
-            // Handle lightbox open event from map marker popup
             useEffect(() => {
                 const handleOpenLightbox = (e) => {
                     const photoId = e.detail;
@@ -1086,7 +1012,6 @@
             if (!isConfigConfigured) return <ConfigError />;
             if (authError) return <AuthError message={authError} />;
 
-            // Use useMemo for heavy calculations
             const allTags = useMemo(() => [...new Set(photos.flatMap(p => p.tags))], [photos]);
             
             const tagCounts = useMemo(() => {
@@ -1103,7 +1028,6 @@
             const visibleTags = isTagsExpanded ? sortedTags : sortedTags.slice(0, 10);
             const hasMoreTags = sortedTags.length > 10;
 
-            // Advanced Search & Filter Logic with Boolean Operators
             const filteredPhotos = useMemo(() => {
                 return photos.filter(photo => {
                     if (dateFilter) {
@@ -1168,7 +1092,6 @@
                 });
             }, [filteredPhotos, sortOrder]);
 
-            // Pagination Logic
             const visiblePhotos = sortedPhotos.slice(0, visibleCount);
             const hasMorePhotos = visibleCount < sortedPhotos.length;
 
@@ -1273,7 +1196,6 @@
                             <div className="bg-slate-50 p-6 rounded-full"><Cloud className="h-12 w-12 text-slate-300" /></div>
                             <h3 className="text-xl font-bold text-slate-700">沒有符合條件的照片</h3>
                             <p className="text-slate-500">試著調整搜尋條件{isAdmin ? '，或上傳一張新照片吧！' : '。'}</p>
-                            {/* Hide upload button for strangers in empty state too */}
                             {isAdmin && (
                                 <button onClick={() => setView('upload')} className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl shadow-lg shadow-indigo-200 transition-all font-medium flex items-center gap-2">
                                     <Upload size={18}/> 上傳照片
