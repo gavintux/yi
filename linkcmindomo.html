@@ -506,13 +506,51 @@
 
             const checkBooleanSearch = (item, query) => {
                 try {
-                    let evalStr = query.toLowerCase();
-                    evalStr = evalStr.replace(/\s*&\s*/g, ' && ').replace(/\s*\|\s*/g, ' || ').replace(/\s*!\s*/g, ' ! ');
+                    // 1. 預處理：轉小寫、全形轉半形
+                    let evalStr = query.toLowerCase()
+                        .replace(/＆/g, '&').replace(/｜/g, '|').replace(/！/g, '!')
+                        .replace(/（/g, '(').replace(/）/g, ')');
+
+                    // 2. 支援文字型運算子
+                    evalStr = evalStr
+                        .replace(/\bnot\b/g, '!')
+                        .replace(/\band\b/g, '&')
+                        .replace(/\bor\b/g, '|');
+
+                    // 3. 運算子標準化
+                    evalStr = evalStr
+                        .replace(/&/g, ' && ')
+                        .replace(/\|/g, ' || ')
+                        .replace(/!/g, ' ! ')
+                        .replace(/\(/g, ' ( ')
+                        .replace(/\)/g, ' ) ');
+
                     const itemTags = new Set((item.tags || []).map(t => t.toLowerCase()));
-                    evalStr = evalStr.replace(/#([a-zA-Z0-9\u4e00-\u9fa5_]+)/g, (match, tagName) => {
-                        return itemTags.has(tagName) ? 'true' : 'false';
+                    const title = (item.title || '').toLowerCase();
+                    const desc = (item.description || '').toLowerCase();
+                    
+                    // 4. 解析 Token (非運算子、非空白)
+                    evalStr = evalStr.replace(/[^&|!()\s]+/g, (token) => {
+                        // 避免取代已存在的布林關鍵字
+                        if (token === 'true' || token === 'false') return token;
+                        if (token === '&&' || token === '||' || token === '!') return token;
+
+                        if (token.startsWith('#')) {
+                            // 標籤搜尋
+                            const cleanTagName = token.substring(1); 
+                            return itemTags.has(cleanTagName) ? 'true' : 'false';
+                        } else {
+                            // 內文搜尋 (標題或描述)
+                            return (title.includes(token) || desc.includes(token)) ? 'true' : 'false';
+                        }
                     });
+
+                    // 隱式 AND 支援 (兩個布林值中間有空白)
+                    evalStr = evalStr.replace(/(true|false|\))\s+(?=(true|false|\(|!))/g, '$1 && ');
+
+                    // 5. 安全性檢查
                     if (!/^(true|false|&&|\|\||!|\(|\)|\s)+$/.test(evalStr)) return null;
+                    
                     return new Function(`return (${evalStr})`)();
                 } catch (e) {
                     return null;
@@ -524,26 +562,33 @@
                 const trimmedTerm = debouncedSearchTerm.trim();
 
                 if (trimmedTerm) {
-                    const isBooleanQuery = /[&|!]/.test(trimmedTerm) && /#/.test(trimmedTerm);
-                    if (isBooleanQuery) {
-                         baseList = baseList.filter(item => {
-                             const result = checkBooleanSearch(item, trimmedTerm);
-                             if (result === null) {
-                                 const lower = trimmedTerm.toLowerCase();
-                                 return item.title.toLowerCase().includes(lower) || 
-                                        (item.description && item.description.toLowerCase().includes(lower)) ||
-                                        (item.tags && item.tags.some(t => t.toLowerCase().includes(lower)));
-                             }
-                             return result;
-                         });
-                    } else {
-                         const lower = trimmedTerm.toLowerCase();
-                         baseList = baseList.filter(item => 
-                            item.title.toLowerCase().includes(lower) || 
-                            (item.description && item.description.toLowerCase().includes(lower)) ||
-                            (item.tags && item.tags.some(t => t.toLowerCase().includes(lower)))
-                        );
-                    }
+                    baseList = baseList.filter(item => {
+                        // 嘗試布林搜尋
+                        // 只要有布林符號、關鍵字或 #，都嘗試解析
+                        const hasBooleanChars = /[&|!()]/.test(trimmedTerm) || /\b(and|or|not)\b/i.test(trimmedTerm);
+                        const hasTags = /#/.test(trimmedTerm);
+                        
+                        // 嘗試解析布林搜尋
+                        const booleanResult = checkBooleanSearch(item, trimmedTerm);
+                        
+                        // 如果布林解析成功 (不是 null)，直接回傳結果
+                        if (booleanResult !== null) return booleanResult;
+
+                        // 降級：一般文字搜尋 (容錯處理)
+                        const lower = trimmedTerm.toLowerCase();
+                        
+                        // 特殊處理：如果搜尋詞是單一 #tag (未被布林解析捕獲的情況)
+                        let tagMatch = false;
+                        if (lower.startsWith('#')) {
+                            const cleanTag = lower.substring(1);
+                            tagMatch = item.tags && item.tags.some(t => t.toLowerCase().includes(cleanTag));
+                        }
+
+                        return item.title.toLowerCase().includes(lower) || 
+                               (item.description && item.description.toLowerCase().includes(lower)) ||
+                               (item.tags && item.tags.some(t => t.toLowerCase().includes(lower))) || 
+                               tagMatch;
+                    });
                 }
                 
                 let filtered = [];
