@@ -113,7 +113,7 @@
             },
             system: {
                 collectionName: 'mandala_charts_v1', 
-                publicCollectionName: 'mandala_charts_v1', // Unified to v1
+                publicCollectionName: 'mandala_charts_v1', 
                 adminPasscode: '590123',
                 defaultGridSize: 3, 
                 defaultViewStyle: 'standard',
@@ -325,8 +325,17 @@
                 if (pass === USER_CONFIG.system.adminPasscode) {
                     setIsAdmin(true);
                     setShowAdminLogin(false);
-                    // Trigger fetch for admin
-                    setTimeout(() => fetchFileList(true), 100);
+                    
+                    // Directly enter editor mode logic
+                    // If no doc is open, start a fresh one
+                    if (!currentDocId) {
+                        setData({});
+                        setDocMetadata({ title: '未命名檔案', category: '一般' });
+                    }
+                    setViewMode('editor');
+                    
+                    // Fetch list silently so it's ready in the background
+                    fetchFileList(true, false);
                 } else {
                     alert("密碼錯誤");
                 }
@@ -334,15 +343,13 @@
 
             const handleLogout = () => {
                 setIsAdmin(false);
-                if (currentDocId) {
-                    // Force go back to gallery
-                    setCurrentDocId(null);
-                    setViewMode('gallery');
-                }
+                setCurrentDocId(null);
+                setViewMode('gallery');
+                fetchFileList(false);
             }
 
             // -- File Actions (Universal Fetch with Error Handling) --
-            const fetchFileList = async (forceAdmin = false) => {
+            const fetchFileList = async (forceAdmin = false, autoSwitchToGallery = true) => {
                 if (!db || !auth.currentUser) return;
                 setLoading(true);
                 const currentAdmin = forceAdmin || isAdmin;
@@ -354,8 +361,7 @@
                     try {
                         const userPath = `artifacts/${appId}/users/${auth.currentUser.uid}/${USER_CONFIG.system.collectionName}`;
                         const userSnapshot = await db.collection(userPath).orderBy('updatedAt', 'desc').get();
-                        const userFiles = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'private' }));
-                        allFiles = [...allFiles, ...userFiles];
+                        allFiles = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'private' }));
                     } catch(err) {
                         console.warn("Private fetch failed:", err);
                     }
@@ -400,7 +406,7 @@
                 });
 
                 setFileList(uniqueFiles);
-                if (!currentDocId) setViewMode('gallery');
+                if (autoSwitchToGallery && !currentDocId) setViewMode('gallery');
                 setLoading(false);
             };
 
@@ -438,11 +444,8 @@
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
 
-                    // 1. Private
                     const newDoc = await db.collection(path).add(fileData);
                     const newId = newDoc.id;
-
-                    // 2. Public Sync
                     await syncToPublic(newId, fileData);
 
                     setCurrentDocId(newId);
@@ -460,13 +463,11 @@
                 try {
                     const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
                     await db.doc(`${path}/${fileId}`).delete();
-                    // Also try delete from public
                     const pubPath = `artifacts/${appId}/public/data/${USER_CONFIG.system.publicCollectionName}`;
                     await db.doc(`${pubPath}/${fileId}`).delete().catch(()=>{});
-                    
                     alert("已刪除");
-                    fetchFileList();
-                } catch (e) { alert("刪除失敗 (可能是權限不足)"); }
+                    fetchFileList(true, false);
+                } catch (e) { alert("刪除失敗"); }
             }
 
             const handleFileMenu = (e) => {
@@ -475,7 +476,7 @@
                 e.target.value = ""; 
 
                 if (action === "new") {
-                    if (window.confirm("確定要開新檔案嗎？")) {
+                    if (window.confirm("確定要開新檔案嗎？(未儲存的內容將消失)")) {
                         setData({}); 
                         setCurrentDocId(null); 
                         setDocMetadata({title:'未命名檔案', category:'一般'});
@@ -501,7 +502,6 @@
                 }
             };
 
-            // ... (Load/Export MD/Update Cell/Image logic same) ...
             const handleLoadLocal = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -699,7 +699,16 @@
                             </div>
                             <div className="flex gap-2">
                                 {isAdmin ? (
-                                    <button onClick={handleLogout} className="text-slate-500 font-bold text-sm border px-2 py-1 rounded hover:bg-slate-50">Logout</button>
+                                    <>
+                                        <button 
+                                            onClick={() => { setViewMode('editor'); setData({}); setCurrentDocId(null); setIsSidebarOpen(false); }} 
+                                            className="text-indigo-600 font-bold text-sm border border-indigo-200 px-3 py-1 rounded hover:bg-indigo-50 flex items-center gap-1"
+                                            title="Go to Editor / New File"
+                                        >
+                                            <LucideIcon name="Edit" className="w-4 h-4"/> <span className="hidden sm:inline">編輯/新增</span>
+                                        </button>
+                                        <button onClick={handleLogout} className="text-slate-500 font-bold text-sm border px-2 py-1 rounded hover:bg-slate-50">Logout</button>
+                                    </>
                                 ) : (
                                     <button onClick={() => setShowAdminLogin(true)} className="text-indigo-600 font-bold text-sm border border-indigo-200 px-2 py-1 rounded hover:bg-indigo-50">Login 🔒</button>
                                 )}
