@@ -112,13 +112,13 @@
                 measurementId: "G-LK3WK0T9R8"
             },
             system: {
-                // IMPORTANT: Reverted to v1 to find your old files!
+                // Main collection for User Data
                 collectionName: 'mandala_charts_v1', 
+                // Secondary collection for Legacy Public Data (Read-only merge)
+                publicCollectionName: 'mandala_charts',
                 adminPasscode: '590123',
                 defaultGridSize: 3, 
                 defaultViewStyle: 'standard',
-                // Optional: Fixed App ID for cross-environment access (e.g., 'my-mandala-app')
-                // If empty, it uses the dynamic environment ID.
                 fixedAppId: '' 
             }
         };
@@ -153,6 +153,7 @@
 
         const collectAllTagsFromData = (cellsData) => {
             const tags = new Set();
+            if (!cellsData) return [];
             Object.values(cellsData).forEach(cell => {
                 if (cell.tags) cell.tags.forEach(t => tags.add(t));
                 const txt = (cell.title || "") + " " + (cell.note || "");
@@ -230,12 +231,11 @@
 
             const [showSaveAsModal, setShowSaveAsModal] = useState(false);
             const [fileList, setFileList] = useState([]);
-            const [viewMode, setViewMode] = useState('gallery'); // 'gallery' or 'editor'
+            const [viewMode, setViewMode] = useState('gallery'); 
 
             const fileInputRef = useRef(null);
             const imgInputRef = useRef(null);
             
-            // App ID Logic: Use fixed ID if provided, otherwise dynamic
             const appId = USER_CONFIG.system.fixedAppId || (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
 
             // -- Auth --
@@ -256,32 +256,43 @@
                 if (auth) {
                     const unsubscribe = auth.onAuthStateChanged(u => {
                         setUser(u);
-                        // Once user is ready, load the gallery
-                        if (u) fetchFileList(); 
-                        else setLoading(false);
+                        if (u) {
+                            // Automatically fetch guest list on load
+                            if (!isAdmin) fetchFileList(false); 
+                        } else {
+                            setLoading(false);
+                        }
                     });
                     return () => unsubscribe();
                 }
-            }, []);
+            }, [isAdmin]); // Re-run if admin status changes to fetch correct list
 
             // -- Auto Save (Admin) --
             useEffect(() => {
                 if (!user || !currentDocId || !db || !isAdmin) return;
+                
+                // Only auto-save if we are editing a User Private file (v1 collection)
+                // If we opened a public file (v0), we force "Save As" first to avoid overwriting public with private logic mismatch
+                // Ideally, we just check if currentDocId exists. Assuming it is valid.
+                
                 const timer = setTimeout(async () => {
                     setSaveStatus('saving');
                     try {
                         const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
                         const allDocTags = collectAllTagsFromData(data);
-                        await db.doc(`${path}/${currentDocId}`).update({
+                        await db.doc(`${path}/${currentDocId}`).set({
                             cells: data,
                             gridSize: gridSize,
                             title: docMetadata.title,
                             category: docMetadata.category,
                             tagsIndex: allDocTags,
                             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
+                        }, { merge: true });
                         setSaveStatus('saved');
-                    } catch (e) { setSaveStatus('error'); }
+                    } catch (e) { 
+                        console.error("Auto-save fail", e);
+                        setSaveStatus('error'); 
+                    }
                 }, 2000);
                 return () => clearTimeout(timer);
             }, [data, gridSize, user, currentDocId, docMetadata, isAdmin]);
@@ -291,25 +302,42 @@
                 if (pass === USER_CONFIG.system.adminPasscode) {
                     setIsAdmin(true);
                     setShowAdminLogin(false);
-                    // Refresh list to show all files (including hidden ones)
-                    fetchFileList(true); 
+                    // Trigger fetch for admin
+                    setTimeout(() => fetchFileList(true), 100);
                 } else {
                     alert("密碼錯誤");
                 }
             };
 
-            // -- File Actions --
+            // -- File Actions (Key Fix for Fetching) --
             const fetchFileList = async (forceAdmin = false) => {
                 if (!db || !auth.currentUser) return;
                 setLoading(true);
+                const currentAdmin = forceAdmin || isAdmin;
+                
                 try {
-                    const path = `artifacts/${appId}/users/${auth.currentUser.uid}/${USER_CONFIG.system.collectionName}`;
-                    const snapshot = await db.collection(path).orderBy('updatedAt', 'desc').get();
-                    let files = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    
-                    const currentAdmin = forceAdmin || isAdmin;
+                    let allFiles = [];
+
+                    // 1. Fetch Private Files (V1) - The main storage now
+                    const userPath = `artifacts/${appId}/users/${auth.currentUser.uid}/${USER_CONFIG.system.collectionName}`;
+                    const userSnapshot = await db.collection(userPath).orderBy('updatedAt', 'desc').get();
+                    const userFiles = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'private' }));
+                    allFiles = [...allFiles, ...userFiles];
+
+                    // 2. Fetch Public Files (Legacy/Share) - Try to rescue old files
+                    // We only do this if we are Admin (to recover files) OR if we are Guest (to see shared)
+                    // Actually, let's just fetch them and filter.
+                    try {
+                        const publicPath = `artifacts/${appId}/public/data/${USER_CONFIG.system.publicCollectionName}`;
+                        const publicSnapshot = await db.collection(publicPath).orderBy('updatedAt', 'desc').get();
+                        const publicFiles = publicSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'public' }));
+                        allFiles = [...allFiles, ...publicFiles];
+                    } catch(err) { console.log("No public files found or permission denied"); }
+
+                    // Filter Logic
                     if (!currentAdmin) {
-                        files = files.filter(f => {
+                        // Guest: Only show #share
+                        allFiles = allFiles.filter(f => {
                             const hasTagIndex = f.tagsIndex && f.tagsIndex.includes('share');
                             const rawContent = JSON.stringify(f.cells || "");
                             const hasRawTag = rawContent.includes('#share') || (f.title && f.title.includes('#share'));
@@ -317,17 +345,42 @@
                         });
                     }
 
-                    setFileList(files);
+                    // Dedup (prefer private if duplicate ID, though unlikely with auto-ID)
+                    const uniqueFiles = Array.from(new Map(allFiles.map(item => [item.id, item])).values());
+                    
+                    // Sort again by date (merged list)
+                    uniqueFiles.sort((a, b) => {
+                        const tA = a.updatedAt ? a.updatedAt.seconds : 0;
+                        const tB = b.updatedAt ? b.updatedAt.seconds : 0;
+                        return tB - tA;
+                    });
+
+                    setFileList(uniqueFiles);
                     if (!currentDocId) setViewMode('gallery');
-                } catch (e) { console.error(e); }
+                } catch (e) { 
+                    console.error("Fetch Error", e);
+                    alert("讀取檔案列表時發生錯誤，請檢查網路或權限。");
+                }
                 setLoading(false);
             };
 
             const loadFile = (file) => {
                 setData(file.cells || {});
                 setGridSize(file.gridSize || 3);
-                setCurrentDocId(file.id);
-                setDocMetadata({ title: file.title || '未命名檔案', category: file.category || '一般' });
+                
+                // If loading a public file as Admin, we should probably treat it as a new draft or allow saving copy?
+                // For simplicity, we just load it. If they save, it might fail if they don't have write perm to public.
+                // But auto-save writes to PRIVATE path now. So it will save as a COPY in private if ID matches?
+                // To be safe: If source is public, we nullify ID so they must "Save As" or it creates new.
+                if (file.source === 'public' && isAdmin) {
+                    setCurrentDocId(null); // Force new file creation on next save
+                    setDocMetadata({ title: file.title + " (Copy)", category: file.category || '一般' });
+                    alert("您開啟了一個公共/舊版檔案。這將會被儲存為您的新檔案。");
+                } else {
+                    setCurrentDocId(file.id);
+                    setDocMetadata({ title: file.title || '未命名', category: file.category || '一般' });
+                }
+                
                 setViewMode('editor');
                 setIsSidebarOpen(false);
             };
@@ -348,25 +401,35 @@
                     setDocMetadata({ title, category });
                     setSaveStatus('saved');
                     setShowSaveAsModal(false);
-                } catch (e) { alert("儲存失敗"); }
+                    alert("儲存成功！");
+                } catch (e) { alert("儲存失敗: " + e.message); }
                 setLoading(false);
             };
 
             const handleFileMenu = (e) => {
                 const action = e.target.value;
-                e.target.value = ""; // Reset selector
+                if (!action) return;
                 
+                // Reset select immediately
+                e.target.value = ""; 
+
                 if (action === "new") {
-                    if (window.confirm("清空目前內容以建立新檔案？")) {
+                    if (window.confirm("確定要開新檔案嗎？(未儲存的內容將消失)")) {
                         setData({}); 
                         setCurrentDocId(null); 
                         setDocMetadata({title:'未命名檔案', category:'一般'});
                         setViewMode('editor');
                         setIsSidebarOpen(false);
-                        setTimeout(() => alert("已建立新檔案，請記得儲存。"), 100);
+                        // Optional: clear search/tags
+                        setSearchQuery("");
+                        setActiveTags([]);
                     }
                 } else if (action === "save") {
-                    currentDocId ? alert("已自動儲存") : setShowSaveAsModal(true);
+                    if (currentDocId) {
+                        alert("系統已自動儲存您的變更。");
+                    } else {
+                        setShowSaveAsModal(true);
+                    }
                 } else if (action === "save_as") {
                     setShowSaveAsModal(true);
                 } else if (action === "gallery") {
@@ -381,7 +444,7 @@
                 }
             };
 
-            // ... (Load Local & Export MD functions) ...
+            // ... (Load Local & Export MD - Keep same) ...
             const handleLoadLocal = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -425,7 +488,7 @@
                 if (openDrive) setTimeout(() => window.open(USER_CONFIG.seo.driveFolder, '_blank'), 500);
             };
 
-            // ... (Update Cell, Add Image logic) ...
+            // ... (Update Cell, Add Image - Keep same) ...
             const updateCell = (gridIdx, cellIdx, field, value) => {
                 if (!isAdmin) return;
                 const key = `${gridIdx}-${cellIdx}`;
@@ -578,7 +641,7 @@
                                     <p className="text-xs text-slate-500">{isAdmin ? 'Admin Mode' : 'Guest Mode (#share)'}</p>
                                 </div>
                             </div>
-                            <button onClick={() => { if(isAdmin) { setViewMode('editor'); setData({}); setCurrentDocId(null); } else setShowAdminLogin(true); }} className="text-indigo-600 font-bold text-sm">
+                            <button onClick={() => { if(isAdmin) { setViewMode('editor'); setData({}); setCurrentDocId(null); setIsSidebarOpen(false); } else setShowAdminLogin(true); }} className="text-indigo-600 font-bold text-sm">
                                 {isAdmin ? 'Go to Editor ➡' : 'Login 🔒'}
                             </button>
                         </div>
@@ -589,6 +652,7 @@
                                         <div key={file.id} className="flex flex-col items-center gap-2 group">
                                             {renderThumbnail(file)}
                                             <span className="text-xs font-bold text-slate-700 truncate w-24 text-center group-hover:text-indigo-600">{file.title}</span>
+                                            {file.source === 'public' && <span className="text-[9px] bg-yellow-100 text-yellow-700 px-1 rounded">Old/Public</span>}
                                         </div>
                                     ))}
                                     {fileList.length === 0 && <div className="col-span-full text-center text-slate-400 py-10">尚無檔案</div>}
@@ -658,11 +722,11 @@
                                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
                                     <label className="text-xs font-bold text-slate-600 mb-1 block">檔案操作</label>
                                     <select className="w-full text-sm p-2 border rounded bg-white" onChange={handleFileMenu} value="">
-                                        <option value="" disabled>選擇...</option>
+                                        <option value="" disabled>請選擇...</option>
                                         <option value="new">📄 開新檔案</option>
                                         <option value="save">💾 儲存</option>
                                         <option value="save_as">💾 另存新檔...</option>
-                                        <option value="gallery">📂 回到藝廊 (開啟舊檔)</option>
+                                        <option value="gallery">📂 回到藝廊</option>
                                         <option value="export_drive">📤 下載 MD 並開啟雲端硬碟</option>
                                     </select>
                                     <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleLoadLocal} />
@@ -700,6 +764,7 @@
                                         });
                                     }} className="w-full py-2 bg-white border rounded text-xs hover:bg-slate-50">📸 下載圖片</button>
                                 </div>
+                                <div className="text-[10px] text-slate-400 mt-4 break-all">AppID: {appId}</div>
                             </div>
                         )}
                         {!isAdmin && (
