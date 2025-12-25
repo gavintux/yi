@@ -171,6 +171,9 @@
             const [saveStatus, setSaveStatus] = useState('saved');
             const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
             const [isEditingTitle, setIsEditingTitle] = useState(false);
+            
+            // Password Control State
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
 
             // Modals
             const [showFileModal, setShowFileModal] = useState(false);
@@ -181,6 +184,19 @@
             const fileInputRef = useRef(null);
             const imgInputRef = useRef(null);
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+            // --- Password Check Logic ---
+            const checkPassword = () => {
+                if (isAuthenticated) return true;
+                const input = prompt("請輸入密碼 (590123) 以繼續操作：");
+                if (input === null) return false; // User cancelled
+                if (input === "590123") {
+                    setIsAuthenticated(true);
+                    return true;
+                }
+                alert("密碼錯誤，無法執行操作。");
+                return false;
+            };
 
             // --- Auth & Init ---
             useEffect(() => {
@@ -341,6 +357,9 @@
                 const action = e.target.value;
                 e.target.value = "";
                 if (action === "new") {
+                    // Password Check for New File
+                    if (!checkPassword()) return;
+
                     if (confirm("清空目前內容？")) {
                         setData({}); setCurrentDocId(null); setDocMetadata({title:'未命名', category:'一般'});
                     }
@@ -443,17 +462,24 @@
 
                 const titleClass = viewStyle === 'compact' ? 'text-[10px]' : 'text-xs md:text-sm';
                 const hasImage = cellData.images && cellData.images.length > 0;
+                
+                const paddingClass = viewStyle === 'compact' ? 'p-0.5' : 'p-1';
 
                 return (
                     <div 
                         key={`${gIdx}-${cIdx}`}
-                        className={`relative grid-border p-1 flex flex-col cursor-pointer hover:shadow-md ${opacity} overflow-hidden h-full w-full ${bgClass}`}
+                        className={`relative grid-border ${paddingClass} flex flex-col cursor-pointer hover:shadow-md ${opacity} overflow-hidden h-full w-full ${bgClass}`}
                         style={style}
-                        onClick={() => setSelectedCell({ gIdx, cIdx, data: cellData })}
+                        onClick={() => {
+                            // Password Check for Edit Cell
+                            if (checkPassword()) {
+                                setSelectedCell({ gIdx, cIdx, data: cellData });
+                            }
+                        }}
                     >
                         {viewStyle === 'compact' ? (
-                            <div className="flex flex-col items-center justify-center h-full text-center">
-                                {cellData.emoji && <span className="text-sm">{cellData.emoji}</span>}
+                            <div className="flex flex-col items-center justify-end h-full text-center">
+                                {cellData.emoji && <span className="text-sm mb-auto">{cellData.emoji}</span>}
                                 {hasImage && <div className="w-2 h-2 rounded-full bg-blue-500 mb-0.5"></div>}
                                 <span className={`${titleClass} font-medium leading-tight line-clamp-2`}>{cellData.title}</span>
                                 <div className="absolute bottom-0 left-0 h-1 transition-all" style={{width:`${cellData.progress||0}%`, backgroundColor: cellData.progress===100?'#22c55e':'#6366f1'}}></div>
@@ -463,7 +489,14 @@
                                 <div className="flex justify-between items-start mb-1 shrink-0">
                                     <span className={`${titleClass} font-bold text-slate-800 leading-snug line-clamp-2 break-all`}>{cellData.title}</span>
                                     <div 
-                                        onClick={(e) => { e.stopPropagation(); updateCell(gIdx, cIdx, 'progress_click'); }}
+                                        onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            // Optional: Do we need password to toggle progress? 
+                                            // The request said "Edit Cell" which usually implies opening the editor. 
+                                            // I'll leave the quick-click progress open for convenience, or you can wrap this too.
+                                            // For now, I'll keep it unlocked for better UX, assuming "Edit" means the modal.
+                                            updateCell(gIdx, cIdx, 'progress_click'); 
+                                        }}
                                         className="text-[10px] font-mono text-slate-400 hover:text-indigo-600 shrink-0 ml-1 border rounded px-1"
                                     >
                                         {cellData.progress||0}%
@@ -633,7 +666,9 @@
                                 id="mandala-grid-container"
                                 className={`
                                     bg-white shadow-xl p-1
-                                    ${gridSize === 9 ? 'min-w-[800px] min-h-[800px]' : 'w-full max-w-2xl aspect-square min-w-[300px]'}
+                                    ${gridSize === 9 
+                                        ? 'h-full aspect-square' 
+                                        : 'w-full max-w-2xl aspect-square min-w-[300px]'}
                                 `}
                             >
                                 {gridSize === 3 ? (
