@@ -57,33 +57,6 @@
         .grid-border {
             border-color: #cbd5e1;
         }
-
-        /* Thumbnail Grid Styles */
-        .thumb-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            width: 100%;
-            aspect-ratio: 1/1;
-            gap: 1px;
-            background-color: #e2e8f0;
-            border: 1px solid #cbd5e1;
-            overflow: hidden;
-            border-radius: 4px;
-        }
-        .thumb-cell {
-            background-color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 8px;
-            padding: 1px;
-            text-align: center;
-            overflow: hidden;
-            color: #475569;
-            line-height: 1;
-            white-space: nowrap;
-        }
     </style>
 </head>
 <body>
@@ -115,13 +88,9 @@
                 measurementId: "G-LK3WK0T9R8"
             },
             system: {
-                collectionName: 'mandala_charts_v1', 
-                publicCollectionName: 'mandala_charts_v1', 
-                adminPasscode: '590123',
+                collectionName: 'mandala_charts', 
                 defaultGridSize: 3, 
-                defaultViewStyle: 'standard',
-                // 建議：若要跨平台存取，請設定固定的 App ID，例如 'my-mandala-app'
-                fixedAppId: '' 
+                defaultViewStyle: 'standard'
             }
         };
 
@@ -153,17 +122,7 @@
             return matches ? matches.map(t => t.substring(1)) : [];
         };
 
-        const collectAllTagsFromData = (cellsData) => {
-            const tags = new Set();
-            if (!cellsData) return [];
-            Object.values(cellsData).forEach(cell => {
-                if (cell.tags) cell.tags.forEach(t => tags.add(t));
-                const txt = (cell.title || "") + " " + (cell.note || "");
-                extractTags(txt).forEach(t => tags.add(t));
-            });
-            return Array.from(tags);
-        };
-
+        // Compress image before saving to avoid Firestore limits
         const compressImage = (file) => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -195,28 +154,9 @@
         // ==========================================
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // Lucide Icon
-        const LucideIcon = React.memo(({ name, className = "" }) => {
-            const ref = useRef(null);
-            useEffect(() => {
-                if (ref.current && window.lucide && window.lucide.icons && window.lucide.icons[name]) {
-                    const svg = window.lucide.createElement(window.lucide.icons[name]);
-                    svg.setAttribute('width', '100%');
-                    svg.setAttribute('height', '100%');
-                    svg.style.display = 'block';
-                    ref.current.innerHTML = '';
-                    ref.current.appendChild(svg);
-                } else if (ref.current) { ref.current.innerHTML = ''; }
-            }, [name]);
-            return <span ref={ref} className={`inline-block ${className}`}></span>;
-        });
-
         function App() {
-            // -- State --
+            // State
             const [user, setUser] = useState(null);
-            const [isAdmin, setIsAdmin] = useState(false);
-            const [showAdminLogin, setShowAdminLogin] = useState(false);
-            
             const [currentDocId, setCurrentDocId] = useState(null);
             const [docMetadata, setDocMetadata] = useState({ title: '未命名檔案', category: '一般' });
             
@@ -231,335 +171,98 @@
             const [saveStatus, setSaveStatus] = useState('saved');
             const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
             const [isEditingTitle, setIsEditingTitle] = useState(false);
+            
+            // Password Control State
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+            // Modals
+            const [showFileModal, setShowFileModal] = useState(false);
             const [showSaveAsModal, setShowSaveAsModal] = useState(false);
             const [fileList, setFileList] = useState([]);
-            const [viewMode, setViewMode] = useState('gallery'); 
+            const [activeTab, setActiveTab] = useState('All');
 
             const fileInputRef = useRef(null);
             const imgInputRef = useRef(null);
-            
-            const appId = USER_CONFIG.system.fixedAppId || (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-            // -- Auth --
+            // --- Password Check Logic ---
+            const checkPassword = () => {
+                if (isAuthenticated) return true;
+                const input = prompt("請輸入密碼 (590123) 以繼續操作：");
+                if (input === null) return false; // User cancelled
+                if (input === "590123") {
+                    setIsAuthenticated(true);
+                    return true;
+                }
+                alert("密碼錯誤，無法執行操作。");
+                return false;
+            };
+
+            // --- Auth & Init ---
             useEffect(() => {
                 const initAuth = async () => {
-                    if (!auth) { setLoading(false); return; }
+                    if (!auth) {
+                        setLoading(false);
+                        return;
+                    }
                     try {
                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            try { await auth.signInWithCustomToken(__initial_auth_token); } 
-                            catch (tokenError) { await auth.signInAnonymously(); }
-                        } else { await auth.signInAnonymously(); }
+                            try {
+                                await auth.signInWithCustomToken(__initial_auth_token);
+                            } catch (tokenError) {
+                                console.warn("Custom token mismatch/failed, falling back to anonymous auth for user config:", tokenError);
+                                await auth.signInAnonymously();
+                            }
+                        } else {
+                            await auth.signInAnonymously();
+                        }
                     } catch (e) {
-                        console.error("Auth failed", e);
+                        console.error("Auth completely failed", e);
+                        // Do not block UI, allow read-only or local mode essentially
                         setLoading(false);
                     }
                 };
                 initAuth();
+                
                 if (auth) {
                     const unsubscribe = auth.onAuthStateChanged(u => {
                         setUser(u);
-                        if (u) {
-                            // Automatically fetch guest list on load
-                            if (!isAdmin) fetchFileList(false); 
-                        } else {
-                            setLoading(false);
-                        }
+                        if (!currentDocId) setLoading(false);
                     });
                     return () => unsubscribe();
                 }
-            }, [isAdmin]); // Re-run if admin status changes to fetch correct list
+            }, []);
 
-            // -- Sync Logic (Private -> Public) --
-            const syncToPublic = async (docId, fileData) => {
-                if (!isAdmin || !docId) return;
-                const publicPath = `artifacts/${appId}/public/data/${USER_CONFIG.system.publicCollectionName}`;
-                const hasShare = (fileData.tagsIndex || []).includes('share') || 
-                                 JSON.stringify(fileData.cells||"").includes('#share') || 
-                                 (fileData.title||"").includes('#share');
-
-                try {
-                    if (hasShare) {
-                        console.log(`[Sync] 同步到公共區: ${docId}`);
-                        await db.doc(`${publicPath}/${docId}`).set({
-                            ...fileData,
-                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        }, { merge: true });
-                    } else {
-                        console.log(`[Sync] 從公共區移除 (若存在): ${docId}`);
-                        await db.doc(`${publicPath}/${docId}`).delete();
-                    }
-                } catch (e) { console.warn("[Sync] Public sync failed (權限或網絡問題)", e); }
-            };
-
-            // -- Auto Save (Admin Only) --
+            // --- Auto Save ---
             useEffect(() => {
-                if (!user || !currentDocId || !db || !isAdmin) return;
-                
+                if (!user || !currentDocId || !db) return;
                 const timer = setTimeout(async () => {
                     setSaveStatus('saving');
                     try {
                         const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
-                        const allDocTags = collectAllTagsFromData(data);
-                        const fileData = {
+                        // Also update metadata (title/category) in case it changed
+                        await db.doc(`${path}/${currentDocId}`).update({
                             cells: data,
                             gridSize: gridSize,
                             title: docMetadata.title,
                             category: docMetadata.category,
-                            tagsIndex: allDocTags,
                             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        };
-                        
-                        console.log(`[AutoSave] 寫入個人資料庫: ${path}/${currentDocId}`);
-                        
-                        // 1. Save to Private
-                        await db.doc(`${path}/${currentDocId}`).set(fileData, { merge: true });
-                        
-                        // 2. Sync to Public
-                        await syncToPublic(currentDocId, fileData);
-
+                        });
                         setSaveStatus('saved');
-                    } catch (e) { 
-                        console.error("[AutoSave] 失敗", e);
-                        setSaveStatus('error'); 
+                    } catch (e) {
+                        setSaveStatus('error');
                     }
                 }, 2000);
                 return () => clearTimeout(timer);
-            }, [data, gridSize, user, currentDocId, docMetadata, isAdmin]);
+            }, [data, gridSize, user, currentDocId, docMetadata]);
 
-            // -- Admin Logic --
-            const handleAdminLogin = (pass) => {
-                if (pass === USER_CONFIG.system.adminPasscode) {
-                    setIsAdmin(true);
-                    setShowAdminLogin(false);
-                    
-                    // Directly enter editor mode logic
-                    // If no doc is open, start a fresh one
-                    if (!currentDocId) {
-                        setData({});
-                        setDocMetadata({ title: '未命名檔案', category: '一般' });
-                    }
-                    setViewMode('editor');
-                    
-                    // Fetch list silently so it's ready in the background
-                    fetchFileList(true, false);
-                } else {
-                    alert("密碼錯誤");
-                }
-            };
-
-            const handleLogout = () => {
-                setIsAdmin(false);
-                setCurrentDocId(null);
-                setViewMode('gallery');
-                fetchFileList(false);
-            }
-
-            // -- File Actions (Universal Fetch with Error Handling) --
-            const fetchFileList = async (forceAdmin = false, autoSwitchToGallery = true) => {
-                if (!db || !auth.currentUser) return;
-                setLoading(true);
-                const currentAdmin = forceAdmin || isAdmin;
-                let allFiles = [];
-                
-                // 1. Fetch Private Files (V1)
-                if (currentAdmin) {
-                    try {
-                        const userPath = `artifacts/${appId}/users/${auth.currentUser.uid}/${USER_CONFIG.system.collectionName}`;
-                        console.log(`[Fetch] 讀取個人檔案: ${userPath}`);
-                        const userSnapshot = await db.collection(userPath).orderBy('updatedAt', 'desc').get();
-                        allFiles = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'private' }));
-                    } catch(err) {
-                        console.warn("[Fetch] 個人檔案讀取失敗 (可能是權限問題):", err);
-                    }
-                }
-
-                // 2. Fetch Public Files (Legacy/Share)
-                try {
-                    const publicPath = `artifacts/${appId}/public/data/${USER_CONFIG.system.publicCollectionName}`;
-                    console.log(`[Fetch] 讀取公共檔案: ${publicPath}`);
-                    const publicSnapshot = await db.collection(publicPath).orderBy('updatedAt', 'desc').get();
-                    const publicFiles = publicSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'public' }));
-                    allFiles = [...allFiles, ...publicFiles];
-                } catch(err) { console.warn("[Fetch] 公共檔案讀取失敗:", err); }
-
-                // Filter for Guest
-                if (!currentAdmin) {
-                    allFiles = allFiles.filter(f => {
-                        const hasTagIndex = f.tagsIndex && f.tagsIndex.includes('share');
-                        const rawContent = JSON.stringify(f.cells || "");
-                        const hasRawTag = rawContent.includes('#share') || (f.title && f.title.includes('#share'));
-                        return hasTagIndex || hasRawTag;
-                    });
-                }
-
-                // Dedup
-                const uniqueFilesMap = new Map();
-                allFiles.forEach(file => {
-                    if (!uniqueFilesMap.has(file.id)) {
-                        uniqueFilesMap.set(file.id, file);
-                    } else if (file.source === 'private') {
-                        uniqueFilesMap.set(file.id, file);
-                    }
-                });
-                const uniqueFiles = Array.from(uniqueFilesMap.values());
-                
-                uniqueFiles.sort((a, b) => {
-                    const tA = a.updatedAt ? a.updatedAt.seconds : 0;
-                    const tB = b.updatedAt ? b.updatedAt.seconds : 0;
-                    return tB - tA;
-                });
-
-                console.log(`[Fetch] 總共載入 ${uniqueFiles.length} 個檔案`);
-                setFileList(uniqueFiles);
-                if (autoSwitchToGallery && !currentDocId) setViewMode('gallery');
-                setLoading(false);
-            };
-
-            const loadFile = (file) => {
-                console.log(`[Load] 開啟檔案 ID: ${file.id} (${file.source})`);
-                setData(file.cells || {});
-                setGridSize(file.gridSize || 3);
-                
-                if (file.source === 'public' && isAdmin) {
-                    setCurrentDocId(null); 
-                    setDocMetadata({ title: file.title + " (Copy)", category: file.category || '一般' });
-                    alert("您開啟了一個公共檔案。儲存時將建立為您的私人新檔案。");
-                } else {
-                    setCurrentDocId(file.id);
-                    setDocMetadata({ title: file.title || '未命名', category: file.category || '一般' });
-                }
-                
-                setViewMode('editor');
-                setIsSidebarOpen(false);
-            };
-
-            const saveAsNewFile = async (title, category) => {
-                if (!user || !db || !isAdmin) return;
-                setLoading(true);
-                try {
-                    const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
-                    const allDocTags = collectAllTagsFromData(data);
-                    const fileData = {
-                        title, category, cells: data, gridSize,
-                        tagsIndex: allDocTags,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-
-                    const newDoc = await db.collection(path).add(fileData);
-                    const newId = newDoc.id;
-                    console.log(`[SaveAs] 新增檔案成功: ${newId}`);
-                    await syncToPublic(newId, fileData);
-
-                    setCurrentDocId(newId);
-                    setDocMetadata({ title, category });
-                    setSaveStatus('saved');
-                    setShowSaveAsModal(false);
-                    alert("儲存成功！");
-                } catch (e) { 
-                    console.error("[SaveAs] 失敗", e);
-                    alert("儲存失敗: " + e.message); 
-                }
-                setLoading(false);
-            };
-
-            const deleteFile = async (e, fileId) => {
-                e.stopPropagation();
-                if (!confirm("確定要刪除此檔案嗎？")) return;
-                try {
-                    const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
-                    await db.doc(`${path}/${fileId}`).delete();
-                    const pubPath = `artifacts/${appId}/public/data/${USER_CONFIG.system.publicCollectionName}`;
-                    await db.doc(`${pubPath}/${fileId}`).delete().catch(()=>{});
-                    console.log(`[Delete] 檔案刪除成功: ${fileId}`);
-                    alert("已刪除");
-                    fetchFileList(true, false);
-                } catch (e) { alert("刪除失敗"); }
-            }
-
-            const handleFileMenu = (e) => {
-                const action = e.target.value;
-                if (!action) return;
-                e.target.value = ""; 
-
-                if (action === "new") {
-                    if (window.confirm("確定要開新檔案嗎？(未儲存的內容將消失)")) {
-                        setData({}); 
-                        setCurrentDocId(null); 
-                        setDocMetadata({title:'未命名檔案', category:'一般'});
-                        setViewMode('editor');
-                        setIsSidebarOpen(false);
-                        setSearchQuery("");
-                        setActiveTags([]);
-                    }
-                } else if (action === "save") {
-                    if (currentDocId) alert("系統已自動儲存。");
-                    else setShowSaveAsModal(true);
-                } else if (action === "save_as") {
-                    setShowSaveAsModal(true);
-                } else if (action === "gallery") {
-                    setViewMode('gallery');
-                    fetchFileList();
-                    setCurrentDocId(null);
-                    setIsSidebarOpen(false);
-                } else if (action === "import") {
-                    fileInputRef.current?.click();
-                } else if (action === "export_drive") {
-                    handleExportMarkdown(true);
-                }
-            };
-
-            // ... (Load/Export MD/Update Cell/Image logic same) ...
-            const handleLoadLocal = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    try {
-                        const parsed = JSON.parse(ev.target.result);
-                        if (confirm("匯入覆蓋？")) {
-                            setData(parsed.cells || {});
-                            setGridSize(parsed.gridSize || 3);
-                            setCurrentDocId(null);
-                            setDocMetadata(parsed.metadata || { title: '匯入檔案', category: '一般' });
-                            setViewMode('editor');
-                            setIsSidebarOpen(false);
-                        }
-                    } catch(err) { alert("格式錯誤"); }
-                    e.target.value = '';
-                };
-                reader.readAsText(file);
-            };
-
-            const handleExportMarkdown = (openDrive = false) => {
-                const now = new Date().toISOString().split('T')[0];
-                let md = `---\ncreated: ${now}\ncategories: ${docMetadata.category}\ntags:\n`;
-                const tags = collectAllTagsFromData(data);
-                tags.forEach(t => md += `  - ${t}\n`);
-                md += `---\n\n# ${docMetadata.title}\n\n`;
-                Object.keys(data).sort().forEach(key => {
-                    const cell = data[key];
-                    if (cell.title) {
-                        md += `## [${key}] ${cell.title}\n`;
-                        if(cell.note) md += `${cell.note}\n\n`;
-                    }
-                });
-                const blob = new Blob([md], { type: 'text/markdown' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${docMetadata.title}.md`;
-                a.click();
-                if (openDrive) setTimeout(() => window.open(USER_CONFIG.seo.driveFolder, '_blank'), 500);
-            };
-
+            // --- Logic ---
             const updateCell = (gridIdx, cellIdx, field, value) => {
-                if (!isAdmin) return;
                 const key = `${gridIdx}-${cellIdx}`;
                 const currentCell = data[key] || {};
                 let updatedData = { ...data };
                 let cellUpdates = { ...currentCell, updatedAt: new Date().toISOString() };
+
                 if (field === 'progress_click') {
                     const currentP = currentCell.progress || 0;
                     const nextP = (currentP + 25);
@@ -567,12 +270,14 @@
                 } else if (value !== undefined) {
                     cellUpdates[field] = value;
                 }
+
                 if (field === 'title' || field === 'note') {
                     const tVal = field === 'title' ? value : (currentCell.title || "");
                     const nVal = field === 'note' ? value : (currentCell.note || "");
                     cellUpdates.tags = extractTags((tVal || "") + " " + (nVal || ""));
                 }
                 updatedData[key] = cellUpdates;
+
                 if (gridSize === 9) {
                     const sync = getSyncedCellCoordinates(gridIdx, cellIdx);
                     if (sync) {
@@ -590,18 +295,131 @@
                 }
                 setData(updatedData);
             };
+
             const addImage = async (file) => {
-                if (!selectedCell || !isAdmin) return;
+                if (!selectedCell) return;
                 try {
                     const base64 = await compressImage(file);
                     const prevImages = selectedCell.data.images || [];
                     updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', [...prevImages, base64]);
-                } catch (e) { alert("Error"); }
+                } catch (e) {
+                    alert("圖片處理失敗");
+                }
             };
+
             const addImageUrl = (url) => {
-                if (!selectedCell || !url || !isAdmin) return;
+                if (!selectedCell || !url) return;
                 const prevImages = selectedCell.data.images || [];
                 updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', [...prevImages, url]);
+            };
+
+            // --- File Actions ---
+            const fetchFileList = async () => {
+                if (!user || !db) return;
+                setLoading(true);
+                try {
+                    const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
+                    const snapshot = await db.collection(path).orderBy('updatedAt', 'desc').get();
+                    setFileList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                    setShowFileModal(true);
+                } catch (e) { alert("讀取失敗"); }
+                setLoading(false);
+            };
+
+            const loadFileFromDB = (file) => {
+                setData(file.cells || {});
+                setGridSize(file.gridSize || 3);
+                setCurrentDocId(file.id);
+                setDocMetadata({ title: file.title || '未命名', category: file.category || '一般' });
+                setShowFileModal(false);
+                setIsSidebarOpen(false);
+            };
+
+            const saveAsNewFile = async (title, category) => {
+                if (!user || !db) return;
+                setLoading(true);
+                try {
+                    const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
+                    const newDoc = await db.collection(path).add({
+                        title, category, cells: data, gridSize,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    setCurrentDocId(newDoc.id);
+                    setDocMetadata({ title, category });
+                    setSaveStatus('saved');
+                    setShowSaveAsModal(false);
+                } catch (e) { alert("儲存失敗"); }
+                setLoading(false);
+            };
+
+            const handleFileMenu = (e) => {
+                const action = e.target.value;
+                e.target.value = "";
+                if (action === "new") {
+                    // Password Check for New File
+                    if (!checkPassword()) return;
+
+                    if (confirm("清空目前內容？")) {
+                        setData({}); setCurrentDocId(null); setDocMetadata({title:'未命名', category:'一般'});
+                    }
+                } else if (action === "save") {
+                    currentDocId ? alert("已自動儲存") : setShowSaveAsModal(true);
+                } else if (action === "save_as") {
+                    setShowSaveAsModal(true);
+                } else if (action === "open") {
+                    fetchFileList();
+                } else if (action === "import") {
+                    fileInputRef.current?.click();
+                } else if (action === "export_drive") {
+                    handleExportMarkdown(true);
+                }
+            };
+
+            const handleLoadLocal = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const parsed = JSON.parse(ev.target.result);
+                        if (confirm("匯入將覆蓋目前內容，確定？")) {
+                            setData(parsed.cells || {});
+                            setGridSize(parsed.gridSize || 3);
+                            setCurrentDocId(null);
+                            setDocMetadata(parsed.metadata || { title: '匯入檔案', category: '一般' });
+                        }
+                    } catch(err) { alert("格式錯誤"); }
+                    e.target.value = '';
+                };
+                reader.readAsText(file);
+            };
+
+            const handleExportMarkdown = (openDrive = false) => {
+                const now = new Date().toISOString().split('T')[0];
+                let md = `---\ncreated: ${now}\ncategories: ${docMetadata.category}\ntags:\n`;
+                // Add tags logic here if needed
+                md += `---\n\n# ${docMetadata.title}\n\n`;
+                Object.keys(data).sort().forEach(key => {
+                    const cell = data[key];
+                    if (cell.title) {
+                        md += `## [${key}] ${cell.title}\n`;
+                        if(cell.note) md += `${cell.note}\n\n`;
+                    }
+                });
+                const blob = new Blob([md], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${docMetadata.title}.md`;
+                a.click();
+                
+                if (openDrive) {
+                    setTimeout(() => {
+                        window.open(USER_CONFIG.seo.driveFolder, '_blank');
+                        alert("檔案已下載。請將檔案拖曳至剛開啟的 Google Drive 資料夾中。");
+                    }, 500);
+                }
             };
 
             // --- Rendering ---
@@ -621,20 +439,27 @@
                 return new Set(keys);
             }, [data, searchQuery, activeTags]);
 
-            const allTags = useMemo(() => collectAllTagsFromData(data), [data]);
+            const allTags = useMemo(() => {
+                const tags = new Set();
+                Object.values(data).forEach(c => (c.tags||[]).forEach(t => tags.add(t)));
+                return Array.from(tags).sort();
+            }, [data]);
 
             const renderCell = (gIdx, cIdx) => {
                 const cellData = data[`${gIdx}-${cIdx}`] || {};
                 const isMatched = searchQuery || activeTags.length ? filteredCells.has(`${gIdx}-${cIdx}`) : true;
                 const isCenter = gridSize === 9 ? (gIdx === 4 && cIdx === 4) : (cIdx === 4);
+                
                 let bgColor = cellData.color || 'bg-white';
                 if (!cellData.color) {
                     if (isCenter) bgColor = 'bg-yellow-100'; 
                     else if (gridSize === 9 && cIdx === 4) bgColor = 'bg-indigo-50'; 
                 }
+
                 const opacity = isMatched ? 'opacity-100' : 'opacity-20 grayscale';
                 const style = { backgroundColor: bgColor.startsWith('bg-') ? undefined : bgColor };
                 const bgClass = bgColor.startsWith('bg-') ? bgColor : '';
+
                 const titleClass = viewStyle === 'compact' ? 'text-[10px]' : 'text-xs md:text-sm';
                 const hasImage = cellData.images && cellData.images.length > 0;
 
@@ -643,7 +468,12 @@
                         key={`${gIdx}-${cIdx}`}
                         className={`relative grid-border p-1 flex flex-col cursor-pointer hover:shadow-md ${opacity} overflow-hidden h-full w-full ${bgClass}`}
                         style={style}
-                        onClick={() => setSelectedCell({ gIdx, cIdx, data: cellData })}
+                        onClick={() => {
+                            // Password Check for Edit Cell
+                            if (checkPassword()) {
+                                setSelectedCell({ gIdx, cIdx, data: cellData });
+                            }
+                        }}
                     >
                         {viewStyle === 'compact' ? (
                             <div className="flex flex-col items-center justify-center h-full text-center">
@@ -656,20 +486,37 @@
                             <div className="flex flex-col h-full">
                                 <div className="flex justify-between items-start mb-1 shrink-0">
                                     <span className={`${titleClass} font-bold text-slate-800 leading-snug line-clamp-2 break-all`}>{cellData.title}</span>
-                                    {isAdmin && <div onClick={(e) => { e.stopPropagation(); updateCell(gIdx, cIdx, 'progress_click'); }}
-                                        className="text-[10px] font-mono text-slate-400 hover:text-indigo-600 shrink-0 ml-1 border rounded px-1">{cellData.progress||0}%</div>}
+                                    <div 
+                                        onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            // Optional: Do we need password to toggle progress? 
+                                            // The request said "Edit Cell" which usually implies opening the editor. 
+                                            // I'll leave the quick-click progress open for convenience, or you can wrap this too.
+                                            // For now, I'll keep it unlocked for better UX, assuming "Edit" means the modal.
+                                            updateCell(gIdx, cIdx, 'progress_click'); 
+                                        }}
+                                        className="text-[10px] font-mono text-slate-400 hover:text-indigo-600 shrink-0 ml-1 border rounded px-1"
+                                    >
+                                        {cellData.progress||0}%
+                                    </div>
                                 </div>
+                                
+                                {/* Image Thumbnail */}
                                 {hasImage && (
                                     <div className="flex-1 w-full bg-slate-100 rounded overflow-hidden relative mb-1" style={{minHeight: '20px'}}>
                                         <img src={cellData.images[0]} className="w-full h-full object-cover absolute inset-0" />
+                                        {cellData.images.length > 1 && <span className="absolute bottom-0 right-0 bg-black/50 text-white text-[8px] px-1">+{cellData.images.length-1}</span>}
                                     </div>
                                 )}
-                                {!hasImage && cellData.note && viewStyle !== 'compact' && (
+
+                                {viewStyle === 'standard' && !hasImage && cellData.note && (
                                     <p className="text-[10px] text-slate-500 line-clamp-2 md:line-clamp-3 whitespace-pre-wrap flex-1">{cellData.note}</p>
                                 )}
+                                
                                 <div className="mt-auto pt-1 flex justify-between items-end border-t border-black/5">
                                     <div className="flex gap-1 items-center">
                                         {(cellData.attachments?.length>0) && <span className="text-[10px]">📎</span>}
+                                        {cellData.note && <span className="text-[10px]">📝</span>}
                                         {cellData.emoji && <span className="text-xs">{cellData.emoji}</span>}
                                     </div>
                                 </div>
@@ -679,211 +526,156 @@
                 );
             };
 
-            const renderThumbnail = (fileData) => {
-                const cells = fileData.cells || {};
-                const size = fileData.gridSize || 3;
-                return (
-                    <div className="thumb-grid shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-white" onClick={() => loadFile(fileData)}>
-                        {Array.from({ length: 9 }).map((_, i) => {
-                            const key = size === 9 ? `4-${i}` : `4-${i}`;
-                            const cell = cells[key] || {};
-                            const bgColor = cell.color && !cell.color.startsWith('bg-') ? cell.color : 'white';
-                            return <div key={i} className="thumb-cell" style={{backgroundColor: bgColor}}>{cell.title||""}</div>
-                        })}
-                    </div>
-                );
-            };
-
-            // --- VIEW: Gallery ---
-            if (viewMode === 'gallery') {
-                return (
-                    <div className="h-full w-full bg-slate-100 flex flex-col">
-                        <div className="bg-white p-4 shadow-sm z-10 flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <img src={USER_CONFIG.seo.logoImage} className="w-10 h-10 rounded" />
-                                <div>
-                                    <h1 className="font-bold text-lg text-slate-800">Mandala Gallery</h1>
-                                    <p className="text-xs text-slate-500">{isAdmin ? 'Admin Mode (Writable)' : 'Guest Mode (Read Only)'}</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                {isAdmin ? (
-                                    <>
-                                        <button 
-                                            onClick={() => { setViewMode('editor'); setData({}); setCurrentDocId(null); setIsSidebarOpen(false); }} 
-                                            className="text-indigo-600 font-bold text-sm border border-indigo-200 px-3 py-1 rounded hover:bg-indigo-50 flex items-center gap-1"
-                                            title="Go to Editor / New File"
-                                        >
-                                            <LucideIcon name="Edit" className="w-4 h-4"/> <span className="hidden sm:inline">編輯/新增</span>
-                                        </button>
-                                        <button onClick={handleLogout} className="text-slate-500 font-bold text-sm border px-2 py-1 rounded hover:bg-slate-50">Logout</button>
-                                    </>
-                                ) : (
-                                    <button onClick={() => setShowAdminLogin(true)} className="text-indigo-600 font-bold text-sm border border-indigo-200 px-2 py-1 rounded hover:bg-indigo-50">Login 🔒</button>
-                                )}
-                            </div>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-4">
-                            {loading ? <div className="text-center p-10 text-slate-500">載入中...</div> : (
-                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                                    {fileList.map(file => (
-                                        <div key={file.id} className="flex flex-col items-center gap-2 group relative">
-                                            {renderThumbnail(file)}
-                                            <span className="text-xs font-bold text-slate-700 truncate w-24 text-center group-hover:text-indigo-600">{file.title}</span>
-                                            {/* Admin Actions */}
-                                            {isAdmin && (
-                                                <div className="flex gap-2 mt-1">
-                                                    <button onClick={()=>loadFile(file)} className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded">✏️ 編輯</button>
-                                                    <button onClick={(e)=>deleteFile(e, file.id)} className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded">🗑️ 刪除</button>
-                                                </div>
-                                            )}
-                                            {!isAdmin && <button onClick={()=>loadFile(file)} className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded mt-1">👁️ 檢視</button>}
-                                        </div>
-                                    ))}
-                                    {fileList.length === 0 && <div className="col-span-full text-center text-slate-400 py-10">尚無檔案</div>}
-                                </div>
-                            )}
-                        </div>
-                        {showAdminLogin && (
-                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                                <div className="bg-white rounded-lg p-6 w-full max-w-xs shadow-xl">
-                                    <h3 className="font-bold mb-4 text-center">Admin Login</h3>
-                                    <input type="password" id="admin-pass" className="w-full border p-2 rounded mb-4" placeholder="Enter Passcode" />
-                                    <div className="flex gap-2">
-                                        <button onClick={()=>setShowAdminLogin(false)} className="flex-1 py-2 border rounded">Cancel</button>
-                                        <button onClick={()=>handleAdminLogin(document.getElementById('admin-pass').value)} className="flex-1 py-2 bg-indigo-600 text-white rounded">Login</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                );
-            }
-
-            // --- VIEW: Editor ---
             return (
                 <div className="flex flex-col md:flex-row h-full w-full overflow-hidden bg-slate-100">
-                    {/* Header Mobile */}
+                    
+                    {/* Mobile Header */}
                     <div className="md:hidden bg-white p-2 border-b flex justify-between items-center shadow-sm shrink-0 z-30 h-14">
                         <div className="flex items-center gap-2 overflow-hidden">
-                            <button onClick={() => { setViewMode('gallery'); fetchFileList(); }} className="text-slate-500 mr-2 text-xl">⬅</button>
                             <img src={USER_CONFIG.seo.logoImage} className="w-8 h-8 rounded" />
                             <div className="flex flex-col overflow-hidden">
-                                {isAdmin && isEditingTitle ? (
-                                    <input autoFocus className="text-sm font-bold border rounded px-1" value={docMetadata.title} onBlur={()=>setIsEditingTitle(false)} onChange={e=>setDocMetadata({...docMetadata, title:e.target.value})} />
+                                {isEditingTitle ? (
+                                    <input 
+                                        autoFocus
+                                        className="text-sm font-bold border rounded px-1"
+                                        value={docMetadata.title}
+                                        onBlur={() => setIsEditingTitle(false)}
+                                        onChange={(e) => setDocMetadata({...docMetadata, title: e.target.value})}
+                                    />
                                 ) : (
-                                    <span className="font-bold text-slate-800 truncate" onClick={()=>isAdmin && setIsEditingTitle(true)}>{docMetadata.title}</span>
+                                    <span className="font-bold text-slate-800 truncate" onClick={()=>setIsEditingTitle(true)}>{docMetadata.title}</span>
                                 )}
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            {isAdmin && (
-                                <button 
-                                    onClick={() => {
-                                        if (currentDocId) { alert("自動儲存中..."); } 
-                                        else { setShowSaveAsModal(true); }
-                                    }}
-                                    className="p-2 text-indigo-600 font-bold"
-                                >💾</button>
-                            )}
-                            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 border rounded text-slate-600">{isSidebarOpen?'✕':'☰'}</button>
-                        </div>
+                        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 border rounded text-slate-600">
+                            {isSidebarOpen ? '✕' : '☰'}
+                        </button>
                     </div>
 
                     {/* Sidebar */}
-                    <aside className={`fixed md:relative inset-0 md:inset-auto z-40 bg-white md:w-72 border-r border-slate-200 transform transition-transform duration-300 ease-in-out flex flex-col shadow-xl md:shadow-none ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+                    <aside className={`
+                        fixed md:relative inset-0 md:inset-auto z-40 bg-white md:w-72 border-r border-slate-200 
+                        transform transition-transform duration-300 ease-in-out flex flex-col shadow-xl md:shadow-none
+                        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+                    `}>
                         <div className="p-4 border-b border-slate-100 flex justify-between items-start bg-slate-50 md:bg-white">
                             <div className="w-full">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <button onClick={() => { setViewMode('gallery'); fetchFileList(); }} className="text-xs bg-slate-200 px-2 py-1 rounded hover:bg-slate-300">⬅ Gallery</button>
-                                    {!isAdmin && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Read Only</span>}
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h1 className="font-bold text-lg text-slate-800">Mandala Chart</h1>
                                 </div>
-                                {isAdmin ? (
-                                    <div className="flex items-center gap-2 bg-white border p-1 rounded mb-1">
-                                        <div className="flex-1">
-                                            <label className="text-[10px] text-slate-400 block">檔名</label>
-                                            <input className="text-sm font-bold text-indigo-700 w-full outline-none" value={docMetadata.title} onChange={e=>setDocMetadata({...docMetadata, title:e.target.value})} />
-                                        </div>
-                                        <span className="text-slate-400">✏️</span>
+                                {/* Rename Area */}
+                                <div className="flex items-center gap-2 bg-white border p-1 rounded mb-1">
+                                    <div className="flex-1">
+                                        <label className="text-[10px] text-slate-400 block">檔名</label>
+                                        <input 
+                                            className="text-sm font-bold text-indigo-700 w-full outline-none" 
+                                            value={docMetadata.title}
+                                            onChange={(e) => setDocMetadata({...docMetadata, title: e.target.value})}
+                                        />
                                     </div>
-                                ) : <h1 className="font-bold text-lg text-slate-800">{docMetadata.title}</h1>}
-                                {isAdmin && <div className="text-[10px] mt-1 text-green-600">{saveStatus==='saving'?'Saving...':'Saved'}</div>}
+                                    <div className="w-16 border-l pl-1">
+                                        <label className="text-[10px] text-slate-400 block">分類</label>
+                                        <input 
+                                            className="text-xs text-slate-600 w-full outline-none" 
+                                            value={docMetadata.category}
+                                            onChange={(e) => setDocMetadata({...docMetadata, category: e.target.value})}
+                                        />
+                                    </div>
+                                    <span className="text-slate-400">✏️</span>
+                                </div>
+
+                                <div className="flex gap-2 text-[10px]">
+                                    {currentDocId ? 
+                                        <span className={saveStatus==='saving'?'text-yellow-600':'text-green-600'}>
+                                            {saveStatus==='saving'?'儲存中...':'已自動儲存'}
+                                        </span> : <span className="text-slate-400">未儲存</span>
+                                    }
+                                </div>
                             </div>
-                            <button onClick={()=>setIsSidebarOpen(false)} className="md:hidden text-2xl">&times;</button>
+                            <button onClick={()=>setIsSidebarOpen(false)} className="md:hidden text-2xl leading-none">&times;</button>
                         </div>
 
-                        {/* Sidebar Controls */}
-                        {isAdmin && (
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                    <label className="text-xs font-bold text-slate-600 mb-1 block">檔案操作</label>
-                                    <select className="w-full text-sm p-2 border rounded bg-white" onChange={handleFileMenu} defaultValue="">
-                                        <option value="" disabled>請選擇...</option>
-                                        <option value="new">📄 開新檔案</option>
-                                        <option value="save">💾 儲存</option>
-                                        <option value="save_as">💾 另存新檔...</option>
-                                        <option value="gallery">📂 回到藝廊</option>
-                                        <option value="export_drive">📤 下載 MD 並開啟雲端硬碟</option>
-                                    </select>
-                                    <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleLoadLocal} />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-600">檢視設定</label>
-                                    <div className="flex gap-2">
-                                        <button onClick={()=>setGridSize(3)} className={`flex-1 py-1.5 text-xs border rounded ${gridSize===3?'bg-indigo-600 text-white':'bg-white'}`}>3x3</button>
-                                        <button onClick={()=>setGridSize(9)} className={`flex-1 py-1.5 text-xs border rounded ${gridSize===9?'bg-indigo-600 text-white':'bg-white'}`}>9x9</button>
-                                    </div>
-                                    <select className="w-full text-sm p-1.5 border rounded" value={viewStyle} onChange={e=>setViewStyle(e.target.value)}>
-                                        <option value="standard">標準模式</option>
-                                        <option value="simple">簡單模式</option>
-                                        <option value="compact">精簡模式</option>
-                                    </select>
-                                </div>
-                                {allTags.length > 0 && (
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-600 mb-1 block">標籤過濾</label>
-                                        <div className="flex flex-wrap gap-1">
-                                            {allTags.map(t => (
-                                                <button key={t} onClick={() => setActiveTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
-                                                    className={`text-[10px] px-2 py-1 rounded-full border ${activeTags.includes(t)?'bg-indigo-100 text-indigo-700 border-indigo-300':'bg-white text-slate-600'}`}>
-                                                    #{t}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                                <div>
-                                    <button onClick={()=>{
-                                        const el = document.getElementById('mandala-grid-container');
-                                        if(el) html2canvas(el).then(canvas => {
-                                            const a = document.createElement('a'); a.href = canvas.toDataURL(); a.download = 'mandala.png'; a.click();
-                                        });
-                                    }} className="w-full py-2 bg-white border rounded text-xs hover:bg-slate-50">📸 下載圖片</button>
-                                </div>
-                                <div className="text-[10px] text-slate-400 mt-4 break-all">AppID: {appId} <br/> UID: {user?.uid?.slice(0,6)}...</div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                <label className="text-xs font-bold text-slate-600 mb-1 block">檔案操作</label>
+                                <select className="w-full text-sm p-2 border rounded bg-white" onChange={handleFileMenu} defaultValue="">
+                                    <option value="" disabled>請選擇...</option>
+                                    <option value="new">📄 開新檔案</option>
+                                    <option value="save">💾 儲存</option>
+                                    <option value="save_as">💾 另存新檔...</option>
+                                    <option value="open">📂 開啟舊檔</option>
+                                    <option value="export_drive">📤 下載 MD 並開啟雲端硬碟</option>
+                                </select>
+                                <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleLoadLocal} />
                             </div>
-                        )}
-                        {!isAdmin && (
-                            <div className="p-4">
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-600">檢視設定</label>
+                                <div className="flex gap-2">
+                                    <button onClick={()=>setGridSize(3)} className={`flex-1 py-1.5 text-xs border rounded ${gridSize===3?'bg-indigo-600 text-white':'bg-white'}`}>3x3</button>
+                                    <button onClick={()=>setGridSize(9)} className={`flex-1 py-1.5 text-xs border rounded ${gridSize===9?'bg-indigo-600 text-white':'bg-white'}`}>9x9</button>
+                                </div>
+                                <select className="w-full text-sm p-1.5 border rounded" value={viewStyle} onChange={e=>setViewStyle(e.target.value)}>
+                                    <option value="standard">標準模式</option>
+                                    <option value="simple">簡單模式</option>
+                                    <option value="compact">精簡模式</option>
+                                </select>
+                            </div>
+                            
+                            <div>
                                 <label className="text-xs font-bold text-slate-600">搜尋</label>
-                                <input className="w-full p-2 text-sm border rounded mt-1" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} />
+                                <input 
+                                    type="text" 
+                                    className="w-full p-2 text-sm border rounded"
+                                    placeholder="標題, #tag..." 
+                                    value={searchQuery}
+                                    onChange={e=>setSearchQuery(e.target.value)}
+                                />
                             </div>
-                        )}
+
+                            {allTags.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                    {allTags.map(t => (
+                                        <button key={t} onClick={() => setActiveTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                                            className={`text-[10px] px-2 py-1 rounded-full border ${activeTags.includes(t)?'bg-indigo-100 text-indigo-700 border-indigo-300':'bg-white text-slate-600'}`}>
+                                            #{t}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </aside>
 
-                    {/* Main Grid */}
+                    {/* Main Content Area */}
                     <main className="flex-1 relative overflow-hidden flex flex-col h-full w-full">
+                        {loading && (
+                            <div className="absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></div>
+                                <span className="text-sm text-slate-600">載入中...</span>
+                            </div>
+                        )}
+                        
+                        {/* Grid Container */}
                         <div className="flex-1 overflow-auto bg-slate-100 flex items-start justify-start md:justify-center p-2 md:p-4">
-                            <div id="mandala-grid-container" className={`bg-white shadow-xl p-1 ${gridSize===9?'min-w-[800px] min-h-[800px]':'w-full max-w-2xl aspect-square min-w-[300px]'}`}>
-                                {gridSize===3 ? (
+                             {/* Mobile Fix: Use min-w and min-h to force scrolling if screen is too small.
+                                 This ensures 9x9 grid rows/cols are never squashed to 0 height.
+                             */}
+                            <div 
+                                id="mandala-grid-container"
+                                className={`
+                                    bg-white shadow-xl p-1
+                                    ${gridSize === 9 ? 'min-w-[800px] min-h-[800px]' : 'w-full max-w-2xl aspect-square min-w-[300px]'}
+                                `}
+                            >
+                                {gridSize === 3 ? (
                                     <div className="grid grid-cols-3 grid-rows-3 gap-1 bg-slate-300 border-2 border-slate-300 h-full w-full">
-                                        {Array.from({length:9}).map((_,i)=>renderCell(4,i))}
+                                        {Array.from({ length: 9 }).map((_, i) => renderCell(4, i))}
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-3 grid-rows-3 gap-1 bg-slate-300 border-2 border-slate-300 h-full w-full">
-                                        {Array.from({length:9}).map((_,i)=>(
-                                            <div key={i} className={`grid grid-cols-3 grid-rows-3 gap-px bg-slate-200 border w-full h-full ${i===4?'border-indigo-400 ring-2 ring-indigo-400':''}`}>
-                                                {Array.from({length:9}).map((_,j)=>renderCell(i,j))}
+                                        {Array.from({ length: 9 }).map((_, i) => (
+                                            <div key={i} className={`grid grid-cols-3 grid-rows-3 gap-px bg-slate-200 border w-full h-full ${i===4?'border-indigo-400 z-10 shadow-md ring-2 ring-indigo-400 ring-inset':''}`}>
+                                                {Array.from({ length: 9 }).map((_, j) => renderCell(i, j))}
                                             </div>
                                         ))}
                                     </div>
@@ -892,78 +684,150 @@
                         </div>
                     </main>
 
-                    {/* Editor Modal (Same as before) */}
-                    {selectedCell && (
-                        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setSelectedCell(null)}>
-                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                                <div className="bg-indigo-600 p-3 flex justify-between items-center text-white shrink-0 rounded-t-xl">
-                                    <h3 className="font-bold">{isAdmin ? '編輯儲存格' : '詳細內容'}</h3>
-                                    <button onClick={() => setSelectedCell(null)} className="p-1 hover:bg-white/20 rounded">✕</button>
-                                </div>
-                                <div className="p-4 space-y-4 overflow-y-auto flex-1">
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-500 block">標題</label>
-                                        {isAdmin ? (
-                                            <input className="w-full border p-2 rounded" value={data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.title||''} onChange={e=>updateCell(selectedCell.gIdx, selectedCell.cIdx, 'title', e.target.value)} />
-                                        ) : <div className="text-lg font-bold">{data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.title}</div>}
+                    {/* Editor Modal */}
+                    {selectedCell && (() => {
+                        const cellKey = `${selectedCell.gIdx}-${selectedCell.cIdx}`;
+                        const activeCellData = data[cellKey] || {};
+                        return (
+                            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setSelectedCell(null)}>
+                                <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                                    <div className="bg-indigo-600 p-3 flex justify-between items-center text-white shrink-0 rounded-t-xl">
+                                        <h3 className="font-bold">編輯儲存格</h3>
+                                        <button onClick={() => setSelectedCell(null)} className="p-1 hover:bg-white/20 rounded">✕</button>
                                     </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-500 block">備註</label>
-                                        {isAdmin ? (
-                                            <textarea className="w-full border p-2 rounded h-24" value={data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.note||''} onChange={e=>updateCell(selectedCell.gIdx, selectedCell.cIdx, 'note', e.target.value)} />
-                                        ) : <div className="text-sm whitespace-pre-wrap">{data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.note}</div>}
-                                    </div>
-                                    {isAdmin && (
-                                        <div className="space-y-4">
-                                            <div className="bg-slate-50 p-3 rounded border">
-                                                <label className="text-xs font-bold text-slate-500 block mb-2">圖片附檔</label>
-                                                <div className="flex gap-2 mb-2">
-                                                    <input id="img-url-input" className="flex-1 text-xs p-1 border rounded" placeholder="網址..." />
-                                                    <button onClick={()=>{ addImageUrl(document.getElementById('img-url-input').value); document.getElementById('img-url-input').value=''; }} className="bg-white border px-2 py-1 rounded text-xs">加入</button>
-                                                </div>
-                                                <input type="file" ref={imgInputRef} accept="image/*" className="hidden" onChange={(e)=>addImage(e.target.files[0])} />
-                                                <button onClick={()=>imgInputRef.current?.click()} className="w-full py-1 bg-white border border-dashed rounded text-xs text-slate-500">＋ 上傳本機圖片</button>
+                                    
+                                    <div className="p-4 space-y-4 overflow-y-auto flex-1">
+                                        <div>
+                                            <label className="text-xs font-bold text-slate-500 mb-1 block">標題</label>
+                                            <input type="text" className="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                value={activeCellData.title || ''}
+                                                onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'title', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-slate-500 mb-1 block">備註 (#tag)</label>
+                                            <textarea className="w-full border p-2 rounded h-20 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                value={activeCellData.note || ''}
+                                                onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'note', e.target.value)}
+                                            ></textarea>
+                                        </div>
+                                        
+                                        {/* Image Upload */}
+                                        <div className="bg-slate-50 p-3 rounded border">
+                                            <label className="text-xs font-bold text-slate-500 block mb-2">圖片附檔</label>
+                                            <div className="flex gap-2 mb-2">
+                                                <input 
+                                                    id="img-url-input" 
+                                                    className="flex-1 text-xs p-1 border rounded" 
+                                                    placeholder="貼上圖片網址..."
+                                                />
+                                                <button onClick={()=>{
+                                                    const url = document.getElementById('img-url-input').value;
+                                                    addImageUrl(url);
+                                                    document.getElementById('img-url-input').value = '';
+                                                }} className="bg-white border px-2 py-1 rounded text-xs">加入</button>
+                                            </div>
+                                            <input 
+                                                type="file" 
+                                                ref={imgInputRef} 
+                                                accept="image/*" 
+                                                className="hidden" 
+                                                onChange={(e) => addImage(e.target.files[0])}
+                                            />
+                                            <button onClick={()=>imgInputRef.current?.click()} className="w-full py-1 bg-white border border-dashed rounded text-xs text-slate-500">
+                                                ＋ 上傳本機圖片
+                                            </button>
+                                            
+                                            {/* Image Preview List */}
+                                            {activeCellData.images && activeCellData.images.length > 0 && (
                                                 <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
-                                                    {(data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.images||[]).map((img, idx) => (
+                                                    {activeCellData.images.map((img, idx) => (
                                                         <div key={idx} className="relative w-16 h-16 shrink-0 rounded overflow-hidden border">
                                                             <img src={img} className="w-full h-full object-cover" />
-                                                            <button onClick={()=>{ 
-                                                                const newImgs = data[`${selectedCell.gIdx}-${selectedCell.cIdx}`].images.filter((_,i)=>i!==idx);
-                                                                updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', newImgs);
-                                                            }} className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center text-[8px]">✕</button>
+                                                            <button 
+                                                                onClick={()=>{
+                                                                    const newImgs = activeCellData.images.filter((_, i) => i !== idx);
+                                                                    updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', newImgs);
+                                                                }}
+                                                                className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center text-[8px]"
+                                                            >✕</button>
                                                         </div>
                                                     ))}
                                                 </div>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-500 block">進度 ({activeCellData.progress||0}%)</label>
+                                                <input type="range" min="0" max="100" step="25" className="w-full accent-indigo-600 mt-1"
+                                                    value={activeCellData.progress || 0}
+                                                    onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'progress', parseInt(e.target.value))}
+                                                />
                                             </div>
                                             <div>
-                                                <label className="text-xs font-bold text-slate-500 block mb-1">Emoji</label>
-                                                <div className="flex flex-wrap gap-2 p-2 bg-slate-50 rounded h-24 overflow-y-auto">
-                                                    {EMOJI_LIST.map(em => (
-                                                        <button key={em} onClick={()=>updateCell(selectedCell.gIdx, selectedCell.cIdx, 'emoji', data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.emoji===em?'':em)} className={`p-1 text-lg rounded ${data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.emoji===em?'bg-indigo-200':''}`}>{em}</button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="text-xs font-bold text-slate-500 block">進度</label>
-                                                    <input type="range" min="0" max="100" step="25" className="w-full accent-indigo-600 mt-1" value={data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.progress||0} onChange={e=>updateCell(selectedCell.gIdx, selectedCell.cIdx, 'progress', parseInt(e.target.value))} />
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs font-bold text-slate-500 block">顏色</label>
-                                                    <input type="color" className="h-6 w-full rounded mt-1" value={data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.color&&!data[`${selectedCell.gIdx}-${selectedCell.cIdx}`].color.startsWith('bg-')?data[`${selectedCell.gIdx}-${selectedCell.cIdx}`].color:'#ffffff'} onChange={e=>updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', e.target.value)} />
+                                                <label className="text-xs font-bold text-slate-500 block">顏色</label>
+                                                <div className="flex gap-2 mt-1">
+                                                    <input type="color" className="h-6 w-full rounded"
+                                                        value={activeCellData.color && !activeCellData.color.startsWith('bg-') ? activeCellData.color : '#ffffff'}
+                                                        onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', e.target.value)}
+                                                    />
+                                                    <button onClick={() => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', '')} className="text-xs px-2 border rounded">重置</button>
                                                 </div>
                                             </div>
                                         </div>
-                                    )}
-                                    {!isAdmin && (data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.images||[]).length > 0 && (
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-500">圖片</label>
-                                            {data[`${selectedCell.gIdx}-${selectedCell.cIdx}`].images.map((img,i) => <img key={i} src={img} className="w-full rounded border" />)}
+                                        <div>
+                                            <label className="text-xs font-bold text-slate-500 block mb-1">Emoji 插圖</label>
+                                            <div className="flex flex-wrap gap-2 p-2 bg-slate-50 rounded h-32 overflow-y-auto">
+                                                {EMOJI_LIST.map(em => (
+                                                    <button key={em} onClick={() => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'emoji', activeCellData.emoji===em?'':em)}
+                                                        className={`p-1.5 rounded text-lg ${activeCellData.emoji===em?'bg-indigo-100 ring-2 ring-indigo-300':'hover:bg-white'}`}>
+                                                        {em}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                    )}
+                                    </div>
+                                    
+                                    <div className="p-3 border-t bg-slate-50 shrink-0 rounded-b-xl">
+                                        <button 
+                                            onClick={() => setSelectedCell(null)}
+                                            className="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-bold shadow hover:bg-indigo-700 active:scale-95 transition-transform"
+                                        >
+                                            完成
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="p-3 border-t bg-slate-50 shrink-0 rounded-b-xl">
-                                    <button onClick={() => setSelectedCell(null)} className="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-bold shadow">完成</button>
+                            </div>
+                        );
+                    })()}
+
+                    {/* File Modal */}
+                    {showFileModal && (
+                        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+                            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg h-[70vh] flex flex-col">
+                                <div className="p-3 border-b flex justify-between items-center bg-slate-50 rounded-t-xl">
+                                    <h3 className="font-bold">選擇檔案</h3>
+                                    <button onClick={()=>setShowFileModal(false)} className="text-slate-500">✕</button>
+                                </div>
+                                <div className="flex overflow-x-auto p-2 border-b gap-2">
+                                    {['All', ...new Set(fileList.map(f=>f.category||'未分類'))].map(cat=>(
+                                        <button key={cat} onClick={()=>setActiveTab(cat)} 
+                                            className={`px-3 py-1 rounded-full text-xs whitespace-nowrap ${activeTab===cat?'bg-indigo-600 text-white':'bg-slate-100 text-slate-600'}`}>
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                                    {fileList.filter(f => activeTab==='All' || (f.category||'未分類')===activeTab).map(f => (
+                                        <div key={f.id} onClick={()=>loadFileFromDB(f)} className="p-3 border rounded hover:border-indigo-500 cursor-pointer bg-white shadow-sm">
+                                            <div className="font-bold">{f.title}</div>
+                                            <div className="text-xs text-slate-500 flex justify-between mt-1">
+                                                <span>{f.category}</span>
+                                                <span>{f.updatedAt?new Date(f.updatedAt.seconds*1000).toLocaleDateString():''}</span>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -973,20 +837,23 @@
                     {showSaveAsModal && (
                         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
                             <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5">
-                                <h3 className="font-bold mb-4">另存新檔</h3>
-                                <input id="save-title" className="w-full border p-2 rounded mb-2" defaultValue={docMetadata.title} placeholder="Name" />
-                                <input id="save-cat" className="w-full border p-2 rounded mb-4" defaultValue={docMetadata.category} placeholder="Category" />
-                                <div className="flex justify-end gap-2">
-                                    <button onClick={()=>setShowSaveAsModal(false)} className="px-4 py-2 border rounded">Cancel</button>
-                                    <button onClick={()=>{
-                                        const t=document.getElementById('save-title').value;
-                                        const c=document.getElementById('save-cat').value;
-                                        if(t) saveAsNewFile(t,c);
-                                    }} className="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
+                                <h3 className="font-bold mb-4 text-lg">另存新檔</h3>
+                                <div className="space-y-3">
+                                    <input id="save-title" className="w-full border p-2 rounded" defaultValue={docMetadata.title} placeholder="檔案名稱"/>
+                                    <input id="save-cat" className="w-full border p-2 rounded" defaultValue={docMetadata.category} placeholder="分類"/>
+                                    <div className="flex justify-end gap-2 mt-4">
+                                        <button onClick={()=>setShowSaveAsModal(false)} className="px-4 py-2 rounded text-slate-600">取消</button>
+                                        <button onClick={()=>{
+                                            const t = document.getElementById('save-title').value;
+                                            const c = document.getElementById('save-cat').value;
+                                            if(t) saveAsNewFile(t, c);
+                                        }} className="px-4 py-2 bg-indigo-600 text-white rounded">儲存</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     )}
+
                 </div>
             );
         }
