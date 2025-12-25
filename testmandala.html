@@ -29,6 +29,7 @@
         body {
             font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
             background-color: #f8fafc;
+            /* Mobile Viewport Fix */
             height: 100dvh; 
             width: 100vw;
             overflow: hidden;
@@ -52,6 +53,7 @@
             background-color: white;
         }
 
+        /* Ensure grid lines are visible */
         .grid-border {
             border-color: #cbd5e1;
         }
@@ -102,6 +104,7 @@
                 logoLink: "https://2blog.ilc.edu.tw/linkc/",
                 driveFolder: "https://drive.google.com/drive/folders/1QuKStjyuWFGJYnULrckmexsN2ojKxjcD"
             },
+            // 使用您的專案設定
             firebase: {
                 apiKey: "AIzaSyAWY5zq9QQyO2LNveVtisgrin-ZoDGXmmo",
                 authDomain: "linkc-mandala.firebaseapp.com",
@@ -117,6 +120,7 @@
                 adminPasscode: '590123',
                 defaultGridSize: 3, 
                 defaultViewStyle: 'standard',
+                // 建議：若要跨平台存取，請設定固定的 App ID，例如 'my-mandala-app'
                 fixedAppId: '' 
             }
         };
@@ -169,13 +173,14 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 300; 
+                        const MAX_WIDTH = 300; // Thumbnail size
                         const scaleSize = MAX_WIDTH / img.width;
                         canvas.width = MAX_WIDTH;
                         canvas.height = img.height * scaleSize;
+                        
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+                        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compress to 70% quality JPEG
                     };
                     img.onerror = error => reject(error);
                 };
@@ -254,16 +259,16 @@
                 if (auth) {
                     const unsubscribe = auth.onAuthStateChanged(u => {
                         setUser(u);
-                        // Auth loaded
+                        if (u) {
+                            // Automatically fetch guest list on load
+                            if (!isAdmin) fetchFileList(false); 
+                        } else {
+                            setLoading(false);
+                        }
                     });
                     return () => unsubscribe();
                 }
-            }, []);
-
-            // -- Fetch Trigger when Admin/User changes --
-            useEffect(() => {
-                if (user) fetchFileList();
-            }, [user, isAdmin]);
+            }, [isAdmin]); // Re-run if admin status changes to fetch correct list
 
             // -- Sync Logic (Private -> Public) --
             const syncToPublic = async (docId, fileData) => {
@@ -275,16 +280,16 @@
 
                 try {
                     if (hasShare) {
+                        console.log(`[Sync] 同步到公共區: ${docId}`);
                         await db.doc(`${publicPath}/${docId}`).set({
                             ...fileData,
                             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                         }, { merge: true });
                     } else {
-                        // Attempt to delete if it exists (un-share)
-                        // Note: This might fail if public rules are read-only for delete, but we try.
+                        console.log(`[Sync] 從公共區移除 (若存在): ${docId}`);
                         await db.doc(`${publicPath}/${docId}`).delete();
                     }
-                } catch (e) { console.warn("Public sync failed (likely perm or not shared)", e); }
+                } catch (e) { console.warn("[Sync] Public sync failed (權限或網絡問題)", e); }
             };
 
             // -- Auto Save (Admin Only) --
@@ -305,6 +310,8 @@
                             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                         };
                         
+                        console.log(`[AutoSave] 寫入個人資料庫: ${path}/${currentDocId}`);
+                        
                         // 1. Save to Private
                         await db.doc(`${path}/${currentDocId}`).set(fileData, { merge: true });
                         
@@ -313,7 +320,7 @@
 
                         setSaveStatus('saved');
                     } catch (e) { 
-                        console.error("Auto-save fail", e);
+                        console.error("[AutoSave] 失敗", e);
                         setSaveStatus('error'); 
                     }
                 }, 2000);
@@ -356,27 +363,27 @@
                 let allFiles = [];
                 
                 // 1. Fetch Private Files (V1)
-                // We wrap this in try-catch so if it fails (permission), we continue to public
                 if (currentAdmin) {
                     try {
                         const userPath = `artifacts/${appId}/users/${auth.currentUser.uid}/${USER_CONFIG.system.collectionName}`;
+                        console.log(`[Fetch] 讀取個人檔案: ${userPath}`);
                         const userSnapshot = await db.collection(userPath).orderBy('updatedAt', 'desc').get();
                         allFiles = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'private' }));
                     } catch(err) {
-                        console.warn("Private fetch failed:", err);
+                        console.warn("[Fetch] 個人檔案讀取失敗 (可能是權限問題):", err);
                     }
                 }
 
                 // 2. Fetch Public Files (Legacy/Share)
-                // Always try fetching public files regardless of admin status
                 try {
                     const publicPath = `artifacts/${appId}/public/data/${USER_CONFIG.system.publicCollectionName}`;
+                    console.log(`[Fetch] 讀取公共檔案: ${publicPath}`);
                     const publicSnapshot = await db.collection(publicPath).orderBy('updatedAt', 'desc').get();
                     const publicFiles = publicSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), source: 'public' }));
                     allFiles = [...allFiles, ...publicFiles];
-                } catch(err) { console.warn("Public fetch failed:", err); }
+                } catch(err) { console.warn("[Fetch] 公共檔案讀取失敗:", err); }
 
-                // Filter for Guest (Admin sees all)
+                // Filter for Guest
                 if (!currentAdmin) {
                     allFiles = allFiles.filter(f => {
                         const hasTagIndex = f.tagsIndex && f.tagsIndex.includes('share');
@@ -386,39 +393,35 @@
                     });
                 }
 
-                // Dedup (If same ID exists in both, prefer private version)
+                // Dedup
                 const uniqueFilesMap = new Map();
                 allFiles.forEach(file => {
                     if (!uniqueFilesMap.has(file.id)) {
                         uniqueFilesMap.set(file.id, file);
                     } else if (file.source === 'private') {
-                        // Overwrite public version with private version
                         uniqueFilesMap.set(file.id, file);
                     }
                 });
                 const uniqueFiles = Array.from(uniqueFilesMap.values());
                 
-                // Sort
                 uniqueFiles.sort((a, b) => {
                     const tA = a.updatedAt ? a.updatedAt.seconds : 0;
                     const tB = b.updatedAt ? b.updatedAt.seconds : 0;
                     return tB - tA;
                 });
 
+                console.log(`[Fetch] 總共載入 ${uniqueFiles.length} 個檔案`);
                 setFileList(uniqueFiles);
                 if (autoSwitchToGallery && !currentDocId) setViewMode('gallery');
                 setLoading(false);
             };
 
             const loadFile = (file) => {
+                console.log(`[Load] 開啟檔案 ID: ${file.id} (${file.source})`);
                 setData(file.cells || {});
                 setGridSize(file.gridSize || 3);
                 
                 if (file.source === 'public' && isAdmin) {
-                    // Opening a public file as Admin. 
-                    // If we have a private copy (logic handled in fetch), it shouldn't be 'public'.
-                    // If it is 'public', it means we don't have a private copy.
-                    // Treating as new copy to avoid perm issues writing to public directly.
                     setCurrentDocId(null); 
                     setDocMetadata({ title: file.title + " (Copy)", category: file.category || '一般' });
                     alert("您開啟了一個公共檔案。儲存時將建立為您的私人新檔案。");
@@ -446,6 +449,7 @@
 
                     const newDoc = await db.collection(path).add(fileData);
                     const newId = newDoc.id;
+                    console.log(`[SaveAs] 新增檔案成功: ${newId}`);
                     await syncToPublic(newId, fileData);
 
                     setCurrentDocId(newId);
@@ -453,7 +457,10 @@
                     setSaveStatus('saved');
                     setShowSaveAsModal(false);
                     alert("儲存成功！");
-                } catch (e) { alert("儲存失敗: " + e.message); }
+                } catch (e) { 
+                    console.error("[SaveAs] 失敗", e);
+                    alert("儲存失敗: " + e.message); 
+                }
                 setLoading(false);
             };
 
@@ -465,6 +472,7 @@
                     await db.doc(`${path}/${fileId}`).delete();
                     const pubPath = `artifacts/${appId}/public/data/${USER_CONFIG.system.publicCollectionName}`;
                     await db.doc(`${pubPath}/${fileId}`).delete().catch(()=>{});
+                    console.log(`[Delete] 檔案刪除成功: ${fileId}`);
                     alert("已刪除");
                     fetchFileList(true, false);
                 } catch (e) { alert("刪除失敗"); }
@@ -502,6 +510,7 @@
                 }
             };
 
+            // ... (Load/Export MD/Update Cell/Image logic same) ...
             const handleLoadLocal = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -851,7 +860,7 @@
                                         });
                                     }} className="w-full py-2 bg-white border rounded text-xs hover:bg-slate-50">📸 下載圖片</button>
                                 </div>
-                                <div className="text-[10px] text-slate-400 mt-4 break-all">AppID: {appId}</div>
+                                <div className="text-[10px] text-slate-400 mt-4 break-all">AppID: {appId} <br/> UID: {user?.uid?.slice(0,6)}...</div>
                             </div>
                         )}
                         {!isAdmin && (
