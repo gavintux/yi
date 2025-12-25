@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Linkc Mandala Chart</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+
+    <!-- HTML2Canvas for Image Export -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+            background-color: #f8fafc;
+            height: 100dvh; 
+            width: 100vw;
+            overflow: hidden;
+            position: fixed;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 3px;
+        }
+        
+        .print-container {
+            background-color: white;
+        }
+
+        .grid-border {
+            border-color: #cbd5e1;
+        }
+
+        /* Thumbnail Grid Styles */
+        .thumb-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 100%;
+            aspect-ratio: 1/1;
+            gap: 1px;
+            background-color: #e2e8f0;
+            border: 1px solid #cbd5e1;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+        .thumb-cell {
+            background-color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            padding: 1px;
+            text-align: center;
+            overflow: hidden;
+            color: #475569;
+            line-height: 1;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="root" class="h-full w-full"></div>
+
+    <script type="text/babel">
+        // ==========================================
+        // CONFIG
+        // ==========================================
+        const USER_CONFIG = {
+            seo: {
+                title: "Linkc Mandala Garden",
+                siteName: "Linkc Mandala Chart",
+                description: "曼陀羅思維花園", 
+                keywords: "曼陀羅，工作，生活，我，愛，玩",
+                author: "Linkc",
+                logoImage: "https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f", 
+                logoLink: "https://2blog.ilc.edu.tw/linkc/",
+                driveFolder: "https://drive.google.com/drive/folders/1QuKStjyuWFGJYnULrckmexsN2ojKxjcD"
+            },
+            firebase: {
+                apiKey: "AIzaSyAWY5zq9QQyO2LNveVtisgrin-ZoDGXmmo",
+                authDomain: "linkc-mandala.firebaseapp.com",
+                projectId: "linkc-mandala",
+                storageBucket: "linkc-mandala.firebasestorage.app",
+                messagingSenderId: "349060628914",
+                appId: "1:349060628914:web:f093e6b30c5a6c79da24ab",
+                measurementId: "G-LK3WK0T9R8"
+            },
+            system: {
+                // IMPORTANT: Reverted to v1 to find your old files!
+                collectionName: 'mandala_charts_v1', 
+                adminPasscode: '590123',
+                defaultGridSize: 3, 
+                defaultViewStyle: 'standard',
+                // Optional: Fixed App ID for cross-environment access (e.g., 'my-mandala-app')
+                // If empty, it uses the dynamic environment ID.
+                fixedAppId: '' 
+            }
+        };
+
+        // ==========================================
+        // Firebase Init
+        // ==========================================
+        let app, auth, db;
+        try {
+            app = firebase.initializeApp(USER_CONFIG.firebase);
+            auth = firebase.auth();
+            db = firebase.firestore();
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+        }
+
+        // ==========================================
+        // Utils
+        // ==========================================
+        const getSyncedCellCoordinates = (gridIndex, cellIndex) => {
+            if (gridIndex === 4 && cellIndex !== 4) return { targetGrid: cellIndex, targetCell: 4 };
+            if (gridIndex !== 4 && cellIndex === 4) return { targetGrid: 4, targetCell: gridIndex };
+            return null;
+        };
+
+        const extractTags = (text) => {
+            if (!text) return [];
+            const regex = /#[\w\u4e00-\u9fa5]+/g;
+            const matches = text.match(regex);
+            return matches ? matches.map(t => t.substring(1)) : [];
+        };
+
+        const collectAllTagsFromData = (cellsData) => {
+            const tags = new Set();
+            Object.values(cellsData).forEach(cell => {
+                if (cell.tags) cell.tags.forEach(t => tags.add(t));
+                const txt = (cell.title || "") + " " + (cell.note || "");
+                extractTags(txt).forEach(t => tags.add(t));
+            });
+            return Array.from(tags);
+        };
+
+        const compressImage = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 300; 
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+                    };
+                    img.onerror = error => reject(error);
+                };
+                reader.onerror = error => reject(error);
+            });
+        };
+
+        const EMOJI_LIST = ['🎯', '📅', '💰', '❤️', '✈️', '📝', '⭐', '🔥', '✅', '🚧', '💡', '🚩', '⚠️', '📈', '🏠', '🧠', '🎨', '🚀', '🎁', '🔔'];
+
+        // ==========================================
+        // App Component
+        // ==========================================
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // Lucide Icon
+        const LucideIcon = React.memo(({ name, className = "" }) => {
+            const ref = useRef(null);
+            useEffect(() => {
+                if (ref.current && window.lucide && window.lucide.icons && window.lucide.icons[name]) {
+                    const svg = window.lucide.createElement(window.lucide.icons[name]);
+                    svg.setAttribute('width', '100%');
+                    svg.setAttribute('height', '100%');
+                    svg.style.display = 'block';
+                    ref.current.innerHTML = '';
+                    ref.current.appendChild(svg);
+                } else if (ref.current) { ref.current.innerHTML = ''; }
+            }, [name]);
+            return <span ref={ref} className={`inline-block ${className}`}></span>;
+        });
+
+        function App() {
+            // -- State --
+            const [user, setUser] = useState(null);
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [showAdminLogin, setShowAdminLogin] = useState(false);
+            
+            const [currentDocId, setCurrentDocId] = useState(null);
+            const [docMetadata, setDocMetadata] = useState({ title: '未命名檔案', category: '一般' });
+            
+            const [data, setData] = useState({}); 
+            const [gridSize, setGridSize] = useState(USER_CONFIG.system.defaultGridSize); 
+            const [viewStyle, setViewStyle] = useState(USER_CONFIG.system.defaultViewStyle);
+            
+            const [selectedCell, setSelectedCell] = useState(null);
+            const [searchQuery, setSearchQuery] = useState("");
+            const [activeTags, setActiveTags] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [saveStatus, setSaveStatus] = useState('saved');
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
+            const [isEditingTitle, setIsEditingTitle] = useState(false);
+
+            const [showSaveAsModal, setShowSaveAsModal] = useState(false);
+            const [fileList, setFileList] = useState([]);
+            const [viewMode, setViewMode] = useState('gallery'); // 'gallery' or 'editor'
+
+            const fileInputRef = useRef(null);
+            const imgInputRef = useRef(null);
+            
+            // App ID Logic: Use fixed ID if provided, otherwise dynamic
+            const appId = USER_CONFIG.system.fixedAppId || (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
+
+            // -- Auth --
+            useEffect(() => {
+                const initAuth = async () => {
+                    if (!auth) { setLoading(false); return; }
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            try { await auth.signInWithCustomToken(__initial_auth_token); } 
+                            catch (tokenError) { await auth.signInAnonymously(); }
+                        } else { await auth.signInAnonymously(); }
+                    } catch (e) {
+                        console.error("Auth failed", e);
+                        setLoading(false);
+                    }
+                };
+                initAuth();
+                if (auth) {
+                    const unsubscribe = auth.onAuthStateChanged(u => {
+                        setUser(u);
+                        // Once user is ready, load the gallery
+                        if (u) fetchFileList(); 
+                        else setLoading(false);
+                    });
+                    return () => unsubscribe();
+                }
+            }, []);
+
+            // -- Auto Save (Admin) --
+            useEffect(() => {
+                if (!user || !currentDocId || !db || !isAdmin) return;
+                const timer = setTimeout(async () => {
+                    setSaveStatus('saving');
+                    try {
+                        const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
+                        const allDocTags = collectAllTagsFromData(data);
+                        await db.doc(`${path}/${currentDocId}`).update({
+                            cells: data,
+                            gridSize: gridSize,
+                            title: docMetadata.title,
+                            category: docMetadata.category,
+                            tagsIndex: allDocTags,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        setSaveStatus('saved');
+                    } catch (e) { setSaveStatus('error'); }
+                }, 2000);
+                return () => clearTimeout(timer);
+            }, [data, gridSize, user, currentDocId, docMetadata, isAdmin]);
+
+            // -- Admin Logic --
+            const handleAdminLogin = (pass) => {
+                if (pass === USER_CONFIG.system.adminPasscode) {
+                    setIsAdmin(true);
+                    setShowAdminLogin(false);
+                    // Refresh list to show all files (including hidden ones)
+                    fetchFileList(true); 
+                } else {
+                    alert("密碼錯誤");
+                }
+            };
+
+            // -- File Actions --
+            const fetchFileList = async (forceAdmin = false) => {
+                if (!db || !auth.currentUser) return;
+                setLoading(true);
+                try {
+                    const path = `artifacts/${appId}/users/${auth.currentUser.uid}/${USER_CONFIG.system.collectionName}`;
+                    const snapshot = await db.collection(path).orderBy('updatedAt', 'desc').get();
+                    let files = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    const currentAdmin = forceAdmin || isAdmin;
+                    if (!currentAdmin) {
+                        files = files.filter(f => {
+                            const hasTagIndex = f.tagsIndex && f.tagsIndex.includes('share');
+                            const rawContent = JSON.stringify(f.cells || "");
+                            const hasRawTag = rawContent.includes('#share') || (f.title && f.title.includes('#share'));
+                            return hasTagIndex || hasRawTag;
+                        });
+                    }
+
+                    setFileList(files);
+                    if (!currentDocId) setViewMode('gallery');
+                } catch (e) { console.error(e); }
+                setLoading(false);
+            };
+
+            const loadFile = (file) => {
+                setData(file.cells || {});
+                setGridSize(file.gridSize || 3);
+                setCurrentDocId(file.id);
+                setDocMetadata({ title: file.title || '未命名檔案', category: file.category || '一般' });
+                setViewMode('editor');
+                setIsSidebarOpen(false);
+            };
+
+            const saveAsNewFile = async (title, category) => {
+                if (!user || !db || !isAdmin) return;
+                setLoading(true);
+                try {
+                    const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
+                    const allDocTags = collectAllTagsFromData(data);
+                    const newDoc = await db.collection(path).add({
+                        title, category, cells: data, gridSize,
+                        tagsIndex: allDocTags,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    setCurrentDocId(newDoc.id);
+                    setDocMetadata({ title, category });
+                    setSaveStatus('saved');
+                    setShowSaveAsModal(false);
+                } catch (e) { alert("儲存失敗"); }
+                setLoading(false);
+            };
+
+            const handleFileMenu = (e) => {
+                const action = e.target.value;
+                e.target.value = ""; // Reset selector
+                
+                if (action === "new") {
+                    if (window.confirm("清空目前內容以建立新檔案？")) {
+                        setData({}); 
+                        setCurrentDocId(null); 
+                        setDocMetadata({title:'未命名檔案', category:'一般'});
+                        setViewMode('editor');
+                        setIsSidebarOpen(false);
+                        setTimeout(() => alert("已建立新檔案，請記得儲存。"), 100);
+                    }
+                } else if (action === "save") {
+                    currentDocId ? alert("已自動儲存") : setShowSaveAsModal(true);
+                } else if (action === "save_as") {
+                    setShowSaveAsModal(true);
+                } else if (action === "gallery") {
+                    setViewMode('gallery');
+                    fetchFileList();
+                    setCurrentDocId(null);
+                    setIsSidebarOpen(false);
+                } else if (action === "import") {
+                    fileInputRef.current?.click();
+                } else if (action === "export_drive") {
+                    handleExportMarkdown(true);
+                }
+            };
+
+            // ... (Load Local & Export MD functions) ...
+            const handleLoadLocal = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const parsed = JSON.parse(ev.target.result);
+                        if (confirm("匯入將覆蓋目前內容，確定？")) {
+                            setData(parsed.cells || {});
+                            setGridSize(parsed.gridSize || 3);
+                            setCurrentDocId(null);
+                            setDocMetadata(parsed.metadata || { title: '匯入檔案', category: '一般' });
+                            setViewMode('editor');
+                            setIsSidebarOpen(false);
+                        }
+                    } catch(err) { alert("格式錯誤"); }
+                    e.target.value = '';
+                };
+                reader.readAsText(file);
+            };
+
+            const handleExportMarkdown = (openDrive = false) => {
+                const now = new Date().toISOString().split('T')[0];
+                let md = `---\ncreated: ${now}\ncategories: ${docMetadata.category}\ntags:\n`;
+                const tags = collectAllTagsFromData(data);
+                tags.forEach(t => md += `  - ${t}\n`);
+                md += `---\n\n# ${docMetadata.title}\n\n`;
+                Object.keys(data).sort().forEach(key => {
+                    const cell = data[key];
+                    if (cell.title) {
+                        md += `## [${key}] ${cell.title}\n`;
+                        if(cell.note) md += `${cell.note}\n\n`;
+                    }
+                });
+                const blob = new Blob([md], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${docMetadata.title}.md`;
+                a.click();
+                if (openDrive) setTimeout(() => window.open(USER_CONFIG.seo.driveFolder, '_blank'), 500);
+            };
+
+            // ... (Update Cell, Add Image logic) ...
+            const updateCell = (gridIdx, cellIdx, field, value) => {
+                if (!isAdmin) return;
+                const key = `${gridIdx}-${cellIdx}`;
+                const currentCell = data[key] || {};
+                let updatedData = { ...data };
+                let cellUpdates = { ...currentCell, updatedAt: new Date().toISOString() };
+                if (field === 'progress_click') {
+                    const currentP = currentCell.progress || 0;
+                    const nextP = (currentP + 25);
+                    cellUpdates.progress = nextP > 100 ? 0 : nextP;
+                } else if (value !== undefined) {
+                    cellUpdates[field] = value;
+                }
+                if (field === 'title' || field === 'note') {
+                    const tVal = field === 'title' ? value : (currentCell.title || "");
+                    const nVal = field === 'note' ? value : (currentCell.note || "");
+                    cellUpdates.tags = extractTags((tVal || "") + " " + (nVal || ""));
+                }
+                updatedData[key] = cellUpdates;
+                if (gridSize === 9) {
+                    const sync = getSyncedCellCoordinates(gridIdx, cellIdx);
+                    if (sync) {
+                        const syncKey = `${sync.targetGrid}-${sync.targetCell}`;
+                        const syncCell = data[syncKey] || {};
+                        if (field === 'title' || field === 'color') {
+                            const syncedTitle = field === 'title' ? value : (syncCell.title || "");
+                            updatedData[syncKey] = {
+                                ...syncCell,
+                                [field]: value,
+                                tags: field === 'title' ? extractTags(syncedTitle + " " + (syncCell.note || "")) : syncCell.tags
+                            };
+                        }
+                    }
+                }
+                setData(updatedData);
+            };
+            const addImage = async (file) => {
+                if (!selectedCell || !isAdmin) return;
+                try {
+                    const base64 = await compressImage(file);
+                    const prevImages = selectedCell.data.images || [];
+                    updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', [...prevImages, base64]);
+                } catch (e) { alert("Error"); }
+            };
+            const addImageUrl = (url) => {
+                if (!selectedCell || !url || !isAdmin) return;
+                const prevImages = selectedCell.data.images || [];
+                updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', [...prevImages, url]);
+            };
+
+            // --- Rendering ---
+            const filteredCells = useMemo(() => {
+                let keys = Object.keys(data);
+                if (searchQuery) {
+                    const q = searchQuery.toLowerCase();
+                    keys = keys.filter(k => {
+                        const cell = data[k];
+                        const txt = `${cell.title||''} ${cell.note||''}`.toLowerCase();
+                        return q.split(' ').every(t => txt.includes(t));
+                    });
+                }
+                if (activeTags.length) {
+                    keys = keys.filter(k => activeTags.every(t => (data[k].tags||[]).includes(t)));
+                }
+                return new Set(keys);
+            }, [data, searchQuery, activeTags]);
+
+            const allTags = useMemo(() => collectAllTagsFromData(data), [data]);
+
+            const renderCell = (gIdx, cIdx) => {
+                const cellData = data[`${gIdx}-${cIdx}`] || {};
+                const isMatched = searchQuery || activeTags.length ? filteredCells.has(`${gIdx}-${cIdx}`) : true;
+                const isCenter = gridSize === 9 ? (gIdx === 4 && cIdx === 4) : (cIdx === 4);
+                let bgColor = cellData.color || 'bg-white';
+                if (!cellData.color) {
+                    if (isCenter) bgColor = 'bg-yellow-100'; 
+                    else if (gridSize === 9 && cIdx === 4) bgColor = 'bg-indigo-50'; 
+                }
+                const opacity = isMatched ? 'opacity-100' : 'opacity-20 grayscale';
+                const style = { backgroundColor: bgColor.startsWith('bg-') ? undefined : bgColor };
+                const bgClass = bgColor.startsWith('bg-') ? bgColor : '';
+                const titleClass = viewStyle === 'compact' ? 'text-[10px]' : 'text-xs md:text-sm';
+                const hasImage = cellData.images && cellData.images.length > 0;
+
+                return (
+                    <div 
+                        key={`${gIdx}-${cIdx}`}
+                        className={`relative grid-border p-1 flex flex-col cursor-pointer hover:shadow-md ${opacity} overflow-hidden h-full w-full ${bgClass}`}
+                        style={style}
+                        onClick={() => setSelectedCell({ gIdx, cIdx, data: cellData })}
+                    >
+                        {viewStyle === 'compact' ? (
+                            <div className="flex flex-col items-center justify-center h-full text-center">
+                                {cellData.emoji && <span className="text-sm">{cellData.emoji}</span>}
+                                {hasImage && <div className="w-2 h-2 rounded-full bg-blue-500 mb-0.5"></div>}
+                                <span className={`${titleClass} font-medium leading-tight line-clamp-2`}>{cellData.title}</span>
+                                <div className="absolute bottom-0 left-0 h-1 transition-all" style={{width:`${cellData.progress||0}%`, backgroundColor: cellData.progress===100?'#22c55e':'#6366f1'}}></div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col h-full">
+                                <div className="flex justify-between items-start mb-1 shrink-0">
+                                    <span className={`${titleClass} font-bold text-slate-800 leading-snug line-clamp-2 break-all`}>{cellData.title}</span>
+                                    {isAdmin && <div onClick={(e) => { e.stopPropagation(); updateCell(gIdx, cIdx, 'progress_click'); }}
+                                        className="text-[10px] font-mono text-slate-400 hover:text-indigo-600 shrink-0 ml-1 border rounded px-1">{cellData.progress||0}%</div>}
+                                </div>
+                                {hasImage && (
+                                    <div className="flex-1 w-full bg-slate-100 rounded overflow-hidden relative mb-1" style={{minHeight: '20px'}}>
+                                        <img src={cellData.images[0]} className="w-full h-full object-cover absolute inset-0" />
+                                    </div>
+                                )}
+                                {!hasImage && cellData.note && viewStyle !== 'compact' && (
+                                    <p className="text-[10px] text-slate-500 line-clamp-2 md:line-clamp-3 whitespace-pre-wrap flex-1">{cellData.note}</p>
+                                )}
+                                <div className="mt-auto pt-1 flex justify-between items-end border-t border-black/5">
+                                    <div className="flex gap-1 items-center">
+                                        {(cellData.attachments?.length>0) && <span className="text-[10px]">📎</span>}
+                                        {cellData.emoji && <span className="text-xs">{cellData.emoji}</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            const renderThumbnail = (fileData) => {
+                const cells = fileData.cells || {};
+                const size = fileData.gridSize || 3;
+                return (
+                    <div className="thumb-grid shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-white" onClick={() => loadFile(fileData)}>
+                        {Array.from({ length: 9 }).map((_, i) => {
+                            const key = size === 9 ? `4-${i}` : `4-${i}`;
+                            const cell = cells[key] || {};
+                            const bgColor = cell.color && !cell.color.startsWith('bg-') ? cell.color : 'white';
+                            return <div key={i} className="thumb-cell" style={{backgroundColor: bgColor}}>{cell.title||""}</div>
+                        })}
+                    </div>
+                );
+            };
+
+            // --- VIEW: Gallery ---
+            if (viewMode === 'gallery') {
+                return (
+                    <div className="h-full w-full bg-slate-100 flex flex-col">
+                        <div className="bg-white p-4 shadow-sm z-10 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <img src={USER_CONFIG.seo.logoImage} className="w-10 h-10 rounded" />
+                                <div>
+                                    <h1 className="font-bold text-lg text-slate-800">Mandala Gallery</h1>
+                                    <p className="text-xs text-slate-500">{isAdmin ? 'Admin Mode' : 'Guest Mode (#share)'}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => { if(isAdmin) { setViewMode('editor'); setData({}); setCurrentDocId(null); } else setShowAdminLogin(true); }} className="text-indigo-600 font-bold text-sm">
+                                {isAdmin ? 'Go to Editor ➡' : 'Login 🔒'}
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {loading ? <div className="text-center p-10 text-slate-500">載入中...</div> : (
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                    {fileList.map(file => (
+                                        <div key={file.id} className="flex flex-col items-center gap-2 group">
+                                            {renderThumbnail(file)}
+                                            <span className="text-xs font-bold text-slate-700 truncate w-24 text-center group-hover:text-indigo-600">{file.title}</span>
+                                        </div>
+                                    ))}
+                                    {fileList.length === 0 && <div className="col-span-full text-center text-slate-400 py-10">尚無檔案</div>}
+                                </div>
+                            )}
+                        </div>
+                        {showAdminLogin && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                                <div className="bg-white rounded-lg p-6 w-full max-w-xs shadow-xl">
+                                    <h3 className="font-bold mb-4 text-center">Admin Login</h3>
+                                    <input type="password" id="admin-pass" className="w-full border p-2 rounded mb-4" placeholder="Enter Passcode" />
+                                    <div className="flex gap-2">
+                                        <button onClick={()=>setShowAdminLogin(false)} className="flex-1 py-2 border rounded">Cancel</button>
+                                        <button onClick={()=>handleAdminLogin(document.getElementById('admin-pass').value)} className="flex-1 py-2 bg-indigo-600 text-white rounded">Login</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            // --- VIEW: Editor ---
+            return (
+                <div className="flex flex-col md:flex-row h-full w-full overflow-hidden bg-slate-100">
+                    {/* Header Mobile */}
+                    <div className="md:hidden bg-white p-2 border-b flex justify-between items-center shadow-sm shrink-0 z-30 h-14">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            <button onClick={() => { setViewMode('gallery'); fetchFileList(); }} className="text-slate-500 mr-2 text-xl">⬅</button>
+                            <img src={USER_CONFIG.seo.logoImage} className="w-8 h-8 rounded" />
+                            <div className="flex flex-col overflow-hidden">
+                                {isAdmin && isEditingTitle ? (
+                                    <input autoFocus className="text-sm font-bold border rounded px-1" value={docMetadata.title} onBlur={()=>setIsEditingTitle(false)} onChange={e=>setDocMetadata({...docMetadata, title:e.target.value})} />
+                                ) : (
+                                    <span className="font-bold text-slate-800 truncate" onClick={()=>isAdmin && setIsEditingTitle(true)}>{docMetadata.title}</span>
+                                )}
+                            </div>
+                        </div>
+                        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 border rounded text-slate-600">{isSidebarOpen?'✕':'☰'}</button>
+                    </div>
+
+                    {/* Sidebar */}
+                    <aside className={`fixed md:relative inset-0 md:inset-auto z-40 bg-white md:w-72 border-r border-slate-200 transform transition-transform duration-300 ease-in-out flex flex-col shadow-xl md:shadow-none ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-start bg-slate-50 md:bg-white">
+                            <div className="w-full">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <button onClick={() => { setViewMode('gallery'); fetchFileList(); }} className="text-xs bg-slate-200 px-2 py-1 rounded hover:bg-slate-300">⬅ Gallery</button>
+                                    {!isAdmin && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Read Only</span>}
+                                </div>
+                                {isAdmin ? (
+                                    <div className="flex items-center gap-2 bg-white border p-1 rounded mb-1">
+                                        <div className="flex-1">
+                                            <label className="text-[10px] text-slate-400 block">檔名</label>
+                                            <input className="text-sm font-bold text-indigo-700 w-full outline-none" value={docMetadata.title} onChange={e=>setDocMetadata({...docMetadata, title:e.target.value})} />
+                                        </div>
+                                        <span className="text-slate-400">✏️</span>
+                                    </div>
+                                ) : <h1 className="font-bold text-lg text-slate-800">{docMetadata.title}</h1>}
+                                {isAdmin && <div className="text-[10px] mt-1 text-green-600">{saveStatus==='saving'?'Saving...':'Saved'}</div>}
+                            </div>
+                            <button onClick={()=>setIsSidebarOpen(false)} className="md:hidden text-2xl">&times;</button>
+                        </div>
+
+                        {/* Sidebar Controls */}
+                        {isAdmin && (
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                    <label className="text-xs font-bold text-slate-600 mb-1 block">檔案操作</label>
+                                    <select className="w-full text-sm p-2 border rounded bg-white" onChange={handleFileMenu} value="">
+                                        <option value="" disabled>選擇...</option>
+                                        <option value="new">📄 開新檔案</option>
+                                        <option value="save">💾 儲存</option>
+                                        <option value="save_as">💾 另存新檔...</option>
+                                        <option value="gallery">📂 回到藝廊 (開啟舊檔)</option>
+                                        <option value="export_drive">📤 下載 MD 並開啟雲端硬碟</option>
+                                    </select>
+                                    <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleLoadLocal} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-600">檢視設定</label>
+                                    <div className="flex gap-2">
+                                        <button onClick={()=>setGridSize(3)} className={`flex-1 py-1.5 text-xs border rounded ${gridSize===3?'bg-indigo-600 text-white':'bg-white'}`}>3x3</button>
+                                        <button onClick={()=>setGridSize(9)} className={`flex-1 py-1.5 text-xs border rounded ${gridSize===9?'bg-indigo-600 text-white':'bg-white'}`}>9x9</button>
+                                    </div>
+                                    <select className="w-full text-sm p-1.5 border rounded" value={viewStyle} onChange={e=>setViewStyle(e.target.value)}>
+                                        <option value="standard">標準模式</option>
+                                        <option value="simple">簡單模式</option>
+                                        <option value="compact">精簡模式</option>
+                                    </select>
+                                </div>
+                                {allTags.length > 0 && (
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-600 mb-1 block">標籤過濾</label>
+                                        <div className="flex flex-wrap gap-1">
+                                            {allTags.map(t => (
+                                                <button key={t} onClick={() => setActiveTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                                                    className={`text-[10px] px-2 py-1 rounded-full border ${activeTags.includes(t)?'bg-indigo-100 text-indigo-700 border-indigo-300':'bg-white text-slate-600'}`}>
+                                                    #{t}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                <div>
+                                    <button onClick={()=>{
+                                        const el = document.getElementById('mandala-grid-container');
+                                        if(el) html2canvas(el).then(canvas => {
+                                            const a = document.createElement('a'); a.href = canvas.toDataURL(); a.download = 'mandala.png'; a.click();
+                                        });
+                                    }} className="w-full py-2 bg-white border rounded text-xs hover:bg-slate-50">📸 下載圖片</button>
+                                </div>
+                            </div>
+                        )}
+                        {!isAdmin && (
+                            <div className="p-4">
+                                <label className="text-xs font-bold text-slate-600">搜尋</label>
+                                <input className="w-full p-2 text-sm border rounded mt-1" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} />
+                            </div>
+                        )}
+                    </aside>
+
+                    {/* Main Grid */}
+                    <main className="flex-1 relative overflow-hidden flex flex-col h-full w-full">
+                        <div className="flex-1 overflow-auto bg-slate-100 flex items-start justify-start md:justify-center p-2 md:p-4">
+                            <div id="mandala-grid-container" className={`bg-white shadow-xl p-1 ${gridSize===9?'min-w-[800px] min-h-[800px]':'w-full max-w-2xl aspect-square min-w-[300px]'}`}>
+                                {gridSize===3 ? (
+                                    <div className="grid grid-cols-3 grid-rows-3 gap-1 bg-slate-300 border-2 border-slate-300 h-full w-full">
+                                        {Array.from({length:9}).map((_,i)=>renderCell(4,i))}
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-3 grid-rows-3 gap-1 bg-slate-300 border-2 border-slate-300 h-full w-full">
+                                        {Array.from({length:9}).map((_,i)=>(
+                                            <div key={i} className={`grid grid-cols-3 grid-rows-3 gap-px bg-slate-200 border w-full h-full ${i===4?'border-indigo-400 ring-2 ring-indigo-400':''}`}>
+                                                {Array.from({length:9}).map((_,j)=>renderCell(i,j))}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Editor Modal (Same as before) */}
+                    {selectedCell && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setSelectedCell(null)}>
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                                <div className="bg-indigo-600 p-3 flex justify-between items-center text-white shrink-0 rounded-t-xl">
+                                    <h3 className="font-bold">{isAdmin ? '編輯儲存格' : '詳細內容'}</h3>
+                                    <button onClick={() => setSelectedCell(null)} className="p-1 hover:bg-white/20 rounded">✕</button>
+                                </div>
+                                <div className="p-4 space-y-4 overflow-y-auto flex-1">
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 block">標題</label>
+                                        {isAdmin ? (
+                                            <input className="w-full border p-2 rounded" value={data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.title||''} onChange={e=>updateCell(selectedCell.gIdx, selectedCell.cIdx, 'title', e.target.value)} />
+                                        ) : <div className="text-lg font-bold">{data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.title}</div>}
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 block">備註</label>
+                                        {isAdmin ? (
+                                            <textarea className="w-full border p-2 rounded h-24" value={data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.note||''} onChange={e=>updateCell(selectedCell.gIdx, selectedCell.cIdx, 'note', e.target.value)} />
+                                        ) : <div className="text-sm whitespace-pre-wrap">{data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.note}</div>}
+                                    </div>
+                                    {isAdmin && (
+                                        <div className="space-y-4">
+                                            <div className="bg-slate-50 p-3 rounded border">
+                                                <label className="text-xs font-bold text-slate-500 block mb-2">圖片附檔</label>
+                                                <div className="flex gap-2 mb-2">
+                                                    <input id="img-url-input" className="flex-1 text-xs p-1 border rounded" placeholder="網址..." />
+                                                    <button onClick={()=>{ addImageUrl(document.getElementById('img-url-input').value); document.getElementById('img-url-input').value=''; }} className="bg-white border px-2 py-1 rounded text-xs">加入</button>
+                                                </div>
+                                                <input type="file" ref={imgInputRef} accept="image/*" className="hidden" onChange={(e)=>addImage(e.target.files[0])} />
+                                                <button onClick={()=>imgInputRef.current?.click()} className="w-full py-1 bg-white border border-dashed rounded text-xs text-slate-500">＋ 上傳本機圖片</button>
+                                                <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+                                                    {(data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.images||[]).map((img, idx) => (
+                                                        <div key={idx} className="relative w-16 h-16 shrink-0 rounded overflow-hidden border">
+                                                            <img src={img} className="w-full h-full object-cover" />
+                                                            <button onClick={()=>{ 
+                                                                const newImgs = data[`${selectedCell.gIdx}-${selectedCell.cIdx}`].images.filter((_,i)=>i!==idx);
+                                                                updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', newImgs);
+                                                            }} className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center text-[8px]">✕</button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-500 block mb-1">Emoji</label>
+                                                <div className="flex flex-wrap gap-2 p-2 bg-slate-50 rounded h-24 overflow-y-auto">
+                                                    {EMOJI_LIST.map(em => (
+                                                        <button key={em} onClick={()=>updateCell(selectedCell.gIdx, selectedCell.cIdx, 'emoji', data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.emoji===em?'':em)} className={`p-1 text-lg rounded ${data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.emoji===em?'bg-indigo-200':''}`}>{em}</button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-xs font-bold text-slate-500 block">進度</label>
+                                                    <input type="range" min="0" max="100" step="25" className="w-full accent-indigo-600 mt-1" value={data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.progress||0} onChange={e=>updateCell(selectedCell.gIdx, selectedCell.cIdx, 'progress', parseInt(e.target.value))} />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-bold text-slate-500 block">顏色</label>
+                                                    <input type="color" className="h-6 w-full rounded mt-1" value={data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.color&&!data[`${selectedCell.gIdx}-${selectedCell.cIdx}`].color.startsWith('bg-')?data[`${selectedCell.gIdx}-${selectedCell.cIdx}`].color:'#ffffff'} onChange={e=>updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', e.target.value)} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {!isAdmin && (data[`${selectedCell.gIdx}-${selectedCell.cIdx}`]?.images||[]).length > 0 && (
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-500">圖片</label>
+                                            {data[`${selectedCell.gIdx}-${selectedCell.cIdx}`].images.map((img,i) => <img key={i} src={img} className="w-full rounded border" />)}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-3 border-t bg-slate-50 shrink-0 rounded-b-xl">
+                                    <button onClick={() => setSelectedCell(null)} className="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-bold shadow">完成</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Save As Modal */}
+                    {showSaveAsModal && (
+                        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+                            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5">
+                                <h3 className="font-bold mb-4">另存新檔</h3>
+                                <input id="save-title" className="w-full border p-2 rounded mb-2" defaultValue={docMetadata.title} placeholder="Name" />
+                                <input id="save-cat" className="w-full border p-2 rounded mb-4" defaultValue={docMetadata.category} placeholder="Category" />
+                                <div className="flex justify-end gap-2">
+                                    <button onClick={()=>setShowSaveAsModal(false)} className="px-4 py-2 border rounded">Cancel</button>
+                                    <button onClick={()=>{
+                                        const t=document.getElementById('save-title').value;
+                                        const c=document.getElementById('save-cat').value;
+                                        if(t) saveAsNewFile(t,c);
+                                    }} className="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
