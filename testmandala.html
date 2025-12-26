@@ -304,8 +304,8 @@
                 const shareId = params.get('share');
                 if (shareId && db) {
                     setLoading(true);
-                    // Use 'mandala_charts' for public data to align with standard collection naming
-                    const path = `artifacts/${appId}/public/data/mandala_charts/${shareId}`;
+                    // Use 'mandala_shares' for public data - UPDATED COLLECTION NAME
+                    const path = `artifacts/${appId}/public/data/mandala_shares/${shareId}`;
                     db.doc(path).get().then(doc => {
                         if (doc.exists) {
                             const f = doc.data();
@@ -503,12 +503,11 @@
                 }
                 setLoading(true);
                 try {
-                    // Generate a random ID ALWAYS to prevent permission/overwrite issues with anonymous auth
-                    const shareId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+                    // Use 'add' to let Firestore generate the ID and avoid ID collision/permission issues
+                    // Path: artifacts/{appId}/public/data/mandala_shares
+                    const collectionPath = `artifacts/${appId}/public/data/mandala_shares`;
                     
-                    // Use 'mandala_charts' in public path for consistency
-                    const path = `artifacts/${appId}/public/data/mandala_charts/${shareId}`;
-                    await db.doc(path).set({
+                    const docRef = await db.collection(collectionPath).add({
                         title: docMetadata.title,
                         category: docMetadata.category,
                         cells: data,
@@ -517,9 +516,9 @@
                     });
 
                     // Generate URL
-                    const url = `${window.location.origin}${window.location.pathname}?share=${shareId}`;
+                    const url = `${window.location.origin}${window.location.pathname}?share=${docRef.id}`;
                     
-                    // Simple Copy Fallback
+                    // Copy to clipboard
                     const textArea = document.createElement("textarea");
                     textArea.value = url;
                     document.body.appendChild(textArea);
@@ -530,7 +529,7 @@
                     alert(`分享連結已複製！\n\n連結：${url}`);
                 } catch (e) {
                     console.error("Share failed", e);
-                    alert(`分享失敗，請確認網路連線或稍後再試。\n錯誤訊息: ${e.message}`);
+                    alert(`分享失敗。\n錯誤代碼: ${e.code}\n錯誤訊息: ${e.message}\n\n請確認您的網路連線。`);
                 }
                 setLoading(false);
             };
@@ -644,6 +643,9 @@
             // --- COMPONENT: Dashboard (New Browser) ---
             const renderDashboard = () => {
                 const totalFiles = fileList.length;
+                
+                // --- Category Logic ---
+                // Flatten and count all categories
                 const categoryCounts = fileList.reduce((acc, curr) => {
                     const cats = parseCategories(curr.category);
                     cats.forEach(c => { acc[c] = (acc[c] || 0) + 1; });
