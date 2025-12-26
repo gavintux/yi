@@ -103,7 +103,7 @@
             -webkit-line-clamp: unset !important;
             line-clamp: unset !important;
             height: auto !important;
-            font-size: 0.7rem !important;
+            font-size: 0.7rem !important; /* Smaller font for export to fit more */
             line-height: 1.1 !important;
         }
         .export-mode .grid-cell-content {
@@ -210,27 +210,6 @@
             
             const yiq = ((r*299)+(g*587)+(b*114))/1000;
             return (yiq >= 128) ? 'text-stone-800' : 'text-white';
-        };
-
-        // Simple String Compression for URL
-        const encodeShareData = (dataObj) => {
-            try {
-                const json = JSON.stringify(dataObj);
-                return btoa(unescape(encodeURIComponent(json)));
-            } catch (e) {
-                console.error("Encoding failed", e);
-                return null;
-            }
-        };
-
-        const decodeShareData = (encodedString) => {
-            try {
-                const json = decodeURIComponent(escape(atob(encodedString)));
-                return JSON.parse(json);
-            } catch (e) {
-                console.error("Decoding failed", e);
-                return null;
-            }
         };
 
         const EMOJI_LIST = ['🌿', '🌸', '🌼', '🍄', '🌱', '🍃', '🌻', '🌵', '🌺', '🍂', '🦋', '🐦', '☀️', '💧', '🏡', '📚', '🎨', '🍵', '🧘', '✨'];
@@ -350,32 +329,6 @@
                 }
             }, []);
 
-            // --- Share Logic ---
-            useEffect(() => {
-                const params = new URLSearchParams(window.location.search);
-                const importData = params.get('import'); 
-                
-                if (importData) {
-                    setLoading(true);
-                    const decoded = decodeShareData(importData);
-                    if (decoded) {
-                        setData(decoded.cells || {});
-                        setGridSize(decoded.gridSize || 3);
-                        setDocMetadata({ 
-                            title: decoded.title ? `${decoded.title} (分享副本)` : '分享的檔案', 
-                            category: decoded.category || '一般' 
-                        });
-                        setCurrentDocId(null);
-                        setIsSharedView(true);
-                        setViewMode('editor');
-                    } else {
-                        alert("分享連結格式錯誤或已損壞。");
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                    }
-                    setLoading(false);
-                }
-            }, []); 
-
             // --- File Fetching ---
             useEffect(() => {
                 if (user && viewMode === 'browser') {
@@ -405,6 +358,39 @@
                 }, 2000);
                 return () => clearTimeout(timer);
             }, [data, gridSize, user, currentDocId, docMetadata, viewMode, isSharedView]);
+
+            // --- Search Logic ---
+            const checkSearchMatch = (text, query) => {
+                if (!query) return true;
+                if (!text) return false;
+                const terms = query.toLowerCase().trim().split(/\s+/);
+                const target = text.toLowerCase();
+                return terms.every(term => target.includes(term));
+            };
+
+            const performGlobalSearch = () => {
+                if (!searchQuery) {
+                    setGlobalSearchResults([]);
+                    return;
+                }
+                const results = [];
+                fileList.forEach(file => {
+                    let matchCount = 0;
+                    if (checkSearchMatch(file.title, searchQuery)) matchCount += 10;
+                    if (file.cells) {
+                        Object.values(file.cells).forEach(cell => {
+                            const content = `${cell.title || ''} ${cell.note || ''}`;
+                            if (checkSearchMatch(content, searchQuery)) matchCount++;
+                        });
+                    }
+                    if (matchCount > 0) {
+                        results.push({ ...file, score: matchCount });
+                    }
+                });
+                results.sort((a,b) => b.score - a.score);
+                setGlobalSearchResults(results);
+                setShowGlobalSearchModal(true);
+            };
 
             // --- Core Functions ---
             const updateCell = (gridIdx, cellIdx, field, value) => {
@@ -517,7 +503,6 @@
                         deleted: true,
                         deletedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    // Refresh
                     fetchFileList();
                 } catch (e) { alert("移至垃圾筒失敗"); }
             };
@@ -535,7 +520,7 @@
             };
 
             const deleteForever = async (fileId) => {
-                if (!checkPassword()) return; // Confirm deletion with password
+                if (!checkPassword()) return; 
                 if (!confirm("確定要永久刪除此檔案嗎？此操作無法復原。")) return;
                 if (!user || !db) return;
                 try {
@@ -716,7 +701,6 @@
                 setShowExportModal(false);
             };
 
-            // 4. Export Excel (Two-Row Cells)
             const handleExportXLS = () => {
                 let tableHTML = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"></head><body>`;
                 tableHTML += `<h2>${docMetadata.title}</h2>`;
@@ -728,10 +712,7 @@
 
                 // Loop rows
                 for (let r = 0; r < rows; r++) {
-                    // For each Grid row, we create TWO Excel rows
-                    // Row A: Titles
                     let rowTitleHTML = `<tr style="height: 40px;">`;
-                    // Row B: Notes
                     let rowNoteHTML = `<tr style="height: 80px;">`;
 
                     for (let c = 0; c < cols; c++) {
@@ -752,11 +733,9 @@
                         const cell = data[key] || {};
                         const bg = cell.color ? cell.color : '#ffffff';
                         
-                        // Title Cell
                         const text = cell.title ? `<strong>${cell.title}</strong>` : '&nbsp;';
                         rowTitleHTML += `<td style="background-color:${bg}; vertical-align:middle; text-align:center; padding:5px; width:150px; border: 1px solid #000; font-size:12pt; mso-number-format:'\@';">${text}</td>`;
                         
-                        // Note Cell
                         const note = cell.note ? `<span style="color:#555;">${cell.note}</span>` : '&nbsp;';
                         rowNoteHTML += `<td style="background-color:${bg}; vertical-align:top; padding:5px; width:150px; border: 1px solid #000; font-size:10pt; word-wrap: break-word; mso-number-format:'\@';">${note}</td>`;
                     }
@@ -809,13 +788,26 @@
                 }
             };
 
-            // --- Helpers ---
-            const checkSearchMatch = (text, query) => {
-                if (!query) return true;
-                if (!text) return false;
-                const terms = query.toLowerCase().trim().split(/\s+/);
-                const target = text.toLowerCase();
-                return terms.every(term => target.includes(term));
+            const handleLoadLocal = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const parsed = JSON.parse(ev.target.result);
+                        if (confirm("匯入將覆蓋目前內容，確定？")) {
+                            setData(parsed.cells || {});
+                            setGridSize(parsed.gridSize || 3);
+                            setCurrentDocId(null);
+                            setDocMetadata({ title: parsed.title || '匯入檔案', category: parsed.category || '一般' });
+                            setIsSharedView(true);
+                            if(viewMode === 'browser') setViewMode('editor');
+                            setShowImportModal(false);
+                        }
+                    } catch(err) { alert("格式錯誤"); }
+                    e.target.value = '';
+                };
+                reader.readAsText(file);
             };
 
             // --- Dashboard Render ---
@@ -823,7 +815,6 @@
                 const totalFiles = fileList.filter(f=>!f.deleted).length;
                 const trashFiles = fileList.filter(f=>f.deleted);
                 
-                // Category Logic (Exclude deleted for counts)
                 const activeFiles = fileList.filter(f => !f.deleted);
                 const categoryCounts = activeFiles.reduce((acc, curr) => {
                     const cats = parseCategories(curr.category);
@@ -836,7 +827,6 @@
                 const fullCategoryList = ['All', ...categoryList];
                 const displayCategories = showAllCategories ? fullCategoryList : fullCategoryList.slice(0, 8);
 
-                // Filter logic
                 let filteredFiles = [];
                 if (activeCategory === 'Trash') {
                     filteredFiles = trashFiles;
