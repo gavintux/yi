@@ -91,6 +91,24 @@
         .garden-title {
             font-family: 'Noto Serif TC', serif;
         }
+
+        /* Export specific styles */
+        .export-mode .export-hidden {
+            display: none !important;
+        }
+        .export-mode .export-full-text {
+            white-space: normal !important;
+            overflow: visible !important;
+            display: block !important;
+            -webkit-line-clamp: unset !important;
+            line-clamp: unset !important;
+            height: auto !important;
+            font-size: 0.7rem !important; /* Smaller font for export to fit more */
+            line-height: 1.1 !important;
+        }
+        .export-mode .grid-cell-content {
+            padding: 2px !important;
+        }
     </style>
 </head>
 <body>
@@ -582,15 +600,40 @@
             // 1. Export JPG
             const handleExportJPG = async () => {
                 setLoading(true);
-                const element = document.getElementById('mandala-grid-container');
-                if (!element) return;
+                // Create a temporary export wrapper
+                const originalContainer = document.getElementById('mandala-grid-container');
+                if (!originalContainer) return;
+
+                // Clone the node to modify styles for export
+                const exportContainer = originalContainer.cloneNode(true);
+                
+                // Prepare container for "Image Capture Mode"
+                exportContainer.style.width = '1200px'; // Force fixed width for consistency
+                exportContainer.style.height = 'auto';
+                exportContainer.style.position = 'fixed';
+                exportContainer.style.top = '-9999px';
+                exportContainer.style.left = '-9999px';
+                exportContainer.style.zIndex = '-999';
+                exportContainer.classList.add('export-mode');
+
+                // Add Title Header for the image
+                const header = document.createElement('div');
+                header.style.textAlign = 'center';
+                header.style.marginBottom = '20px';
+                header.innerHTML = `<h1 class="garden-title" style="font-size:32px; color:#44403c; margin-bottom:5px;">${docMetadata.title}</h1><p style="font-size:14px; color:#78716c;">${docMetadata.category} | Linkc Mandala</p>`;
+                exportContainer.insertBefore(header, exportContainer.firstChild);
+
+                document.body.appendChild(exportContainer);
+
                 try {
-                    const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                    const canvas = await html2canvas(exportContainer, { scale: 2, useCORS: true, backgroundColor: '#fcfaf9' });
                     const link = document.createElement('a');
                     link.download = `${docMetadata.title}.jpg`;
                     link.href = canvas.toDataURL('image/jpeg', 0.9);
                     link.click();
-                } catch (e) { alert("圖片匯出失敗"); }
+                } catch (e) { alert("圖片匯出失敗"); console.error(e); }
+                
+                document.body.removeChild(exportContainer);
                 setLoading(false);
                 setShowExportModal(false);
             };
@@ -619,27 +662,46 @@
             // 3. Export PDF
             const handleExportPDF = async () => {
                 setLoading(true);
-                const element = document.getElementById('mandala-grid-container');
-                if (!element) return;
+                const originalContainer = document.getElementById('mandala-grid-container');
+                if (!originalContainer) return;
+
+                // Clone and prep for capture (Same as JPG but for PDF placement)
+                const exportContainer = originalContainer.cloneNode(true);
+                exportContainer.style.width = '1000px'; 
+                exportContainer.style.height = 'auto';
+                exportContainer.style.position = 'fixed';
+                exportContainer.style.top = '-9999px';
+                exportContainer.style.left = '-9999px';
+                exportContainer.classList.add('export-mode');
+
+                // Add Title Header
+                const header = document.createElement('div');
+                header.style.textAlign = 'center';
+                header.style.marginBottom = '20px';
+                header.innerHTML = `<h1 class="garden-title" style="font-size:32px; color:#44403c; margin-bottom:5px;">${docMetadata.title}</h1>`;
+                exportContainer.insertBefore(header, exportContainer.firstChild);
+
+                document.body.appendChild(exportContainer);
+
                 try {
-                    const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-                    const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                    // FIX: Capture the whole container (Title + Grid) as image to support Chinese
+                    const canvas = await html2canvas(exportContainer, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
                     const { jsPDF } = window.jspdf;
-                    // A4 size: 210mm x 297mm
                     const pdf = new jsPDF('p', 'mm', 'a4');
                     const pageWidth = pdf.internal.pageSize.getWidth();
+                    const pageHeight = pdf.internal.pageSize.getHeight();
+                    
                     const margin = 10;
-                    const imgWidth = pageWidth - (margin * 2);
-                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    const maxImgWidth = pageWidth - (margin * 2);
+                    const imgHeight = (canvas.height * maxImgWidth) / canvas.width;
                     
-                    // Title
-                    pdf.setFontSize(16);
-                    pdf.text(docMetadata.title, margin, margin + 5);
-                    
-                    // Image
-                    pdf.addImage(imgData, 'JPEG', margin, margin + 15, imgWidth, imgHeight);
+                    // Add image only (Title is now part of the image)
+                    pdf.addImage(imgData, 'JPEG', margin, margin, maxImgWidth, imgHeight);
                     pdf.save(`${docMetadata.title}.pdf`);
                 } catch (e) { alert("PDF 匯出失敗"); console.error(e); }
+                
+                document.body.removeChild(exportContainer);
                 setLoading(false);
                 setShowExportModal(false);
             };
@@ -977,11 +1039,11 @@
                                 <div className="absolute bottom-0 left-0 h-1 transition-all" style={{width:`${cellData.progress||0}%`, backgroundColor: cellData.progress===100?'#10b981':'#5c8d89'}}></div>
                             </div>
                         ) : (
-                            <div className="flex flex-col h-full relative">
+                            <div className="flex flex-col h-full relative grid-cell-content">
                                 <div className="flex justify-between items-start mb-0.5 shrink-0 z-10">
-                                    <span className={`${titleSizeClass} font-bold leading-snug line-clamp-2 break-all pr-4 garden-title`}>{cellData.title}</span>
+                                    <span className={`${titleSizeClass} font-bold leading-snug line-clamp-2 break-all pr-4 garden-title export-full-text`}>{cellData.title}</span>
                                 </div>
-                                <div className="absolute top-0 right-0 flex flex-col items-end gap-0.5">
+                                <div className="absolute top-0 right-0 flex flex-col items-end gap-0.5 export-hidden">
                                     <div 
                                         onClick={(e) => { e.stopPropagation(); updateCell(gIdx, cIdx, 'progress_click'); }}
                                         className="text-[8px] font-mono border border-current rounded px-1 opacity-70 hover:opacity-100 bg-white/20 backdrop-blur-sm"
@@ -996,9 +1058,9 @@
                                     </div>
                                 )}
                                 {viewStyle === 'standard' && !hasImage && cellData.note && (
-                                    <p className={`${noteSizeClass} opacity-80 line-clamp-3 whitespace-pre-wrap flex-1 w-full break-all leading-tight mt-1`}>{cellData.note}</p>
+                                    <p className={`${noteSizeClass} opacity-80 line-clamp-3 whitespace-pre-wrap flex-1 w-full break-all leading-tight mt-1 export-full-text`}>{cellData.note}</p>
                                 )}
-                                <div className="mt-auto pt-1 flex justify-between items-end">
+                                <div className="mt-auto pt-1 flex justify-between items-end export-hidden">
                                     <div className="flex gap-1 items-center opacity-50">
                                         {(cellData.attachments?.length>0) && <span className="text-[8px]">📎</span>}
                                         {cellData.note && <span className="text-[8px]">📝</span>}
