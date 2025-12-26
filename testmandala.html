@@ -115,6 +115,13 @@
     <div id="root" class="h-full w-full"></div>
 
     <script type="text/babel">
+        /**
+         * 作者：林光章-Linkc
+         * E-Mail: gavin49@gmail.com
+         * webSite: https://gaivntux.github.io/yi/
+         * From: Yilan, Taiwan.
+         */
+
         // ==========================================
         // CONFIG
         // ==========================================
@@ -124,7 +131,8 @@
                 siteName: "Linkc Mandala",
                 description: "曼陀羅思維花園", 
                 logoImage: "https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f", 
-                driveFolder: "https://drive.google.com/drive/folders/1QuKStjyuWFGJYnULrckmexsN2ojKxjcD"
+                driveFolder: "https://drive.google.com/drive/folders/1QuKStjyuWFGJYnULrckmexsN2ojKxjcD",
+                logoLink: "https://gavintux.github.io/yi/"
             },
             firebase: {
                 apiKey: "AIzaSyAWY5zq9QQyO2LNveVtisgrin-ZoDGXmmo",
@@ -200,8 +208,7 @@
         };
 
         const getContrastColor = (hexcolor) => {
-            if (!hexcolor) return 'text-stone-800'; 
-            if (!hexcolor.startsWith('#')) return 'text-stone-800';
+            if (!hexcolor || !hexcolor.startsWith('#')) return 'text-stone-800'; 
 
             const hex = hexcolor.replace("#", "");
             const r = parseInt(hex.substr(0,2),16);
@@ -236,7 +243,7 @@
         const EMOJI_LIST = ['🌿', '🌸', '🌼', '🍄', '🌱', '🍃', '🌻', '🌵', '🌺', '🍂', '🦋', '🐦', '☀️', '💧', '🏡', '📚', '🎨', '🍵', '🧘', '✨'];
 
         const Icons = {
-            Grid: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>,
+            Grid: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>,
             List: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>,
             Plus: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>,
             Search: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>,
@@ -314,7 +321,7 @@
 
             const fileInputRef = useRef(null);
             const imgInputRef = useRef(null);
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'linkc-mandala-app-v1';
 
             // --- 1. CORE LOGIC FUNCTIONS ---
 
@@ -354,6 +361,17 @@
                 });
             };
 
+            const fetchFileList = async (currentUser = user) => {
+                if (!currentUser || !db) return;
+                try {
+                    const path = `artifacts/${appId}/users/${currentUser.uid}/${USER_CONFIG.system.collectionName}`;
+                    const snapshot = await db.collection(path).get();
+                    const files = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    files.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
+                    setFileList(files);
+                } catch (e) { console.error("Read failed", e); }
+            };
+
             const checkSearchMatch = (text, query) => {
                 if (!query) return true;
                 if (!text) return false;
@@ -362,18 +380,6 @@
                 return terms.every(term => target.includes(term));
             };
 
-            const fetchFileList = async () => {
-                if (!user || !db) return;
-                try {
-                    const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
-                    const snapshot = await db.collection(path).get();
-                    const files = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    files.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
-                    setFileList(files);
-                } catch (e) { console.error("Read failed", e); }
-            };
-
-            // Defined before use in JSX
             const performGlobalSearch = () => {
                 if (!searchQuery) { setGlobalSearchResults([]); return; }
                 const results = [];
@@ -488,7 +494,7 @@
                         deleted: true,
                         deletedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    fetchFileList(); // Reload list
+                    fetchFileList(user); // Reload list
                 } catch (e) { alert("移至垃圾筒失敗"); }
             };
 
@@ -500,7 +506,7 @@
                         deleted: false,
                         deletedAt: firebase.firestore.FieldValue.delete()
                     });
-                    fetchFileList();
+                    fetchFileList(user);
                 } catch (e) { alert("還原失敗"); }
             };
 
@@ -511,7 +517,7 @@
                 try {
                     const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
                     await db.doc(`${path}/${fileId}`).delete();
-                    fetchFileList();
+                    fetchFileList(user);
                 } catch (e) { alert("刪除失敗"); }
             };
 
@@ -807,7 +813,7 @@
                         setUser(u);
                         if (u) {
                             // User logged in, fetch files if in browser mode
-                            if (viewMode === 'browser') fetchFileList();
+                            if (viewMode === 'browser') fetchFileList(u);
                         } else {
                             // User logged out
                             setFileList([]);
@@ -845,12 +851,10 @@
 
             useEffect(() => {
                 if (user && viewMode === 'browser') {
-                    // This effect triggers refetch when viewMode changes back to browser
-                    // but we ensure not to double fetch if user just logged in (handled by auth effect)
-                    // It's safe to call again as it just updates list
-                     fetchFileList();
+                    setLoading(true);
+                    fetchFileList(user).finally(() => setLoading(false));
                 }
-            }, [viewMode]); // Removed user dependency to avoid double fetch on login, let auth effect handle initial fetch
+            }, [viewMode]); 
 
             useEffect(() => {
                 if (!user || !currentDocId || !db || viewMode !== 'editor') return;
@@ -904,7 +908,9 @@
                 <div className="flex items-center justify-center min-h-screen bg-stone-100 p-4">
                     <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-stone-200">
                         <div className="text-center mb-8">
-                            <img src={USER_CONFIG.seo.logoImage} className="w-16 h-16 rounded-xl mx-auto mb-4 shadow-sm" />
+                            <a href={USER_CONFIG.seo.logoLink} target="_blank" rel="noopener noreferrer">
+                                <img src={USER_CONFIG.seo.logoImage} className="w-16 h-16 rounded-xl mx-auto mb-4 shadow-sm hover:opacity-80 transition-opacity" />
+                            </a>
                             <h1 className="text-2xl font-bold text-stone-800 garden-title">{USER_CONFIG.seo.siteName}</h1>
                             <p className="text-stone-500 text-sm mt-2">請登入以存取您的思維花園</p>
                         </div>
@@ -998,7 +1004,9 @@
                         {/* Sidebar */}
                         <aside className="hidden md:flex w-64 flex-col bg-white border-r border-stone-200 shadow-sm shrink-0 z-20">
                             <div className="p-5 flex items-center gap-3 border-b border-stone-100">
-                                <img src={USER_CONFIG.seo.logoImage} className="w-8 h-8 rounded shadow-sm" />
+                                <a href={USER_CONFIG.seo.logoLink} target="_blank" rel="noopener noreferrer">
+                                    <img src={USER_CONFIG.seo.logoImage} className="w-8 h-8 rounded shadow-sm hover:opacity-80 transition-opacity" />
+                                </a>
                                 <span className="font-bold text-lg text-stone-800 tracking-tight garden-title">Mandala</span>
                             </div>
                             <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -1335,10 +1343,8 @@
                                 </div>
                             </main>
 
-                            {/* Editor Modal (Cell Edit) - Inserted here */}
-                            {selectedCell && (() => {
-                                const cellKey = `${selectedCell.gIdx}-${selectedCell.cIdx}`;
-                                const activeCellData = data[cellKey] || {};
+                            {selectedCell && (() => { /* ... Cell Edit Modal ... */ 
+                                const cellKey = `${selectedCell.gIdx}-${selectedCell.cIdx}`; const activeCellData = data[cellKey] || {};
                                 return (
                                     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-stone-800/50 backdrop-blur-sm p-4" onClick={() => setSelectedCell(null)}>
                                         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
@@ -1410,7 +1416,7 @@
                         </div>
                     )}
                     
-                    {/* --- MOVED MODALS OUTSIDE TERNARY TO FIX DASHBOARD ISSUE --- */}
+                    {/* --- GLOBAL MODALS (MOVED OUTSIDE TERNARY) --- */}
                     {showGlobalSearchModal && (<div className="fixed inset-0 z-[80] flex items-center justify-center bg-stone-800/50 p-4"><div className="bg-white rounded-xl shadow-xl w-full max-w-lg h-[70vh] flex flex-col"><div className="p-3 border-b border-stone-200 flex justify-between items-center bg-[#fcfaf9] rounded-t-xl"><h3 className="font-bold text-stone-700">全域搜尋結果</h3><button onClick={()=>setShowGlobalSearchModal(false)} className="text-stone-400 hover:text-stone-600">✕</button></div><div className="p-2 border-b border-stone-200 bg-[#fcfaf9]"><input autoFocus className="w-full p-2 border border-stone-300 rounded focus:ring-1 focus:ring-emerald-400 outline-none" placeholder="輸入關鍵字..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') performGlobalSearch(); }} /><div className="text-[10px] text-stone-400 mt-1 flex justify-between"><span>支援空白鍵分隔 (AND 邏輯)</span><button onClick={performGlobalSearch} className="text-emerald-600 font-bold hover:underline">搜尋</button></div></div><div className="flex-1 overflow-y-auto p-2 space-y-2">{globalSearchResults.length > 0 ? (globalSearchResults.map(file => (<div key={file.id} onClick={()=>loadFileFromDB(file)} className="p-3 border border-stone-200 rounded hover:border-emerald-400 cursor-pointer bg-white hover:bg-emerald-50"><div className="font-bold text-emerald-700">{file.title}</div><div className="text-xs text-stone-500 mt-1 flex gap-2"><span className="bg-stone-100 px-1 rounded">{file.category}</span><span>關聯度: {file.score}</span></div></div>))) : (<div className="text-center text-stone-400 py-10">{searchQuery ? "沒有找到符合的結果" : "請輸入關鍵字進行搜尋"}</div>)}</div></div></div>)}
                     {showShareModal && (<div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-800/60 p-4"><div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-5 border border-stone-100"><h3 className="font-bold mb-2 text-lg text-stone-700 garden-title flex items-center gap-2"><Icons.Share /> 分享檔案</h3><p className="text-xs text-stone-500 mb-4">因安全權限限制，請使用下列方式分享：</p><div className="space-y-3"><button onClick={handleExportFile} className="w-full flex items-center p-3 border border-emerald-200 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors group text-left"><div className="bg-emerald-100 text-emerald-600 p-2 rounded-lg group-hover:bg-emerald-200 mr-3"><Icons.Download /></div><div><div className="font-bold text-emerald-800 text-sm">下載分享檔 (.json)</div><div className="text-[10px] text-emerald-600">最穩定，支援圖片，適合備份傳送</div></div></button><button onClick={handleCopyCode} className="w-full flex items-center p-3 border border-stone-200 bg-white rounded-lg hover:bg-stone-50 transition-colors group text-left"><div className="bg-stone-100 text-stone-500 p-2 rounded-lg group-hover:bg-stone-200 mr-3"><Icons.Clipboard /></div><div><div className="font-bold text-stone-700 text-sm">複製文字代碼</div><div className="text-[10px] text-stone-500">適合純文字曼陀羅，可直接貼到通訊軟體</div></div></button></div><button onClick={()=>setShowShareModal(false)} className="mt-4 w-full py-2 text-sm text-stone-400 hover:text-stone-600">關閉</button></div></div>)}
                     {showImportModal && (<div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-800/60 p-4"><div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-5 border border-stone-100"><h3 className="font-bold mb-4 text-lg text-stone-700 garden-title flex items-center gap-2"><Icons.Share /> 匯入分享</h3><div className="space-y-4"><div><label className="text-xs font-bold text-stone-500 mb-1 block">方法 A：選擇檔案 (.json)</label><button onClick={()=>fileInputRef.current?.click()} className="w-full py-2 border border-dashed border-stone-300 rounded text-sm text-stone-500 hover:border-emerald-500 hover:text-emerald-600 bg-stone-50">點擊上傳分享檔</button></div><div className="relative flex py-1 items-center"><div className="flex-grow border-t border-stone-200"></div><span className="flex-shrink-0 mx-2 text-stone-300 text-xs">OR</span><div className="flex-grow border-t border-stone-200"></div></div><div><label className="text-xs font-bold text-stone-500 mb-1 block">方法 B：貼上代碼</label><textarea className="w-full border border-stone-300 rounded p-2 text-xs h-24 focus:ring-1 focus:ring-emerald-500 outline-none font-mono" placeholder="在此貼上別人分享的曼陀羅代碼..." value={importCode} onChange={e => setImportCode(e.target.value)}></textarea><button onClick={handleImportCodeSubmit} disabled={!importCode} className="mt-2 w-full py-2 bg-stone-700 text-white rounded text-sm hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed">解析代碼並開啟</button></div></div><button onClick={()=>setShowImportModal(false)} className="mt-4 w-full py-2 text-sm text-stone-400 hover:text-stone-600">取消</button></div></div>)}
