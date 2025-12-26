@@ -600,15 +600,11 @@
             // 1. Export JPG
             const handleExportJPG = async () => {
                 setLoading(true);
-                // Create a temporary export wrapper
                 const originalContainer = document.getElementById('mandala-grid-container');
                 if (!originalContainer) return;
 
-                // Clone the node to modify styles for export
                 const exportContainer = originalContainer.cloneNode(true);
-                
-                // Prepare container for "Image Capture Mode"
-                exportContainer.style.width = '1200px'; // Force fixed width for consistency
+                exportContainer.style.width = '1200px'; 
                 exportContainer.style.height = 'auto';
                 exportContainer.style.position = 'fixed';
                 exportContainer.style.top = '-9999px';
@@ -616,7 +612,6 @@
                 exportContainer.style.zIndex = '-999';
                 exportContainer.classList.add('export-mode');
 
-                // Add Title Header for the image
                 const header = document.createElement('div');
                 header.style.textAlign = 'center';
                 header.style.marginBottom = '20px';
@@ -641,8 +636,43 @@
             // 2. Export Markdown (.md)
             const handleExportMD = () => {
                 const now = new Date().toISOString().split('T')[0];
-                let md = `---\ncreated: ${now}\ncategories: ${docMetadata.category}\ntags:\n`;
-                md += `---\n\n# ${docMetadata.title}\n\n`;
+                const tagList = parseCategories(docMetadata.category);
+                const tagsString = `[${tagList.join(', ')}]`;
+
+                let md = `---\ncreated: ${now}\ncategories: Mandala\ntags: ${tagsString}\n---\n\n`;
+                md += `# ${docMetadata.title}\n\n`;
+
+                const size = gridSize;
+                const rows = size === 9 ? 9 : 3;
+                const cols = size === 9 ? 9 : 3;
+
+                md += `| ${Array(cols).fill(' ').join(' | ')} |\n`;
+                md += `| ${Array(cols).fill('---').join(' | ')} |\n`;
+
+                for (let r = 0; r < rows; r++) {
+                    let rowContent = [];
+                    for (let c = 0; c < cols; c++) {
+                        let gIdx, cIdx;
+                        if (size === 3) {
+                            gIdx = 4;
+                            cIdx = r * 3 + c;
+                        } else {
+                            const gridRow = Math.floor(r / 3);
+                            const gridCol = Math.floor(c / 3);
+                            gIdx = gridRow * 3 + gridCol;
+                            const cellRow = r % 3;
+                            const cellCol = c % 3;
+                            cIdx = cellRow * 3 + cellCol;
+                        }
+                        const key = `${gIdx}-${cIdx}`;
+                        const cell = data[key] || {};
+                        const cleanTitle = (cell.title || '').replace(/\n/g, ' ');
+                        rowContent.push(cleanTitle);
+                    }
+                    md += `| ${rowContent.join(' | ')} |\n`;
+                }
+                md += `\n\n`;
+
                 Object.keys(data).sort().forEach(key => {
                     const cell = data[key];
                     if (cell.title) {
@@ -665,7 +695,6 @@
                 const originalContainer = document.getElementById('mandala-grid-container');
                 if (!originalContainer) return;
 
-                // Clone and prep for capture (Same as JPG but for PDF placement)
                 const exportContainer = originalContainer.cloneNode(true);
                 exportContainer.style.width = '1000px'; 
                 exportContainer.style.height = 'auto';
@@ -674,7 +703,6 @@
                 exportContainer.style.left = '-9999px';
                 exportContainer.classList.add('export-mode');
 
-                // Add Title Header
                 const header = document.createElement('div');
                 header.style.textAlign = 'center';
                 header.style.marginBottom = '20px';
@@ -684,19 +712,16 @@
                 document.body.appendChild(exportContainer);
 
                 try {
-                    // FIX: Capture the whole container (Title + Grid) as image to support Chinese
                     const canvas = await html2canvas(exportContainer, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
                     const imgData = canvas.toDataURL('image/jpeg', 0.95);
                     const { jsPDF } = window.jspdf;
                     const pdf = new jsPDF('p', 'mm', 'a4');
                     const pageWidth = pdf.internal.pageSize.getWidth();
-                    const pageHeight = pdf.internal.pageSize.getHeight();
                     
                     const margin = 10;
                     const maxImgWidth = pageWidth - (margin * 2);
                     const imgHeight = (canvas.height * maxImgWidth) / canvas.width;
                     
-                    // Add image only (Title is now part of the image)
                     pdf.addImage(imgData, 'JPEG', margin, margin, maxImgWidth, imgHeight);
                     pdf.save(`${docMetadata.title}.pdf`);
                 } catch (e) { alert("PDF 匯出失敗"); console.error(e); }
@@ -710,23 +735,20 @@
             const handleExportXLS = () => {
                 let tableHTML = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"></head><body>`;
                 tableHTML += `<h2>${docMetadata.title}</h2>`;
-                tableHTML += `<table border="1" style="border-collapse: collapse;">`;
+                tableHTML += `<table border="1" style="border-collapse: collapse; table-layout: fixed;">`;
                 
-                // Construct Grid
-                const size = gridSize; // 3 or 9
+                const size = gridSize;
                 const rows = size === 9 ? 9 : 3;
                 const cols = size === 9 ? 9 : 3;
 
                 for (let r = 0; r < rows; r++) {
-                    tableHTML += `<tr>`;
+                    tableHTML += `<tr style="height: 100px;">`; 
                     for (let c = 0; c < cols; c++) {
-                        // Map visual row/col to gridIndex/cellIndex
                         let gIdx, cIdx;
                         if (size === 3) {
-                            gIdx = 4; // Center grid
+                            gIdx = 4; 
                             cIdx = r * 3 + c;
                         } else {
-                            // 9x9 logic
                             const gridRow = Math.floor(r / 3);
                             const gridCol = Math.floor(c / 3);
                             gIdx = gridRow * 3 + gridCol;
@@ -738,11 +760,11 @@
                         const key = `${gIdx}-${cIdx}`;
                         const cell = data[key] || {};
                         const bg = cell.color ? cell.color : '#ffffff';
-                        const text = cell.title || '';
-                        const note = cell.note ? `<br/><span style="font-size:10px; color:#666;">${cell.note}</span>` : '';
+                        const text = cell.title ? `<strong>${cell.title}</strong>` : '&nbsp;';
+                        const note = cell.note ? `<br/><span style="font-size:10px; color:#666;">${cell.note}</span>` : '<br/>';
                         
-                        tableHTML += `<td style="background-color:${bg}; vertical-align:top; padding:5px; height:100px; width:150px;">
-                            <strong>${text}</strong>${note}
+                        tableHTML += `<td style="background-color:${bg}; vertical-align:top; padding:5px; height:100px; width:150px; border: 1px solid #000; word-wrap: break-word; mso-number-format:'\@';">
+                            ${text}${note}
                         </td>`;
                     }
                     tableHTML += `</tr>`;
@@ -785,7 +807,7 @@
                 } else if (action === "import") {
                     fileInputRef.current?.click(); 
                 } else if (action === "export_drive") {
-                    setShowExportModal(true); // Changed to open Export Modal
+                    setShowExportModal(true); 
                 } else if (action === "share") {
                     setShowShareModal(true);
                 }
