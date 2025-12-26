@@ -103,7 +103,7 @@
             -webkit-line-clamp: unset !important;
             line-clamp: unset !important;
             height: auto !important;
-            font-size: 0.7rem !important; /* Smaller font for export to fit more */
+            font-size: 0.7rem !important;
             line-height: 1.1 !important;
         }
         .export-mode .grid-cell-content {
@@ -212,6 +212,27 @@
             return (yiq >= 128) ? 'text-stone-800' : 'text-white';
         };
 
+        // Simple String Compression for URL
+        const encodeShareData = (dataObj) => {
+            try {
+                const json = JSON.stringify(dataObj);
+                return btoa(unescape(encodeURIComponent(json)));
+            } catch (e) {
+                console.error("Encoding failed", e);
+                return null;
+            }
+        };
+
+        const decodeShareData = (encodedString) => {
+            try {
+                const json = decodeURIComponent(escape(atob(encodedString)));
+                return JSON.parse(json);
+            } catch (e) {
+                console.error("Decoding failed", e);
+                return null;
+            }
+        };
+
         const EMOJI_LIST = ['🌿', '🌸', '🌼', '🍄', '🌱', '🍃', '🌻', '🌵', '🌺', '🍂', '🦋', '🐦', '☀️', '💧', '🏡', '📚', '🎨', '🍵', '🧘', '✨'];
 
         const Icons = {
@@ -288,7 +309,8 @@
             const imgInputRef = useRef(null);
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-            // --- Password Check Logic ---
+            // --- 1. CORE LOGIC FUNCTIONS (Defined FIRST) ---
+
             const checkPassword = () => {
                 if (isAuthenticated) return true;
                 const input = prompt("請輸入密碼以繼續操作："); 
@@ -301,106 +323,12 @@
                 return false;
             };
 
-            // --- Auth & Init ---
-            useEffect(() => {
-                const initAuth = async () => {
-                    if (!auth) { setLoading(false); return; }
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            try {
-                                await auth.signInWithCustomToken(__initial_auth_token);
-                            } catch (e) { await auth.signInAnonymously(); }
-                        } else {
-                            await auth.signInAnonymously();
-                        }
-                    } catch (e) {
-                        console.error("Auth failed", e);
-                        setLoading(false);
-                    }
-                };
-                initAuth();
-                
-                if (auth) {
-                    const unsubscribe = auth.onAuthStateChanged(u => {
-                        setUser(u);
-                        if (viewMode === 'editor' && !currentDocId) setLoading(false);
-                    });
-                    return () => unsubscribe();
-                }
-            }, []);
-
-            // --- File Fetching ---
-            useEffect(() => {
-                if (user && viewMode === 'browser') {
-                    setLoading(true);
-                    fetchFileList().finally(() => setLoading(false));
-                }
-            }, [user, viewMode]);
-
-            // --- Auto Save ---
-            useEffect(() => {
-                if (!user || !currentDocId || !db || viewMode !== 'editor') return;
-                if (isSharedView) return; 
-
-                const timer = setTimeout(async () => {
-                    setSaveStatus('saving');
-                    try {
-                        const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
-                        await db.doc(`${path}/${currentDocId}`).update({
-                            cells: data,
-                            gridSize: gridSize,
-                            title: docMetadata.title,
-                            category: docMetadata.category,
-                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        setSaveStatus('saved');
-                    } catch (e) { setSaveStatus('error'); }
-                }, 2000);
-                return () => clearTimeout(timer);
-            }, [data, gridSize, user, currentDocId, docMetadata, viewMode, isSharedView]);
-
-            // --- Search Logic ---
-            const checkSearchMatch = (text, query) => {
-                if (!query) return true;
-                if (!text) return false;
-                const terms = query.toLowerCase().trim().split(/\s+/);
-                const target = text.toLowerCase();
-                return terms.every(term => target.includes(term));
-            };
-
-            const performGlobalSearch = () => {
-                if (!searchQuery) {
-                    setGlobalSearchResults([]);
-                    return;
-                }
-                const results = [];
-                fileList.forEach(file => {
-                    let matchCount = 0;
-                    if (checkSearchMatch(file.title, searchQuery)) matchCount += 10;
-                    if (file.cells) {
-                        Object.values(file.cells).forEach(cell => {
-                            const content = `${cell.title || ''} ${cell.note || ''}`;
-                            if (checkSearchMatch(content, searchQuery)) matchCount++;
-                        });
-                    }
-                    if (matchCount > 0) {
-                        results.push({ ...file, score: matchCount });
-                    }
-                });
-                results.sort((a,b) => b.score - a.score);
-                setGlobalSearchResults(results);
-                setShowGlobalSearchModal(true);
-            };
-
-            // --- Core Functions ---
             const updateCell = (gridIdx, cellIdx, field, value) => {
                 if (isSharedView) return;
-
                 const key = `${gridIdx}-${cellIdx}`;
                 const currentCell = data[key] || {};
                 let updatedData = { ...data };
                 let cellUpdates = { ...currentCell, updatedAt: new Date().toISOString() };
-
                 if (field === 'progress_click') {
                     const currentP = currentCell.progress || 0;
                     const nextP = (currentP + 25);
@@ -408,25 +336,22 @@
                 } else if (value !== undefined) {
                     cellUpdates[field] = value;
                 }
-
                 if (field === 'title' || field === 'note') {
                     const tVal = field === 'title' ? value : (currentCell.title || "");
                     const nVal = field === 'note' ? value : (currentCell.note || "");
                     cellUpdates.tags = extractTags((tVal || "") + " " + (nVal || ""));
                 }
                 updatedData[key] = cellUpdates;
-
                 if (gridSize === 9) {
                     const sync = getSyncedCellCoordinates(gridIdx, cellIdx);
                     if (sync) {
                         const syncKey = `${sync.targetGrid}-${sync.targetCell}`;
                         const syncCell = data[syncKey] || {};
                         if (field === 'title' || field === 'color') {
-                            const syncedTitle = field === 'title' ? value : (syncCell.title || "");
                             updatedData[syncKey] = {
                                 ...syncCell,
                                 [field]: value,
-                                tags: field === 'title' ? extractTags(syncedTitle + " " + (syncCell.note || "")) : syncCell.tags
+                                tags: field === 'title' ? extractTags(value + " " + (syncCell.note || "")) : syncCell.tags
                             };
                         }
                     }
@@ -461,6 +386,10 @@
             };
 
             const loadFileFromDB = (file) => {
+                if (file.deleted) {
+                    alert("請先將檔案從垃圾筒還原，才能開啟編輯。");
+                    return;
+                }
                 setData(file.cells || {});
                 setGridSize(file.gridSize || 3);
                 setCurrentDocId(file.id);
@@ -478,10 +407,10 @@
                     const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
                     const newDoc = await db.collection(path).add({
                         title, category, cells: {}, gridSize: 3,
+                        deleted: false,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    
                     setData({});
                     setGridSize(3);
                     setCurrentDocId(newDoc.id);
@@ -494,7 +423,6 @@
                 setLoading(false);
             };
 
-            // --- Trash Logic ---
             const moveToTrash = async (fileId) => {
                 if (!user || !db) return;
                 try {
@@ -530,7 +458,41 @@
                 } catch (e) { alert("刪除失敗"); }
             };
 
-            // --- Sharing Logic ---
+            const checkSearchMatch = (text, query) => {
+                if (!query) return true;
+                if (!text) return false;
+                const terms = query.toLowerCase().trim().split(/\s+/);
+                const target = text.toLowerCase();
+                return terms.every(term => target.includes(term));
+            };
+
+            const performGlobalSearch = () => {
+                if (!searchQuery) {
+                    setGlobalSearchResults([]);
+                    return;
+                }
+                const results = [];
+                fileList.forEach(file => {
+                    // Skip deleted files in search
+                    if (file.deleted) return;
+
+                    let matchCount = 0;
+                    if (checkSearchMatch(file.title, searchQuery)) matchCount += 10;
+                    if (file.cells) {
+                        Object.values(file.cells).forEach(cell => {
+                            const content = `${cell.title || ''} ${cell.note || ''}`;
+                            if (checkSearchMatch(content, searchQuery)) matchCount++;
+                        });
+                    }
+                    if (matchCount > 0) {
+                        results.push({ ...file, score: matchCount });
+                    }
+                });
+                results.sort((a,b) => b.score - a.score);
+                setGlobalSearchResults(results);
+                setShowGlobalSearchModal(true);
+            };
+
             const handleExportFile = () => {
                 const shareObj = {
                     title: docMetadata.title,
@@ -588,7 +550,6 @@
                 }
             };
 
-            // --- Export Functions ---
             const handleExportJPG = async () => {
                 setLoading(true);
                 const element = document.getElementById('mandala-grid-container');
@@ -625,7 +586,6 @@
                 let md = `---\ncreated: ${now}\ncategories: Mandala\ntags: ${tagsString}\n---\n\n`;
                 md += `# ${docMetadata.title}\n\n`;
                 
-                // Table
                 const size = gridSize;
                 const rows = size === 9 ? 9 : 3;
                 const cols = size === 9 ? 9 : 3;
@@ -756,7 +716,6 @@
                 setShowExportModal(false);
             };
 
-            // --- Menu Logic ---
             const handleFileMenu = (e) => {
                 const action = e.target.value;
                 e.target.value = "";
@@ -810,7 +769,120 @@
                 reader.readAsText(file);
             };
 
-            // --- Dashboard Render ---
+            const handleExportMarkdownWrapper = (openDrive) => {
+                // Wrapper to match previous signature if needed, or redirect
+                if(openDrive) handleExportMD();
+            };
+
+
+            // --- 2. EFFECTS (Defined AFTER functions) ---
+
+            useEffect(() => {
+                const initAuth = async () => {
+                    if (!auth) { setLoading(false); return; }
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            try {
+                                await auth.signInWithCustomToken(__initial_auth_token);
+                            } catch (e) { await auth.signInAnonymously(); }
+                        } else {
+                            await auth.signInAnonymously();
+                        }
+                    } catch (e) {
+                        console.error("Auth failed", e);
+                        setLoading(false);
+                    }
+                };
+                initAuth();
+                
+                if (auth) {
+                    const unsubscribe = auth.onAuthStateChanged(u => {
+                        setUser(u);
+                        if (viewMode === 'editor' && !currentDocId) setLoading(false);
+                    });
+                    return () => unsubscribe();
+                }
+            }, []);
+
+            useEffect(() => {
+                const params = new URLSearchParams(window.location.search);
+                const importData = params.get('import'); 
+                
+                if (importData) {
+                    setLoading(true);
+                    const decoded = decodeShareData(importData);
+                    if (decoded) {
+                        setData(decoded.cells || {});
+                        setGridSize(decoded.gridSize || 3);
+                        setDocMetadata({ 
+                            title: decoded.title ? `${decoded.title} (分享副本)` : '分享的檔案', 
+                            category: decoded.category || '一般' 
+                        });
+                        setCurrentDocId(null);
+                        setIsSharedView(true);
+                        setViewMode('editor');
+                    } else {
+                        alert("分享連結格式錯誤或已損壞。");
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                    setLoading(false);
+                }
+            }, []); 
+
+            useEffect(() => {
+                if (user && viewMode === 'browser') {
+                    setLoading(true);
+                    fetchFileList().finally(() => setLoading(false));
+                }
+            }, [user, viewMode]);
+
+            useEffect(() => {
+                if (!user || !currentDocId || !db || viewMode !== 'editor') return;
+                if (isSharedView) return; 
+
+                const timer = setTimeout(async () => {
+                    setSaveStatus('saving');
+                    try {
+                        const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
+                        await db.doc(`${path}/${currentDocId}`).update({
+                            cells: data,
+                            gridSize: gridSize,
+                            title: docMetadata.title,
+                            category: docMetadata.category,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        setSaveStatus('saved');
+                    } catch (e) { setSaveStatus('error'); }
+                }, 2000);
+                return () => clearTimeout(timer);
+            }, [data, gridSize, user, currentDocId, docMetadata, viewMode, isSharedView]);
+
+
+            // --- 3. HELPERS (Memoized) ---
+            const filteredCells = useMemo(() => {
+                if (searchScope === 'global') return new Set(); 
+                let keys = Object.keys(data);
+                if (searchQuery) {
+                    keys = keys.filter(k => {
+                        const cell = data[k];
+                        const txt = `${cell.title||''} ${cell.note||''}`;
+                        return checkSearchMatch(txt, searchQuery);
+                    });
+                }
+                if (activeTags.length) {
+                    keys = keys.filter(k => activeTags.every(t => (data[k].tags||[]).includes(t)));
+                }
+                return new Set(keys);
+            }, [data, searchQuery, activeTags, searchScope]);
+
+            const allTags = useMemo(() => {
+                const tags = new Set();
+                Object.values(data).forEach(c => (c.tags||[]).forEach(t => tags.add(t)));
+                return Array.from(tags).sort();
+            }, [data]);
+
+            // --- 4. RENDER FUNCTIONS ---
+            
             const renderDashboard = () => {
                 const totalFiles = fileList.filter(f=>!f.deleted).length;
                 const trashFiles = fileList.filter(f=>f.deleted);
@@ -895,7 +967,6 @@
 
                         {/* Main Content */}
                         <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-                            {/* Top Bar */}
                             <header className="bg-white border-b border-stone-200 h-16 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
                                 <div className="flex items-center gap-3 md:hidden">
                                     <img src={USER_CONFIG.seo.logoImage} className="w-8 h-8 rounded" />
@@ -912,7 +983,6 @@
                                 </div>
                             </header>
 
-                            {/* Dashboard Content */}
                             <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col">
                                 {paginatedFiles.length > 0 ? (
                                     <>
@@ -921,7 +991,6 @@
                                                 <div key={file.id} 
                                                     className="dash-card bg-white p-5 rounded-xl border border-stone-200 cursor-pointer h-40 flex flex-col justify-between group relative overflow-hidden">
                                                     
-                                                    {/* Card Click Action */}
                                                     <div onClick={() => activeCategory === 'Trash' ? null : loadFileFromDB(file)} className="flex-1">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${file.gridSize===9?'bg-emerald-100 text-emerald-800':'bg-stone-200 text-stone-700'}`}>{file.gridSize === 9 ? '9x9' : '3x3'}</span>
@@ -930,14 +999,12 @@
                                                         <h3 className="font-bold text-stone-800 text-lg leading-snug line-clamp-2 group-hover:text-emerald-600 transition-colors garden-title">{file.title}</h3>
                                                     </div>
                                                     
-                                                    {/* Footer / Actions */}
                                                     <div className="flex items-center justify-between text-xs text-stone-500 border-t border-stone-100 pt-3 mt-1">
                                                         <div className="flex items-center gap-2 truncate flex-1">
                                                             <Icons.Folder />
                                                             <span className="truncate">{file.category || '未分類'}</span>
                                                         </div>
                                                         
-                                                        {/* Action Buttons */}
                                                         {activeCategory === 'Trash' ? (
                                                             <div className="flex gap-2">
                                                                 <button onClick={(e)=>{e.stopPropagation(); restoreFromTrash(file.id);}} className="text-emerald-600 hover:bg-emerald-50 p-1 rounded" title="還原"><Icons.Restore /></button>
@@ -973,6 +1040,83 @@
                 );
             };
 
+            const renderCell = (gIdx, cIdx) => {
+                const cellData = data[`${gIdx}-${cIdx}`] || {};
+                const isMatched = (searchScope === 'global') ? true : (searchQuery || activeTags.length ? filteredCells.has(`${gIdx}-${cIdx}`) : true);
+                const isCenter = gridSize === 9 ? (gIdx === 4 && cIdx === 4) : (cIdx === 4);
+                let bgColor = cellData.color || 'bg-white';
+                if (!cellData.color) {
+                    if (isCenter) bgColor = 'bg-[#fdfcdc]';
+                    else if (gridSize === 9 && cIdx === 4) bgColor = 'bg-[#ecfdf5]';
+                }
+                const opacity = isMatched ? 'opacity-100' : 'opacity-20 grayscale';
+                const style = { backgroundColor: bgColor.startsWith('bg-') ? undefined : bgColor };
+                const bgClass = bgColor.startsWith('bg-') ? bgColor : '';
+                const textColorClass = getContrastColor(bgColor.startsWith('bg-') ? (bgColor.includes('slate') ? '#334155' : '#ffffff') : bgColor);
+                const titleLength = (cellData.title || '').length;
+                let titleSizeClass = 'text-xs md:text-sm';
+                let noteSizeClass = 'text-[10px]';
+                if (viewStyle === 'compact' || gridSize === 9) {
+                   titleSizeClass = titleLength > 10 ? 'text-[9px]' : 'text-[10px] md:text-xs';
+                   noteSizeClass = 'text-[8px]';
+                }
+                const hasImage = cellData.images && cellData.images.length > 0;
+                const paddingClass = viewStyle === 'compact' ? 'p-0.5' : 'p-1';
+                const fullTooltip = `${cellData.title || ''}\n---\n${cellData.note || ''}`;
+
+                return (
+                    <div 
+                        key={`${gIdx}-${cIdx}`}
+                        title={fullTooltip}
+                        className={`relative grid-border ${paddingClass} flex flex-col cursor-pointer hover:shadow-md ${opacity} overflow-hidden h-full w-full ${bgClass} group ${textColorClass}`}
+                        style={style}
+                        onClick={() => {
+                            if (checkPassword()) {
+                                setSelectedCell({ gIdx, cIdx, data: cellData });
+                            }
+                        }}
+                    >
+                        {viewStyle === 'compact' ? (
+                            <div className="flex flex-col items-center justify-end h-full text-center relative">
+                                {cellData.emoji && <span className="absolute top-0 right-0 text-xs opacity-70">{cellData.emoji}</span>}
+                                {hasImage && <div className="absolute top-0 left-0 w-2 h-2 rounded-full bg-rose-400"></div>}
+                                <span className={`${titleSizeClass} font-medium leading-tight line-clamp-2 w-full break-all`}>{cellData.title}</span>
+                                <div className="absolute bottom-0 left-0 h-1 transition-all" style={{width:`${cellData.progress||0}%`, backgroundColor: cellData.progress===100?'#10b981':'#5c8d89'}}></div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col h-full relative grid-cell-content">
+                                <div className="flex justify-between items-start mb-0.5 shrink-0 z-10">
+                                    <span className={`${titleSizeClass} font-bold leading-snug line-clamp-2 break-all pr-4 garden-title export-full-text`}>{cellData.title}</span>
+                                </div>
+                                <div className="absolute top-0 right-0 flex flex-col items-end gap-0.5 export-hidden">
+                                    <div 
+                                        onClick={(e) => { e.stopPropagation(); updateCell(gIdx, cIdx, 'progress_click'); }}
+                                        className="text-[8px] font-mono border border-current rounded px-1 opacity-70 hover:opacity-100 bg-white/20 backdrop-blur-sm"
+                                    >
+                                        {cellData.progress||0}%
+                                    </div>
+                                    {cellData.emoji && <span className="text-xs">{cellData.emoji}</span>}
+                                </div>
+                                {hasImage && (
+                                    <div className="flex-1 w-full bg-stone-100 rounded overflow-hidden relative mb-1 shrink-0" style={{minHeight: '20px'}}>
+                                        <img src={cellData.images[0]} className="w-full h-full object-cover absolute inset-0" />
+                                    </div>
+                                )}
+                                {viewStyle === 'standard' && !hasImage && cellData.note && (
+                                    <p className={`${noteSizeClass} opacity-80 line-clamp-3 whitespace-pre-wrap flex-1 w-full break-all leading-tight mt-1 export-full-text`}>{cellData.note}</p>
+                                )}
+                                <div className="mt-auto pt-1 flex justify-between items-end export-hidden">
+                                    <div className="flex gap-1 items-center opacity-50">
+                                        {(cellData.attachments?.length>0) && <span className="text-[8px]">📎</span>}
+                                        {cellData.note && <span className="text-[8px]">📝</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
             // --- RENDER MAIN ---
             return (
                 <div className="h-full w-full overflow-hidden text-stone-800">
@@ -986,10 +1130,8 @@
                     {viewMode === 'browser' ? renderDashboard() : (
                         // EDITOR LAYOUT
                         <div className="flex flex-col md:flex-row h-full w-full overflow-hidden bg-[#fcfaf9]">
-                            {/* Mobile Header, Sidebar, Main Grid, Modals... (Same as before, simplified for brevity in this block, but included in full file below) */}
-                            {/* Since this is a partial update request, I will output the FULL file to ensure nothing is missed */}
                             
-                            {/* ... (Re-inserting Editor Layout code from previous working version) ... */}
+                            {/* Mobile Header */}
                             <div className="md:hidden bg-white p-2 border-b border-stone-200 flex justify-between items-center shadow-sm shrink-0 z-30 h-14">
                                 <div className="flex items-center gap-2 overflow-hidden">
                                     <button onClick={()=>handleFileMenu({target:{value:'back'}})} className="mr-1 text-stone-500">←</button>
@@ -1042,7 +1184,6 @@
                                         </select>
                                         <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleLoadLocal} />
                                     </div>
-                                    {/* ... Settings, Search, Tags (Same as before) ... */}
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-stone-600">檢視設定</label>
                                         <div className="flex gap-2">
