@@ -23,6 +23,9 @@
 
     <!-- HTML2Canvas for Image Export -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <!-- jsPDF for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <!-- Google Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
@@ -191,6 +194,27 @@
             return (yiq >= 128) ? 'text-stone-800' : 'text-white';
         };
 
+        // Simple String Compression for URL
+        const encodeShareData = (dataObj) => {
+            try {
+                const json = JSON.stringify(dataObj);
+                return btoa(unescape(encodeURIComponent(json)));
+            } catch (e) {
+                console.error("Encoding failed", e);
+                return null;
+            }
+        };
+
+        const decodeShareData = (encodedString) => {
+            try {
+                const json = decodeURIComponent(escape(atob(encodedString)));
+                return JSON.parse(json);
+            } catch (e) {
+                console.error("Decoding failed", e);
+                return null;
+            }
+        };
+
         const EMOJI_LIST = ['🌿', '🌸', '🌼', '🍄', '🌱', '🍃', '🌻', '🌵', '🌺', '🍂', '🦋', '🐦', '☀️', '💧', '🏡', '📚', '🎨', '🍵', '🧘', '✨'];
 
         const Icons = {
@@ -206,7 +230,8 @@
             ChevronUp: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg>,
             Share: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>,
             Download: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>,
-            Clipboard: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            Clipboard: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>,
+            Export: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         };
 
         // ==========================================
@@ -246,9 +271,10 @@
             // Modals
             const [showSaveAsModal, setShowSaveAsModal] = useState(false);
             const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
-            const [showShareModal, setShowShareModal] = useState(false); // NEW
-            const [showImportModal, setShowImportModal] = useState(false); // NEW
-            const [importCode, setImportCode] = useState(""); // NEW
+            const [showShareModal, setShowShareModal] = useState(false); 
+            const [showImportModal, setShowImportModal] = useState(false); 
+            const [showExportModal, setShowExportModal] = useState(false); // NEW
+            const [importCode, setImportCode] = useState(""); 
             
             // Dashboard State
             const [fileList, setFileList] = useState([]);
@@ -303,6 +329,32 @@
                 }
             }, []);
 
+            // --- Share Logic ---
+            useEffect(() => {
+                const params = new URLSearchParams(window.location.search);
+                const importData = params.get('import'); 
+                
+                if (importData) {
+                    setLoading(true);
+                    const decoded = decodeShareData(importData);
+                    if (decoded) {
+                        setData(decoded.cells || {});
+                        setGridSize(decoded.gridSize || 3);
+                        setDocMetadata({ 
+                            title: decoded.title ? `${decoded.title} (分享副本)` : '分享的檔案', 
+                            category: decoded.category || '一般' 
+                        });
+                        setCurrentDocId(null);
+                        setIsSharedView(true);
+                        setViewMode('editor');
+                    } else {
+                        alert("分享連結格式錯誤或已損壞。");
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                    setLoading(false);
+                }
+            }, []); 
+
             // --- File Fetching ---
             useEffect(() => {
                 if (user && viewMode === 'browser') {
@@ -314,7 +366,6 @@
             // --- Auto Save ---
             useEffect(() => {
                 if (!user || !currentDocId || !db || viewMode !== 'editor') return;
-                // Disable auto-save for shared view
                 if (isSharedView) return; 
 
                 const timer = setTimeout(async () => {
@@ -348,7 +399,6 @@
                     setGlobalSearchResults([]);
                     return;
                 }
-                // Local search in fetched file list
                 const results = [];
                 fileList.forEach(file => {
                     let matchCount = 0;
@@ -442,7 +492,7 @@
                 setCurrentDocId(file.id);
                 setDocMetadata({ title: file.title || '未命名', category: file.category || '一般' });
                 setIsSidebarOpen(false);
-                setIsSharedView(false); // Loading own file
+                setIsSharedView(false); 
                 setViewMode('editor');
                 setShowGlobalSearchModal(false);
             };
@@ -470,7 +520,7 @@
                 setLoading(false);
             };
 
-            // --- New Sharing Logic ---
+            // --- Sharing Logic (Copy/Export) ---
             const handleExportFile = () => {
                 const shareObj = {
                     title: docMetadata.title,
@@ -496,8 +546,6 @@
                     cells: data
                 };
                 const json = JSON.stringify(shareObj);
-                
-                // Simple clipboard write
                 const textArea = document.createElement("textarea");
                 textArea.value = json;
                 document.body.appendChild(textArea);
@@ -515,12 +563,12 @@
                     if (confirm("即將開啟分享的曼陀羅，這將覆蓋目前畫面。\n(確認後請記得另存新檔)")) {
                         setData(parsed.cells || {});
                         setGridSize(parsed.gridSize || 3);
-                        setCurrentDocId(null); // Detach
+                        setCurrentDocId(null); 
                         setDocMetadata({ 
                             title: parsed.title ? `${parsed.title} (分享副本)` : '匯入的分享', 
                             category: parsed.category || '一般' 
                         });
-                        setIsSharedView(true); // Read only initially
+                        setIsSharedView(true);
                         setViewMode('editor');
                         setShowImportModal(false);
                         setImportCode("");
@@ -529,6 +577,125 @@
                     alert("代碼格式錯誤，請確認是否完整複製。");
                 }
             };
+
+            // --- EXPORT FUNCTIONALITY (NEW) ---
+            // 1. Export JPG
+            const handleExportJPG = async () => {
+                setLoading(true);
+                const element = document.getElementById('mandala-grid-container');
+                if (!element) return;
+                try {
+                    const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                    const link = document.createElement('a');
+                    link.download = `${docMetadata.title}.jpg`;
+                    link.href = canvas.toDataURL('image/jpeg', 0.9);
+                    link.click();
+                } catch (e) { alert("圖片匯出失敗"); }
+                setLoading(false);
+                setShowExportModal(false);
+            };
+
+            // 2. Export Markdown (.md)
+            const handleExportMD = () => {
+                const now = new Date().toISOString().split('T')[0];
+                let md = `---\ncreated: ${now}\ncategories: ${docMetadata.category}\ntags:\n`;
+                md += `---\n\n# ${docMetadata.title}\n\n`;
+                Object.keys(data).sort().forEach(key => {
+                    const cell = data[key];
+                    if (cell.title) {
+                        md += `## [${key}] ${cell.title}\n`;
+                        if(cell.note) md += `${cell.note}\n\n`;
+                    }
+                });
+                const blob = new Blob([md], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${docMetadata.title}.md`;
+                a.click();
+                setShowExportModal(false);
+            };
+
+            // 3. Export PDF
+            const handleExportPDF = async () => {
+                setLoading(true);
+                const element = document.getElementById('mandala-grid-container');
+                if (!element) return;
+                try {
+                    const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                    const { jsPDF } = window.jspdf;
+                    // A4 size: 210mm x 297mm
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const pageWidth = pdf.internal.pageSize.getWidth();
+                    const margin = 10;
+                    const imgWidth = pageWidth - (margin * 2);
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    
+                    // Title
+                    pdf.setFontSize(16);
+                    pdf.text(docMetadata.title, margin, margin + 5);
+                    
+                    // Image
+                    pdf.addImage(imgData, 'JPEG', margin, margin + 15, imgWidth, imgHeight);
+                    pdf.save(`${docMetadata.title}.pdf`);
+                } catch (e) { alert("PDF 匯出失敗"); console.error(e); }
+                setLoading(false);
+                setShowExportModal(false);
+            };
+
+            // 4. Export Excel (HTML Table)
+            const handleExportXLS = () => {
+                let tableHTML = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"></head><body>`;
+                tableHTML += `<h2>${docMetadata.title}</h2>`;
+                tableHTML += `<table border="1" style="border-collapse: collapse;">`;
+                
+                // Construct Grid
+                const size = gridSize; // 3 or 9
+                const rows = size === 9 ? 9 : 3;
+                const cols = size === 9 ? 9 : 3;
+
+                for (let r = 0; r < rows; r++) {
+                    tableHTML += `<tr>`;
+                    for (let c = 0; c < cols; c++) {
+                        // Map visual row/col to gridIndex/cellIndex
+                        let gIdx, cIdx;
+                        if (size === 3) {
+                            gIdx = 4; // Center grid
+                            cIdx = r * 3 + c;
+                        } else {
+                            // 9x9 logic
+                            const gridRow = Math.floor(r / 3);
+                            const gridCol = Math.floor(c / 3);
+                            gIdx = gridRow * 3 + gridCol;
+                            const cellRow = r % 3;
+                            const cellCol = c % 3;
+                            cIdx = cellRow * 3 + cellCol;
+                        }
+                        
+                        const key = `${gIdx}-${cIdx}`;
+                        const cell = data[key] || {};
+                        const bg = cell.color ? cell.color : '#ffffff';
+                        const text = cell.title || '';
+                        const note = cell.note ? `<br/><span style="font-size:10px; color:#666;">${cell.note}</span>` : '';
+                        
+                        tableHTML += `<td style="background-color:${bg}; vertical-align:top; padding:5px; height:100px; width:150px;">
+                            <strong>${text}</strong>${note}
+                        </td>`;
+                    }
+                    tableHTML += `</tr>`;
+                }
+                tableHTML += `</table></body></html>`;
+
+                const blob = new Blob([tableHTML], { type: 'application/vnd.ms-excel' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${docMetadata.title}.xls`;
+                a.click();
+                setShowExportModal(false);
+            };
+
 
             // --- Menu Logic ---
             const handleFileMenu = (e) => {
@@ -550,12 +717,13 @@
                 } else if (action === "save_as") {
                     setShowSaveAsModal(true);
                 } else if (action === "back") {
+                    if (isSharedView) window.history.replaceState({}, document.title, window.location.pathname);
                     setViewMode('browser');
                     setIsSharedView(false);
                 } else if (action === "import") {
-                    fileInputRef.current?.click(); // Keep file import support
+                    fileInputRef.current?.click(); 
                 } else if (action === "export_drive") {
-                    handleExportMarkdown(true);
+                    setShowExportModal(true); // Changed to open Export Modal
                 } else if (action === "share") {
                     setShowShareModal(true);
                 }
@@ -572,12 +740,9 @@
                             setData(parsed.cells || {});
                             setGridSize(parsed.gridSize || 3);
                             setCurrentDocId(null);
-                            setDocMetadata({ 
-                                title: parsed.title || '匯入檔案', 
-                                category: parsed.category || '一般' 
-                            });
-                            setIsSharedView(true); // Treat imported file as shared/readonly first
-                            if(viewMode === 'browser') setViewMode('editor'); // Switch to editor if in browser
+                            setDocMetadata({ title: parsed.title || '匯入檔案', category: parsed.category || '一般' });
+                            setIsSharedView(true);
+                            if(viewMode === 'browser') setViewMode('editor');
                             setShowImportModal(false);
                         }
                     } catch(err) { alert("格式錯誤"); }
@@ -586,36 +751,9 @@
                 reader.readAsText(file);
             };
 
-            const handleExportMarkdown = (openDrive = false) => {
-                const now = new Date().toISOString().split('T')[0];
-                let md = `---\ncreated: ${now}\ncategories: ${docMetadata.category}\ntags:\n`;
-                md += `---\n\n# ${docMetadata.title}\n\n`;
-                Object.keys(data).sort().forEach(key => {
-                    const cell = data[key];
-                    if (cell.title) {
-                        md += `## [${key}] ${cell.title}\n`;
-                        if(cell.note) md += `${cell.note}\n\n`;
-                    }
-                });
-                const blob = new Blob([md], { type: 'text/markdown' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${docMetadata.title}.md`;
-                a.click();
-                
-                if (openDrive) {
-                    setTimeout(() => {
-                        window.open(USER_CONFIG.seo.driveFolder, '_blank');
-                        alert("檔案已下載。請將檔案拖曳至剛開啟的 Google Drive 資料夾中。");
-                    }, 500);
-                }
-            };
-
             // --- Helpers ---
             const filteredCells = useMemo(() => {
                 if (searchScope === 'global') return new Set(); 
-
                 let keys = Object.keys(data);
                 if (searchQuery) {
                     keys = keys.filter(k => {
@@ -963,7 +1101,7 @@
                                             <option value="new">📄 開新畫布 (清空)</option>
                                             {!isSharedView && <option value="save">💾 儲存</option>}
                                             <option value="save_as">{isSharedView ? '💾 另存為我的副本' : '💾 另存新檔...'}</option>
-                                            <option value="export_drive">📤 下載 MD</option>
+                                            <option value="export_drive">📤 匯出/下載...</option>
                                         </select>
                                         <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleLoadLocal} />
                                     </div>
@@ -1278,6 +1416,38 @@
                                 </div>
                                 
                                 <button onClick={()=>setShowImportModal(false)} className="mt-4 w-full py-2 text-sm text-stone-400 hover:text-stone-600">取消</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* NEW: Export Modal */}
+                    {showExportModal && (
+                        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-800/60 p-4">
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-5 border border-stone-100">
+                                <h3 className="font-bold mb-4 text-lg text-stone-700 garden-title flex items-center gap-2">
+                                    <Icons.Export /> 匯出檔案
+                                </h3>
+                                
+                                <div className="space-y-2">
+                                    <button onClick={handleExportJPG} className="w-full text-left p-3 hover:bg-stone-50 rounded-lg transition-colors border border-transparent hover:border-stone-200">
+                                        <div className="font-bold text-stone-700">圖片 (.jpg)</div>
+                                        <div className="text-xs text-stone-500">適合分享到社群媒體</div>
+                                    </button>
+                                    <button onClick={handleExportPDF} className="w-full text-left p-3 hover:bg-stone-50 rounded-lg transition-colors border border-transparent hover:border-stone-200">
+                                        <div className="font-bold text-stone-700">文件 (.pdf)</div>
+                                        <div className="text-xs text-stone-500">適合列印與正式文件</div>
+                                    </button>
+                                    <button onClick={handleExportXLS} className="w-full text-left p-3 hover:bg-stone-50 rounded-lg transition-colors border border-transparent hover:border-stone-200">
+                                        <div className="font-bold text-stone-700">Excel (.xls)</div>
+                                        <div className="text-xs text-stone-500">適合資料整理與分析</div>
+                                    </button>
+                                    <button onClick={handleExportMD} className="w-full text-left p-3 hover:bg-stone-50 rounded-lg transition-colors border border-transparent hover:border-stone-200">
+                                        <div className="font-bold text-stone-700">Markdown (.md)</div>
+                                        <div className="text-xs text-stone-500">適合筆記軟體 (Obsidian, Notion)</div>
+                                    </button>
+                                </div>
+                                
+                                <button onClick={()=>setShowExportModal(false)} className="mt-4 w-full py-2 text-sm text-stone-400 hover:text-stone-600">取消</button>
                             </div>
                         </div>
                     )}
