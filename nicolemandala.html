@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nicole Mandala Chart</title>
+    <title>Linkc Mandala Chart</title>
     <link rel="icon" href="https://duk.tw/3eXGrY.png">
     
     <!-- React & ReactDOM -->
@@ -115,6 +115,13 @@
     <div id="root" class="h-full w-full"></div>
 
     <script type="text/babel">
+        /**
+         * 作者：林光章-Linkc
+         * E-Mail: gavin49@gmail.com
+         * webSite: https://gaivntux.github.io/yi/
+         * From: Yilan, Taiwan.
+         */
+
         // ==========================================
         // CONFIG
         // ==========================================
@@ -124,7 +131,8 @@
                 siteName: "Nicole Mandala",
                 description: "曼陀羅思維花園", 
                 logoImage: "https://duk.tw/3eXGrY.png", 
-                driveFolder: "https://drive.google.com/drive/u/0/folders/1XyXl-GDw_lkxvQPfiv6MJ_teohR-gsaL"
+                driveFolder: "https://drive.google.com/drive/u/0/folders/1XyXl-GDw_lkxvQPfiv6MJ_teohR-gsaL",
+                logoLink: "https://www.lmes.ilc.edu.tw/"
             },
             firebase: {
                 apiKey: "AIzaSyAWY5zq9QQyO2LNveVtisgrin-ZoDGXmmo",
@@ -200,8 +208,7 @@
         };
 
         const getContrastColor = (hexcolor) => {
-            if (!hexcolor) return 'text-stone-800'; 
-            if (!hexcolor.startsWith('#')) return 'text-stone-800';
+            if (!hexcolor || !hexcolor.startsWith('#')) return 'text-stone-800'; 
 
             const hex = hexcolor.replace("#", "");
             const r = parseInt(hex.substr(0,2),16);
@@ -236,7 +243,7 @@
         const EMOJI_LIST = ['🌿', '🌸', '🌼', '🍄', '🌱', '🍃', '🌻', '🌵', '🌺', '🍂', '🦋', '🐦', '☀️', '💧', '🏡', '📚', '🎨', '🍵', '🧘', '✨'];
 
         const Icons = {
-            Grid: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>,
+            Grid: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>,
             List: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>,
             Plus: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>,
             Search: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>,
@@ -252,7 +259,8 @@
             Export: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>,
             Trash: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>,
             Restore: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>,
-            DeleteForever: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            DeleteForever: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>,
+            SignOut: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
         };
 
         // ==========================================
@@ -264,6 +272,12 @@
             // State
             const [user, setUser] = useState(null);
             const [viewMode, setViewMode] = useState('browser'); 
+
+            // Auth State
+            const [authMode, setAuthMode] = useState('login'); 
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [authError, setAuthError] = useState('');
 
             // Editor State
             const [currentDocId, setCurrentDocId] = useState(null);
@@ -307,7 +321,7 @@
 
             const fileInputRef = useRef(null);
             const imgInputRef = useRef(null);
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const appId = 'nicole-mandala-app';
 
             // --- 1. CORE LOGIC FUNCTIONS ---
 
@@ -321,6 +335,41 @@
                 }
                 alert("密碼錯誤，無法執行操作。");
                 return false;
+            };
+
+            const handleAuth = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setAuthError('');
+                try {
+                    if (authMode === 'login') {
+                        await auth.signInWithEmailAndPassword(email, password);
+                    } else {
+                        await auth.createUserWithEmailAndPassword(email, password);
+                    }
+                } catch (error) {
+                    setAuthError(error.message);
+                }
+                setLoading(false);
+            };
+
+            const handleSignOut = () => {
+                auth.signOut().then(() => {
+                    setUser(null);
+                    setFileList([]);
+                    setViewMode('browser');
+                });
+            };
+
+            const fetchFileList = async (currentUser = user) => {
+                if (!currentUser || !db) return;
+                try {
+                    const path = `artifacts/${appId}/users/${currentUser.uid}/${USER_CONFIG.system.collectionName}`;
+                    const snapshot = await db.collection(path).get();
+                    const files = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    files.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
+                    setFileList(files);
+                } catch (e) { console.error("Read failed", e); }
             };
 
             const checkSearchMatch = (text, query) => {
@@ -398,17 +447,6 @@
                 updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', [...prevImages, url]);
             };
 
-            const fetchFileList = async () => {
-                if (!user || !db) return;
-                try {
-                    const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
-                    const snapshot = await db.collection(path).get();
-                    const files = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    files.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
-                    setFileList(files);
-                } catch (e) { console.error("Read failed", e); }
-            };
-
             const loadFileFromDB = (file) => {
                 if (file.deleted) {
                     alert("請先將檔案從垃圾筒還原，才能開啟編輯。");
@@ -456,7 +494,7 @@
                         deleted: true,
                         deletedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    fetchFileList();
+                    fetchFileList(user); // Reload list
                 } catch (e) { alert("移至垃圾筒失敗"); }
             };
 
@@ -468,7 +506,7 @@
                         deleted: false,
                         deletedAt: firebase.firestore.FieldValue.delete()
                     });
-                    fetchFileList();
+                    fetchFileList(user);
                 } catch (e) { alert("還原失敗"); }
             };
 
@@ -479,7 +517,7 @@
                 try {
                     const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
                     await db.doc(`${path}/${fileId}`).delete();
-                    fetchFileList();
+                    fetchFileList(user);
                 } catch (e) { alert("刪除失敗"); }
             };
 
@@ -760,36 +798,27 @@
                 reader.readAsText(file);
             };
 
-            const handleExportMarkdownWrapper = (openDrive) => {
-                // Wrapper to match previous signature if needed, or redirect
-                if(openDrive) handleExportMD();
-            };
 
-
-            // --- 2. EFFECTS (Defined AFTER functions) ---
+            // --- 2. EFFECTS ---
 
             useEffect(() => {
                 const initAuth = async () => {
-                    if (!auth) { setLoading(false); return; }
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            try {
-                                await auth.signInWithCustomToken(__initial_auth_token);
-                            } catch (e) { await auth.signInAnonymously(); }
-                        } else {
-                            await auth.signInAnonymously();
-                        }
-                    } catch (e) {
-                        console.error("Auth failed", e);
-                        setLoading(false);
-                    }
+                    const timer = setTimeout(() => setLoading(false), 5000); 
+                    if (!auth) { clearTimeout(timer); setLoading(false); return; }
                 };
                 initAuth();
                 
                 if (auth) {
                     const unsubscribe = auth.onAuthStateChanged(u => {
                         setUser(u);
-                        if (viewMode === 'editor' && !currentDocId) setLoading(false);
+                        if (u) {
+                            // User logged in, fetch files if in browser mode
+                            if (viewMode === 'browser') fetchFileList(u);
+                        } else {
+                            // User logged out
+                            setFileList([]);
+                        }
+                        setLoading(false);
                     });
                     return () => unsubscribe();
                 }
@@ -823,9 +852,9 @@
             useEffect(() => {
                 if (user && viewMode === 'browser') {
                     setLoading(true);
-                    fetchFileList().finally(() => setLoading(false));
+                    fetchFileList(user).finally(() => setLoading(false));
                 }
-            }, [user, viewMode]);
+            }, [viewMode]); 
 
             useEffect(() => {
                 if (!user || !currentDocId || !db || viewMode !== 'editor') return;
@@ -873,6 +902,70 @@
             }, [data]);
 
             // --- 4. RENDER FUNCTIONS ---
+
+            // Login Screen Component
+            const renderLogin = () => (
+                <div className="flex items-center justify-center min-h-screen bg-stone-100 p-4">
+                    <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-stone-200">
+                        <div className="text-center mb-8">
+                            <a href={USER_CONFIG.seo.logoLink} target="_blank" rel="noopener noreferrer">
+                                <img src={USER_CONFIG.seo.logoImage} className="w-16 h-16 rounded-xl mx-auto mb-4 shadow-sm hover:opacity-80 transition-opacity" />
+                            </a>
+                            <h1 className="text-2xl font-bold text-stone-800 garden-title">{USER_CONFIG.seo.siteName}</h1>
+                            <p className="text-stone-500 text-sm mt-2">請登入以存取您的思維花園</p>
+                        </div>
+                        
+                        <form onSubmit={handleAuth} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-stone-600 mb-1">Email</label>
+                                <input 
+                                    type="email" 
+                                    required 
+                                    className="w-full p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                    placeholder="name@example.com"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-stone-600 mb-1">密碼</label>
+                                <input 
+                                    type="password" 
+                                    required 
+                                    className="w-full p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                />
+                            </div>
+
+                            {authError && (
+                                <div className="text-rose-500 text-xs bg-rose-50 p-2 rounded border border-rose-100">
+                                    {authError.includes('auth/user-not-found') ? '找不到此帳號' : 
+                                     authError.includes('auth/wrong-password') ? '密碼錯誤' : 
+                                     authError.includes('auth/email-already-in-use') ? '此 Email 已被註冊' : 
+                                     authError.includes('auth/weak-password') ? '密碼強度不足 (需6位以上)' : authError}
+                                </div>
+                            )}
+
+                            <button 
+                                type="submit" 
+                                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm transition-all active:scale-95"
+                            >
+                                {authMode === 'login' ? '登入' : '註冊新帳號'}
+                            </button>
+                        </form>
+
+                        <div className="mt-6 text-center text-sm text-stone-500">
+                            {authMode === 'login' ? (
+                                <>還沒有帳號？ <button onClick={() => setAuthMode('register')} className="text-emerald-600 font-bold hover:underline">立即註冊</button></>
+                            ) : (
+                                <>已有帳號？ <button onClick={() => setAuthMode('login')} className="text-emerald-600 font-bold hover:underline">返回登入</button></>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
             
             const renderDashboard = () => {
                 const totalFiles = fileList.filter(f=>!f.deleted).length;
@@ -911,7 +1004,9 @@
                         {/* Sidebar */}
                         <aside className="hidden md:flex w-64 flex-col bg-white border-r border-stone-200 shadow-sm shrink-0 z-20">
                             <div className="p-5 flex items-center gap-3 border-b border-stone-100">
-                                <img src={USER_CONFIG.seo.logoImage} className="w-8 h-8 rounded shadow-sm" />
+                                <a href={USER_CONFIG.seo.logoLink} target="_blank" rel="noopener noreferrer">
+                                    <img src={USER_CONFIG.seo.logoImage} className="w-8 h-8 rounded shadow-sm hover:opacity-80 transition-opacity" />
+                                </a>
                                 <span className="font-bold text-lg text-stone-800 tracking-tight garden-title">Mandala</span>
                             </div>
                             <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -953,6 +1048,12 @@
                                         )}
                                     </nav>
                                 </div>
+                                {/* Sign Out Button */}
+                                <div className="mt-auto border-t border-stone-100 pt-4">
+                                    <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-stone-500 hover:bg-stone-50 hover:text-rose-600 transition-colors">
+                                        <Icons.SignOut /> 登出帳號
+                                    </button>
+                                </div>
                             </div>
                         </aside>
 
@@ -982,7 +1083,7 @@
                                                 <div key={file.id} 
                                                     className="dash-card bg-white p-5 rounded-xl border border-stone-200 cursor-pointer h-40 flex flex-col justify-between group relative overflow-hidden">
                                                     
-                                                    <div onClick={() => activeCategory === 'Trash' ? null : loadFileFromDB(file)} className="flex-1">
+                                                    <div onClick={() => activeCategory === 'Trash' ? alert("請先還原檔案才能編輯") : loadFileFromDB(file)} className="flex-1">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${file.gridSize===9?'bg-emerald-100 text-emerald-800':'bg-stone-200 text-stone-700'}`}>{file.gridSize === 9 ? '9x9' : '3x3'}</span>
                                                             <span className="text-[10px] text-stone-400">{file.updatedAt ? new Date(file.updatedAt.seconds * 1000).toLocaleDateString() : ''}</span>
@@ -1108,7 +1209,11 @@
                 );
             };
 
-            // --- RENDER MAIN ---
+            // --- MAIN RENDER ---
+            if (!user && !isSharedView) {
+                return renderLogin(); // Force Login if not authenticated and not viewing share
+            }
+
             return (
                 <div className="h-full w-full overflow-hidden text-stone-800">
                     {loading && (
@@ -1121,8 +1226,7 @@
                     {viewMode === 'browser' ? renderDashboard() : (
                         // EDITOR LAYOUT
                         <div className="flex flex-col md:flex-row h-full w-full overflow-hidden bg-[#fcfaf9]">
-                            
-                            {/* Mobile Header */}
+                            {/* ... Editor Layout Content ... */}
                             <div className="md:hidden bg-white p-2 border-b border-stone-200 flex justify-between items-center shadow-sm shrink-0 z-30 h-14">
                                 <div className="flex items-center gap-2 overflow-hidden">
                                     <button onClick={()=>handleFileMenu({target:{value:'back'}})} className="mr-1 text-stone-500">←</button>
@@ -1146,49 +1250,30 @@
                                 </button>
                             </div>
 
-                            {/* Sidebar */}
-                            <aside className={`
-                                fixed md:relative inset-0 md:inset-auto z-40 bg-white md:w-72 border-r border-stone-200 
-                                transform transition-transform duration-300 ease-in-out flex flex-col shadow-xl md:shadow-none
-                                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-                            `}>
+                            <aside className={`fixed md:relative inset-0 md:inset-auto z-40 bg-white md:w-72 border-r border-stone-200 transform transition-transform duration-300 ease-in-out flex flex-col shadow-xl md:shadow-none ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
                                 <div className="p-4 border-b border-stone-100 flex justify-between items-start bg-white">
                                     <div className="w-full">
                                         <div className="flex items-center gap-2 mb-3">
-                                            <button onClick={()=>handleFileMenu({target:{value:'back'}})} 
-                                                className="text-xs bg-stone-100 hover:bg-stone-200 px-2 py-1 rounded flex items-center gap-1 text-stone-600 transition-colors">
-                                                ← 回儀表板
-                                            </button>
-                                            {isSharedView && (
-                                                <span className="ml-auto text-xs bg-rose-100 text-rose-600 px-2 py-1 rounded-full animate-pulse font-bold">僅供瀏覽</span>
-                                            )}
+                                            <button onClick={()=>handleFileMenu({target:{value:'back'}})} className="text-xs bg-stone-100 hover:bg-stone-200 px-2 py-1 rounded flex items-center gap-1 text-stone-600 transition-colors">← 回儀表板</button>
+                                            {isSharedView && <span className="ml-auto text-xs bg-rose-100 text-rose-600 px-2 py-1 rounded-full animate-pulse font-bold">僅供瀏覽</span>}
                                         </div>
                                         <div className="flex items-center gap-2 bg-white border border-stone-200 p-1 rounded mb-1">
                                             <div className="flex-1">
                                                 <label className="text-[10px] text-stone-400 block">檔名</label>
-                                                <input className="text-sm font-bold text-emerald-700 w-full outline-none garden-title disabled:text-gray-500" 
-                                                    value={docMetadata.title}
-                                                    disabled={isSharedView}
-                                                    onChange={(e) => setDocMetadata({...docMetadata, title: e.target.value})} />
+                                                <input className="text-sm font-bold text-emerald-700 w-full outline-none garden-title disabled:text-gray-500" value={docMetadata.title} disabled={isSharedView} onChange={(e) => setDocMetadata({...docMetadata, title: e.target.value})} />
                                             </div>
                                             <div className="w-16 border-l border-stone-200 pl-1">
                                                 <label className="text-[10px] text-stone-400 block">分類</label>
-                                                <input className="text-xs text-stone-600 w-full outline-none disabled:text-gray-400" 
-                                                    value={docMetadata.category}
-                                                    disabled={isSharedView}
-                                                    onChange={(e) => setDocMetadata({...docMetadata, category: e.target.value})} />
+                                                <input className="text-xs text-stone-600 w-full outline-none disabled:text-gray-400" value={docMetadata.category} disabled={isSharedView} onChange={(e) => setDocMetadata({...docMetadata, category: e.target.value})} />
                                             </div>
                                             {!isSharedView && <span className="text-stone-400">✏️</span>}
                                         </div>
                                         <div className="flex gap-2 text-[10px]">
-                                            {currentDocId ? 
-                                                <span className={saveStatus==='saving'?'text-yellow-600':'text-emerald-600'}>{saveStatus==='saving'?'種植中...':'已保存'}</span> 
-                                                : <span className="text-stone-400">未儲存 {isSharedView ? '(分享檢視)' : ''}</span>}
+                                            {currentDocId ? <span className={saveStatus==='saving'?'text-yellow-600':'text-emerald-600'}>{saveStatus==='saving'?'種植中...':'已保存'}</span> : <span className="text-stone-400">未儲存 {isSharedView ? '(分享檢視)' : ''}</span>}
                                         </div>
                                     </div>
                                     <button onClick={()=>setIsSidebarOpen(false)} className="md:hidden text-2xl leading-none text-stone-400">&times;</button>
                                 </div>
-
                                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                     <div className="bg-[#fcfaf9] p-3 rounded-lg border border-stone-200">
                                         <label className="text-xs font-bold text-stone-600 mb-1 block">花園操作</label>
@@ -1203,7 +1288,6 @@
                                         </select>
                                         <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleLoadLocal} />
                                     </div>
-
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-stone-600">檢視設定</label>
                                         <div className="flex gap-2">
@@ -1216,7 +1300,6 @@
                                             <option value="compact">精簡</option>
                                         </select>
                                     </div>
-                                    
                                     <div>
                                         <div className="flex justify-between items-end mb-1">
                                             <label className="text-xs font-bold text-stone-600">搜尋</label>
@@ -1226,52 +1309,23 @@
                                             </div>
                                         </div>
                                         <div className="relative">
-                                            <input 
-                                                type="text" 
-                                                className="w-full p-2 text-sm border border-stone-200 rounded focus:ring-1 focus:ring-emerald-300 outline-none"
-                                                placeholder={searchScope==='file' ? "搜尋此花園..." : "搜尋所有花園..."}
-                                                value={searchQuery}
-                                                onChange={e=> {
-                                                    setSearchQuery(e.target.value);
-                                                    if(searchScope === 'global' && e.target.value.length === 0) setGlobalSearchResults([]);
-                                                }}
-                                                onKeyDown={e => {
-                                                    if(e.key === 'Enter' && searchScope === 'global') performGlobalSearch();
-                                                }}
-                                            />
-                                            {searchScope === 'global' && (
-                                                <button onClick={performGlobalSearch} className="absolute right-2 top-2 text-stone-400 hover:text-emerald-600">
-                                                    <Icons.Search />
-                                                </button>
-                                            )}
+                                            <input type="text" className="w-full p-2 text-sm border border-stone-200 rounded focus:ring-1 focus:ring-emerald-300 outline-none" placeholder={searchScope==='file' ? "搜尋此花園..." : "搜尋所有花園..."} value={searchQuery} onChange={e=> { setSearchQuery(e.target.value); if(searchScope === 'global' && e.target.value.length === 0) setGlobalSearchResults([]); }} onKeyDown={e => { if(e.key === 'Enter' && searchScope === 'global') performGlobalSearch(); }} />
+                                            {searchScope === 'global' && <button onClick={performGlobalSearch} className="absolute right-2 top-2 text-stone-400 hover:text-emerald-600"><Icons.Search /></button>}
                                         </div>
                                     </div>
-
                                     {allTags.length > 0 && (
                                         <div className="flex flex-wrap gap-1">
                                             {allTags.map(t => (
-                                                <button key={t} onClick={() => setActiveTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
-                                                    className={`text-[10px] px-2 py-1 rounded-full border ${activeTags.includes(t)?'bg-emerald-100 text-emerald-700 border-emerald-300':'bg-white text-stone-600 border-stone-200'}`}>
-                                                    #{t}
-                                                </button>
+                                                <button key={t} onClick={() => setActiveTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])} className={`text-[10px] px-2 py-1 rounded-full border ${activeTags.includes(t)?'bg-emerald-100 text-emerald-700 border-emerald-300':'bg-white text-stone-600 border-stone-200'}`}>#{t}</button>
                                             ))}
                                         </div>
                                     )}
                                 </div>
                             </aside>
 
-                            {/* Main Grid Area */}
                             <main className="flex-1 relative overflow-hidden flex flex-col h-full w-full">
                                 <div className="flex-1 overflow-auto bg-[#fcfaf9] flex items-start justify-center p-0 md:p-4">
-                                    <div 
-                                        id="mandala-grid-container"
-                                        className={`
-                                            bg-white shadow-xl p-1
-                                            ${gridSize === 9 
-                                                ? 'w-full h-full' 
-                                                : 'w-full max-w-2xl aspect-square min-w-[300px] my-auto'}
-                                        `}
-                                    >
+                                    <div id="mandala-grid-container" className={`bg-white shadow-xl p-1 ${gridSize === 9 ? 'w-full h-full' : 'w-full max-w-2xl aspect-square min-w-[300px] my-auto'}`}>
                                         {gridSize === 3 ? (
                                             <div className="grid grid-cols-3 grid-rows-3 gap-1 bg-stone-300 border-2 border-stone-300 h-full w-full">
                                                 {Array.from({ length: 9 }).map((_, i) => renderCell(4, i))}
@@ -1289,10 +1343,8 @@
                                 </div>
                             </main>
 
-                            {/* Editor Modal (Cell Edit) */}
-                            {selectedCell && (() => {
-                                const cellKey = `${selectedCell.gIdx}-${selectedCell.cIdx}`;
-                                const activeCellData = data[cellKey] || {};
+                            {selectedCell && (() => { /* ... Cell Edit Modal ... */ 
+                                const cellKey = `${selectedCell.gIdx}-${selectedCell.cIdx}`; const activeCellData = data[cellKey] || {};
                                 return (
                                     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-stone-800/50 backdrop-blur-sm p-4" onClick={() => setSelectedCell(null)}>
                                         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
@@ -1303,102 +1355,59 @@
                                             <div className="p-4 space-y-4 overflow-y-auto flex-1">
                                                 <div>
                                                     <label className="text-xs font-bold text-stone-500 mb-1 block">標題</label>
-                                                    <input type="text" disabled={isSharedView} className="w-full border border-stone-300 p-2 rounded focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-gray-100 disabled:text-gray-600"
-                                                        value={activeCellData.title || ''}
-                                                        onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'title', e.target.value)}
-                                                    />
+                                                    <input type="text" disabled={isSharedView} className="w-full border border-stone-300 p-2 rounded focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-gray-100 disabled:text-gray-600" value={activeCellData.title || ''} onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'title', e.target.value)} />
                                                 </div>
                                                 <div>
                                                     <label className="text-xs font-bold text-stone-500 mb-1 block">備註 (#tag)</label>
-                                                    <textarea disabled={isSharedView} className="w-full border border-stone-300 p-2 rounded h-20 focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-gray-100 disabled:text-gray-600"
-                                                        value={activeCellData.note || ''}
-                                                        onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'note', e.target.value)}
-                                                    ></textarea>
+                                                    <textarea disabled={isSharedView} className="w-full border border-stone-300 p-2 rounded h-20 focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-gray-100 disabled:text-gray-600" value={activeCellData.note || ''} onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'note', e.target.value)}></textarea>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="text-xs font-bold text-stone-500 block">成長進度 ({activeCellData.progress||0}%)</label>
-                                                        <input disabled={isSharedView} type="range" min="0" max="100" step="25" className="w-full accent-emerald-600 mt-1 disabled:opacity-50"
-                                                            value={activeCellData.progress || 0}
-                                                            onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'progress', parseInt(e.target.value))}
-                                                        />
+                                                        <input disabled={isSharedView} type="range" min="0" max="100" step="25" className="w-full accent-emerald-600 mt-1 disabled:opacity-50" value={activeCellData.progress || 0} onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'progress', parseInt(e.target.value))} />
                                                     </div>
                                                     <div>
                                                         <label className="text-xs font-bold text-stone-500 block">顏色</label>
                                                         <div className="flex gap-2 mt-1">
-                                                            <input disabled={isSharedView} type="color" className="h-6 w-full rounded border border-stone-300 disabled:opacity-50"
-                                                                value={activeCellData.color && !activeCellData.color.startsWith('bg-') ? activeCellData.color : '#ffffff'}
-                                                                onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', e.target.value)}
-                                                            />
+                                                            <input disabled={isSharedView} type="color" className="h-6 w-full rounded border border-stone-300 disabled:opacity-50" value={activeCellData.color && !activeCellData.color.startsWith('bg-') ? activeCellData.color : '#ffffff'} onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', e.target.value)} />
                                                             <button disabled={isSharedView} onClick={() => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', '')} className="text-xs px-2 border border-stone-300 rounded text-stone-600 hover:bg-stone-50 disabled:opacity-50">重置</button>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
                                                 <div className="bg-[#fcfaf9] p-3 rounded border border-stone-200">
                                                     <label className="text-xs font-bold text-stone-500 block mb-2">圖片附檔</label>
                                                     {!isSharedView && (
                                                         <>
                                                             <div className="flex gap-2 mb-2">
-                                                                <input 
-                                                                    id="img-url-input" 
-                                                                    className="flex-1 text-xs p-1 border border-stone-300 rounded" 
-                                                                    placeholder="貼上圖片網址..."
-                                                                />
-                                                                <button onClick={()=>{
-                                                                    const url = document.getElementById('img-url-input').value;
-                                                                    addImageUrl(url);
-                                                                    document.getElementById('img-url-input').value = '';
-                                                                }} className="bg-white border border-stone-300 px-2 py-1 rounded text-xs text-stone-600">加入</button>
+                                                                <input id="img-url-input" className="flex-1 text-xs p-1 border border-stone-300 rounded" placeholder="貼上圖片網址..." />
+                                                                <button onClick={()=>{ const url = document.getElementById('img-url-input').value; addImageUrl(url); document.getElementById('img-url-input').value = ''; }} className="bg-white border border-stone-300 px-2 py-1 rounded text-xs text-stone-600">加入</button>
                                                             </div>
-                                                            <input 
-                                                                type="file" 
-                                                                ref={imgInputRef} 
-                                                                accept="image/*" 
-                                                                className="hidden" 
-                                                                onChange={(e) => addImage(e.target.files[0])}
-                                                            />
-                                                            <button onClick={()=>imgInputRef.current?.click()} className="w-full py-1 bg-white border border-dashed border-stone-300 rounded text-xs text-stone-500 hover:border-emerald-400">
-                                                                ＋ 上傳本機圖片
-                                                            </button>
+                                                            <input type="file" ref={imgInputRef} accept="image/*" className="hidden" onChange={(e) => addImage(e.target.files[0])} />
+                                                            <button onClick={()=>imgInputRef.current?.click()} className="w-full py-1 bg-white border border-dashed border-stone-300 rounded text-xs text-stone-500 hover:border-emerald-400">＋ 上傳本機圖片</button>
                                                         </>
                                                     )}
-                                                    
                                                     {activeCellData.images && activeCellData.images.length > 0 ? (
                                                         <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
                                                             {activeCellData.images.map((img, idx) => (
                                                                 <div key={idx} className="relative w-16 h-16 shrink-0 rounded overflow-hidden border border-stone-200">
                                                                     <img src={img} className="w-full h-full object-cover" />
-                                                                    {!isSharedView && (
-                                                                        <button onClick={()=>{
-                                                                                const newImgs = activeCellData.images.filter((_, i) => i !== idx);
-                                                                                updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', newImgs);
-                                                                            }} className="absolute top-0 right-0 bg-rose-500 text-white w-4 h-4 flex items-center justify-center text-[8px]">✕</button>
-                                                                    )}
+                                                                    {!isSharedView && <button onClick={()=>{ const newImgs = activeCellData.images.filter((_, i) => i !== idx); updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', newImgs); }} className="absolute top-0 right-0 bg-rose-500 text-white w-4 h-4 flex items-center justify-center text-[8px]">✕</button>}
                                                                 </div>
                                                             ))}
                                                         </div>
-                                                    ) : (
-                                                        isSharedView && <span className="text-xs text-gray-400">無圖片</span>
-                                                    )}
+                                                    ) : (isSharedView && <span className="text-xs text-gray-400">無圖片</span>)}
                                                 </div>
-
                                                 <div>
                                                     <label className="text-xs font-bold text-stone-500 block mb-1">花園裝飾 (Emoji)</label>
                                                     <div className="flex flex-wrap gap-2 p-2 bg-[#fcfaf9] rounded h-32 overflow-y-auto border border-stone-200">
                                                         {EMOJI_LIST.map(em => (
-                                                            <button key={em} disabled={isSharedView} onClick={() => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'emoji', activeCellData.emoji===em?'':em)}
-                                                                className={`p-1.5 rounded text-lg ${activeCellData.emoji===em?'bg-emerald-100 ring-2 ring-emerald-300':'hover:bg-white'} ${isSharedView ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                                                {em}
-                                                            </button>
+                                                            <button key={em} disabled={isSharedView} onClick={() => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'emoji', activeCellData.emoji===em?'':em)} className={`p-1.5 rounded text-lg ${activeCellData.emoji===em?'bg-emerald-100 ring-2 ring-emerald-300':'hover:bg-white'} ${isSharedView ? 'opacity-50 cursor-not-allowed' : ''}`}>{em}</button>
                                                         ))}
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="p-3 border-t border-stone-100 bg-[#fcfaf9] shrink-0 rounded-b-xl">
-                                                <button onClick={() => setSelectedCell(null)} className={`w-full py-2.5 text-white rounded-lg font-bold shadow active:scale-95 transition-transform ${isSharedView ? 'bg-gray-500 hover:bg-gray-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
-                                                    {isSharedView ? '關閉' : '完成'}
-                                                </button>
+                                                <button onClick={() => setSelectedCell(null)} className={`w-full py-2.5 text-white rounded-lg font-bold shadow active:scale-95 transition-transform ${isSharedView ? 'bg-gray-500 hover:bg-gray-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}>{isSharedView ? '關閉' : '完成'}</button>
                                             </div>
                                         </div>
                                     </div>
@@ -1406,210 +1415,13 @@
                             })()}
                         </div>
                     )}
-
-                    {/* Global Search Results Modal */}
-                    {showGlobalSearchModal && (
-                        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-stone-800/50 p-4">
-                            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg h-[70vh] flex flex-col">
-                                <div className="p-3 border-b border-stone-200 flex justify-between items-center bg-[#fcfaf9] rounded-t-xl">
-                                    <h3 className="font-bold text-stone-700">全域搜尋結果</h3>
-                                    <button onClick={()=>setShowGlobalSearchModal(false)} className="text-stone-400 hover:text-stone-600">✕</button>
-                                </div>
-                                <div className="p-2 border-b border-stone-200 bg-[#fcfaf9]">
-                                    <input 
-                                        autoFocus
-                                        className="w-full p-2 border border-stone-300 rounded focus:ring-1 focus:ring-emerald-400 outline-none" 
-                                        placeholder="輸入關鍵字..."
-                                        value={searchQuery}
-                                        onChange={e => setSearchQuery(e.target.value)}
-                                        onKeyDown={e => { if(e.key === 'Enter') performGlobalSearch(); }}
-                                    />
-                                    <div className="text-[10px] text-stone-400 mt-1 flex justify-between">
-                                        <span>支援空白鍵分隔 (AND 邏輯)</span>
-                                        <button onClick={performGlobalSearch} className="text-emerald-600 font-bold hover:underline">搜尋</button>
-                                    </div>
-                                </div>
-                                <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                                    {globalSearchResults.length > 0 ? (
-                                        globalSearchResults.map(file => (
-                                            <div key={file.id} onClick={()=>loadFileFromDB(file)} className="p-3 border border-stone-200 rounded hover:border-emerald-400 cursor-pointer bg-white hover:bg-emerald-50">
-                                                <div className="font-bold text-emerald-700">{file.title}</div>
-                                                <div className="text-xs text-stone-500 mt-1 flex gap-2">
-                                                    <span className="bg-stone-100 px-1 rounded">{file.category}</span>
-                                                    <span>關聯度: {file.score}</span>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-center text-stone-400 py-10">
-                                            {searchQuery ? "沒有找到符合的結果" : "請輸入關鍵字進行搜尋"}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Share Modal */}
-                    {showShareModal && (
-                        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-800/60 p-4">
-                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-5 border border-stone-100">
-                                <h3 className="font-bold mb-2 text-lg text-stone-700 garden-title flex items-center gap-2">
-                                    <Icons.Share /> 分享檔案
-                                </h3>
-                                <p className="text-xs text-stone-500 mb-4">因安全權限限制，請使用下列方式分享：</p>
-                                
-                                <div className="space-y-3">
-                                    <button onClick={handleExportFile} className="w-full flex items-center p-3 border border-emerald-200 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors group text-left">
-                                        <div className="bg-emerald-100 text-emerald-600 p-2 rounded-lg group-hover:bg-emerald-200 mr-3">
-                                            <Icons.Download />
-                                        </div>
-                                        <div>
-                                            <div className="font-bold text-emerald-800 text-sm">下載分享檔 (.json)</div>
-                                            <div className="text-[10px] text-emerald-600">最穩定，支援圖片，適合備份傳送</div>
-                                        </div>
-                                    </button>
-
-                                    <button onClick={handleCopyCode} className="w-full flex items-center p-3 border border-stone-200 bg-white rounded-lg hover:bg-stone-50 transition-colors group text-left">
-                                        <div className="bg-stone-100 text-stone-500 p-2 rounded-lg group-hover:bg-stone-200 mr-3">
-                                            <Icons.Clipboard />
-                                        </div>
-                                        <div>
-                                            <div className="font-bold text-stone-700 text-sm">複製文字代碼</div>
-                                            <div className="text-[10px] text-stone-500">適合純文字曼陀羅，可直接貼到通訊軟體</div>
-                                        </div>
-                                    </button>
-                                </div>
-                                
-                                <button onClick={()=>setShowShareModal(false)} className="mt-4 w-full py-2 text-sm text-stone-400 hover:text-stone-600">關閉</button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Import Modal */}
-                    {showImportModal && (
-                        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-800/60 p-4">
-                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-5 border border-stone-100">
-                                <h3 className="font-bold mb-4 text-lg text-stone-700 garden-title flex items-center gap-2">
-                                    <Icons.Share /> 匯入分享
-                                </h3>
-                                
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-stone-500 mb-1 block">方法 A：選擇檔案 (.json)</label>
-                                        <button onClick={()=>fileInputRef.current?.click()} className="w-full py-2 border border-dashed border-stone-300 rounded text-sm text-stone-500 hover:border-emerald-500 hover:text-emerald-600 bg-stone-50">
-                                            點擊上傳分享檔
-                                        </button>
-                                    </div>
-                                    
-                                    <div className="relative flex py-1 items-center">
-                                        <div className="flex-grow border-t border-stone-200"></div>
-                                        <span className="flex-shrink-0 mx-2 text-stone-300 text-xs">OR</span>
-                                        <div className="flex-grow border-t border-stone-200"></div>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs font-bold text-stone-500 mb-1 block">方法 B：貼上代碼</label>
-                                        <textarea 
-                                            className="w-full border border-stone-300 rounded p-2 text-xs h-24 focus:ring-1 focus:ring-emerald-500 outline-none font-mono"
-                                            placeholder="在此貼上別人分享的曼陀羅代碼..."
-                                            value={importCode}
-                                            onChange={e => setImportCode(e.target.value)}
-                                        ></textarea>
-                                        <button 
-                                            onClick={handleImportCodeSubmit}
-                                            disabled={!importCode}
-                                            className="mt-2 w-full py-2 bg-stone-700 text-white rounded text-sm hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            解析代碼並開啟
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <button onClick={()=>setShowImportModal(false)} className="mt-4 w-full py-2 text-sm text-stone-400 hover:text-stone-600">取消</button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Export Modal */}
-                    {showExportModal && (
-                        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-800/60 p-4">
-                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-5 border border-stone-100">
-                                <h3 className="font-bold mb-4 text-lg text-stone-700 garden-title flex items-center gap-2">
-                                    <Icons.Export /> 匯出檔案
-                                </h3>
-                                
-                                <div className="space-y-2">
-                                    <button onClick={handleExportJPG} className="w-full text-left p-3 hover:bg-stone-50 rounded-lg transition-colors border border-transparent hover:border-stone-200">
-                                        <div className="font-bold text-stone-700">圖片 (.jpg)</div>
-                                        <div className="text-xs text-stone-500">適合分享到社群媒體</div>
-                                    </button>
-                                    <button onClick={handleExportPDF} className="w-full text-left p-3 hover:bg-stone-50 rounded-lg transition-colors border border-transparent hover:border-stone-200">
-                                        <div className="font-bold text-stone-700">文件 (.pdf)</div>
-                                        <div className="text-xs text-stone-500">適合列印與正式文件</div>
-                                    </button>
-                                    <button onClick={handleExportXLS} className="w-full text-left p-3 hover:bg-stone-50 rounded-lg transition-colors border border-transparent hover:border-stone-200">
-                                        <div className="font-bold text-stone-700">Excel (.xls)</div>
-                                        <div className="text-xs text-stone-500">適合資料整理與分析</div>
-                                    </button>
-                                    <button onClick={handleExportMD} className="w-full text-left p-3 hover:bg-stone-50 rounded-lg transition-colors border border-transparent hover:border-stone-200">
-                                        <div className="font-bold text-stone-700">Markdown (.md)</div>
-                                        <div className="text-xs text-stone-500">適合筆記軟體 (Obsidian, Notion)</div>
-                                    </button>
-                                </div>
-                                
-                                <button onClick={()=>setShowExportModal(false)} className="mt-4 w-full py-2 text-sm text-stone-400 hover:text-stone-600">取消</button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Save As Modal */}
-                    {showSaveAsModal && (
-                        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-800/50 p-4">
-                            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5 border border-stone-100">
-                                <h3 className="font-bold mb-4 text-lg text-stone-700 garden-title">{currentDocId && viewMode === 'editor' && !isSharedView ? '另存新檔' : (isSharedView ? '儲存副本至花園' : '建立新花園')}</h3>
-                                <div className="space-y-3">
-                                    <input id="save-title" className="w-full border border-stone-300 p-2 rounded focus:ring-1 focus:ring-emerald-400 outline-none" 
-                                        defaultValue={viewMode === 'browser' ? '' : docMetadata.title} 
-                                        placeholder="檔案名稱"
-                                    />
-                                    <input id="save-cat" className="w-full border border-stone-300 p-2 rounded focus:ring-1 focus:ring-emerald-400 outline-none" 
-                                        defaultValue={viewMode === 'browser' ? activeCategory === 'All' ? '一般' : activeCategory : docMetadata.category} 
-                                        placeholder="分類 (可多選, 用逗號分隔)"
-                                    />
-                                    <div className="flex justify-end gap-2 mt-4">
-                                        <button onClick={()=>setShowSaveAsModal(false)} className="px-4 py-2 rounded text-stone-500 hover:bg-stone-100">取消</button>
-                                        <button onClick={()=>{
-                                            const t = document.getElementById('save-title').value;
-                                            const c = document.getElementById('save-cat').value;
-                                            if(t) {
-                                                if (viewMode === 'browser' || (!currentDocId && !isSharedView)) {
-                                                    createNewFile(t, c);
-                                                } else {
-                                                    if (viewMode === 'editor') {
-                                                        const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
-                                                        db.collection(path).add({
-                                                            title: t, category: c, cells: data, gridSize,
-                                                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                                                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                                                        }).then(doc => {
-                                                            setCurrentDocId(doc.id);
-                                                            setDocMetadata({title:t, category:c});
-                                                            setSaveStatus('saved');
-                                                            setIsSharedView(false); // No longer shared view once saved copy
-                                                            setShowSaveAsModal(false);
-                                                        });
-                                                    }
-                                                }
-                                            }
-                                        }} className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 shadow-sm">
-                                            {viewMode === 'browser' ? '建立' : '儲存'}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    
+                    {/* --- GLOBAL MODALS (MOVED OUTSIDE TERNARY) --- */}
+                    {showGlobalSearchModal && (<div className="fixed inset-0 z-[80] flex items-center justify-center bg-stone-800/50 p-4"><div className="bg-white rounded-xl shadow-xl w-full max-w-lg h-[70vh] flex flex-col"><div className="p-3 border-b border-stone-200 flex justify-between items-center bg-[#fcfaf9] rounded-t-xl"><h3 className="font-bold text-stone-700">全域搜尋結果</h3><button onClick={()=>setShowGlobalSearchModal(false)} className="text-stone-400 hover:text-stone-600">✕</button></div><div className="p-2 border-b border-stone-200 bg-[#fcfaf9]"><input autoFocus className="w-full p-2 border border-stone-300 rounded focus:ring-1 focus:ring-emerald-400 outline-none" placeholder="輸入關鍵字..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => { if(e.key === 'Enter') performGlobalSearch(); }} /><div className="text-[10px] text-stone-400 mt-1 flex justify-between"><span>支援空白鍵分隔 (AND 邏輯)</span><button onClick={performGlobalSearch} className="text-emerald-600 font-bold hover:underline">搜尋</button></div></div><div className="flex-1 overflow-y-auto p-2 space-y-2">{globalSearchResults.length > 0 ? (globalSearchResults.map(file => (<div key={file.id} onClick={()=>loadFileFromDB(file)} className="p-3 border border-stone-200 rounded hover:border-emerald-400 cursor-pointer bg-white hover:bg-emerald-50"><div className="font-bold text-emerald-700">{file.title}</div><div className="text-xs text-stone-500 mt-1 flex gap-2"><span className="bg-stone-100 px-1 rounded">{file.category}</span><span>關聯度: {file.score}</span></div></div>))) : (<div className="text-center text-stone-400 py-10">{searchQuery ? "沒有找到符合的結果" : "請輸入關鍵字進行搜尋"}</div>)}</div></div></div>)}
+                    {showShareModal && (<div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-800/60 p-4"><div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-5 border border-stone-100"><h3 className="font-bold mb-2 text-lg text-stone-700 garden-title flex items-center gap-2"><Icons.Share /> 分享檔案</h3><p className="text-xs text-stone-500 mb-4">因安全權限限制，請使用下列方式分享：</p><div className="space-y-3"><button onClick={handleExportFile} className="w-full flex items-center p-3 border border-emerald-200 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors group text-left"><div className="bg-emerald-100 text-emerald-600 p-2 rounded-lg group-hover:bg-emerald-200 mr-3"><Icons.Download /></div><div><div className="font-bold text-emerald-800 text-sm">下載分享檔 (.json)</div><div className="text-[10px] text-emerald-600">最穩定，支援圖片，適合備份傳送</div></div></button><button onClick={handleCopyCode} className="w-full flex items-center p-3 border border-stone-200 bg-white rounded-lg hover:bg-stone-50 transition-colors group text-left"><div className="bg-stone-100 text-stone-500 p-2 rounded-lg group-hover:bg-stone-200 mr-3"><Icons.Clipboard /></div><div><div className="font-bold text-stone-700 text-sm">複製文字代碼</div><div className="text-[10px] text-stone-500">適合純文字曼陀羅，可直接貼到通訊軟體</div></div></button></div><button onClick={()=>setShowShareModal(false)} className="mt-4 w-full py-2 text-sm text-stone-400 hover:text-stone-600">關閉</button></div></div>)}
+                    {showImportModal && (<div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-800/60 p-4"><div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-5 border border-stone-100"><h3 className="font-bold mb-4 text-lg text-stone-700 garden-title flex items-center gap-2"><Icons.Share /> 匯入分享</h3><div className="space-y-4"><div><label className="text-xs font-bold text-stone-500 mb-1 block">方法 A：選擇檔案 (.json)</label><button onClick={()=>fileInputRef.current?.click()} className="w-full py-2 border border-dashed border-stone-300 rounded text-sm text-stone-500 hover:border-emerald-500 hover:text-emerald-600 bg-stone-50">點擊上傳分享檔</button></div><div className="relative flex py-1 items-center"><div className="flex-grow border-t border-stone-200"></div><span className="flex-shrink-0 mx-2 text-stone-300 text-xs">OR</span><div className="flex-grow border-t border-stone-200"></div></div><div><label className="text-xs font-bold text-stone-500 mb-1 block">方法 B：貼上代碼</label><textarea className="w-full border border-stone-300 rounded p-2 text-xs h-24 focus:ring-1 focus:ring-emerald-500 outline-none font-mono" placeholder="在此貼上別人分享的曼陀羅代碼..." value={importCode} onChange={e => setImportCode(e.target.value)}></textarea><button onClick={handleImportCodeSubmit} disabled={!importCode} className="mt-2 w-full py-2 bg-stone-700 text-white rounded text-sm hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed">解析代碼並開啟</button></div></div><button onClick={()=>setShowImportModal(false)} className="mt-4 w-full py-2 text-sm text-stone-400 hover:text-stone-600">取消</button></div></div>)}
+                    {showExportModal && (<div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-800/60 p-4"><div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-5 border border-stone-100"><h3 className="font-bold mb-4 text-lg text-stone-700 garden-title flex items-center gap-2"><Icons.Export /> 匯出檔案</h3><div className="space-y-2"><button onClick={handleExportJPG} className="w-full text-left p-3 hover:bg-stone-50 rounded-lg transition-colors border border-transparent hover:border-stone-200"><div className="font-bold text-stone-700">圖片 (.jpg)</div><div className="text-xs text-stone-500">適合分享到社群媒體</div></button><button onClick={handleExportPDF} className="w-full text-left p-3 hover:bg-stone-50 rounded-lg transition-colors border border-transparent hover:border-stone-200"><div className="font-bold text-stone-700">文件 (.pdf)</div><div className="text-xs text-stone-500">適合列印與正式文件</div></button><button onClick={handleExportXLS} className="w-full text-left p-3 hover:bg-stone-50 rounded-lg transition-colors border border-transparent hover:border-stone-200"><div className="font-bold text-stone-700">Excel (.xls)</div><div className="text-xs text-stone-500">適合資料整理與分析</div></button><button onClick={handleExportMD} className="w-full text-left p-3 hover:bg-stone-50 rounded-lg transition-colors border border-transparent hover:border-stone-200"><div className="font-bold text-stone-700">Markdown (.md)</div><div className="text-xs text-stone-500">適合筆記軟體 (Obsidian, Notion)</div></button></div><button onClick={()=>setShowExportModal(false)} className="mt-4 w-full py-2 text-sm text-stone-400 hover:text-stone-600">取消</button></div></div>)}
+                    {showSaveAsModal && (<div className="fixed inset-0 z-[70] flex items-center justify-center bg-stone-800/50 p-4"><div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5 border border-stone-100"><h3 className="font-bold mb-4 text-lg text-stone-700 garden-title">{currentDocId && viewMode === 'editor' && !isSharedView ? '另存新檔' : (isSharedView ? '儲存副本至花園' : '建立新花園')}</h3><div className="space-y-3"><input id="save-title" className="w-full border border-stone-300 p-2 rounded focus:ring-1 focus:ring-emerald-400 outline-none" defaultValue={viewMode === 'browser' ? '' : docMetadata.title} placeholder="檔案名稱"/><input id="save-cat" className="w-full border border-stone-300 p-2 rounded focus:ring-1 focus:ring-emerald-400 outline-none" defaultValue={viewMode === 'browser' ? activeCategory === 'All' ? '一般' : activeCategory : docMetadata.category} placeholder="分類 (可多選, 用逗號分隔)"/><div className="flex justify-end gap-2 mt-4"><button onClick={()=>setShowSaveAsModal(false)} className="px-4 py-2 rounded text-stone-500 hover:bg-stone-100">取消</button><button onClick={()=>{ const t = document.getElementById('save-title').value; const c = document.getElementById('save-cat').value; if(t) { if (viewMode === 'browser' || (!currentDocId && !isSharedView)) { createNewFile(t, c); } else { if (viewMode === 'editor') { const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`; db.collection(path).add({ title: t, category: c, cells: data, gridSize, createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }).then(doc => { setCurrentDocId(doc.id); setDocMetadata({title:t, category:c}); setSaveStatus('saved'); setIsSharedView(false); setShowSaveAsModal(false); }); } } } }} className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 shadow-sm">{viewMode === 'browser' ? '建立' : '儲存'}</button></div></div></div></div>)}
                 </div>
             );
         }
