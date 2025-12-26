@@ -266,7 +266,7 @@
             const [user, setUser] = useState(null);
             const [viewMode, setViewMode] = useState('browser'); 
 
-            // Auth State (Email/Password)
+            // Auth State
             const [authMode, setAuthMode] = useState('login'); 
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
@@ -317,6 +317,10 @@
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
             // --- 1. CORE LOGIC FUNCTIONS ---
+            
+            // Define Helper Functions *inside* component to access state, but typically can be outside if stateless.
+            // Here we keep them inside or ensure they are properly memoized or referenced.
+            // To solve "ReferenceError", functions must be defined before they are used in useEffect or JSX.
 
             const checkPassword = () => {
                 if (isAuthenticated) return true;
@@ -362,6 +366,18 @@
                 return terms.every(term => target.includes(term));
             };
 
+            const fetchFileList = async () => {
+                if (!user || !db) return;
+                try {
+                    const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
+                    const snapshot = await db.collection(path).get();
+                    const files = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    files.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
+                    setFileList(files);
+                } catch (e) { console.error("Read failed", e); }
+            };
+
+            // Defined before use in JSX
             const performGlobalSearch = () => {
                 if (!searchQuery) { setGlobalSearchResults([]); return; }
                 const results = [];
@@ -429,17 +445,6 @@
                 updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', [...prevImages, url]);
             };
 
-            const fetchFileList = async () => {
-                if (!user || !db) return;
-                try {
-                    const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
-                    const snapshot = await db.collection(path).get();
-                    const files = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    files.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
-                    setFileList(files);
-                } catch (e) { console.error("Read failed", e); }
-            };
-
             const loadFileFromDB = (file) => {
                 if (file.deleted) {
                     alert("請先將檔案從垃圾筒還原，才能開啟編輯。");
@@ -487,7 +492,7 @@
                         deleted: true,
                         deletedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    fetchFileList();
+                    fetchFileList(); // Reload list
                 } catch (e) { alert("移至垃圾筒失敗"); }
             };
 
@@ -791,19 +796,14 @@
                 reader.readAsText(file);
             };
 
-            const handleExportMarkdownWrapper = (openDrive) => {
-                // Wrapper to match previous signature if needed, or redirect
-                if(openDrive) handleExportMD();
-            };
 
-
-            // --- 2. EFFECTS (Defined AFTER functions) ---
+            // --- 2. EFFECTS ---
 
             useEffect(() => {
                 const initAuth = async () => {
+                    // Safety Timeout
                     const timer = setTimeout(() => setLoading(false), 5000); 
                     if (!auth) { clearTimeout(timer); setLoading(false); return; }
-                    // Pure Email Auth - No Anonymous
                 };
                 initAuth();
                 
@@ -814,12 +814,8 @@
                             // User logged in, fetch files if in browser mode
                             if (viewMode === 'browser') fetchFileList();
                         } else {
-                            // User logged out, clear data
+                            // User logged out
                             setFileList([]);
-                            // If user is sharing, allow view
-                            if (!isSharedView) {
-                                // Just stay in login mode
-                            }
                         }
                         setLoading(false);
                     });
@@ -854,10 +850,12 @@
 
             useEffect(() => {
                 if (user && viewMode === 'browser') {
-                    setLoading(true);
-                    fetchFileList().finally(() => setLoading(false));
+                    // This effect triggers refetch when viewMode changes back to browser
+                    // but we ensure not to double fetch if user just logged in (handled by auth effect)
+                    // It's safe to call again as it just updates list
+                     fetchFileList();
                 }
-            }, [user, viewMode]);
+            }, [viewMode]); // Removed user dependency to avoid double fetch on login, let auth effect handle initial fetch
 
             useEffect(() => {
                 if (!user || !currentDocId || !db || viewMode !== 'editor') return;
