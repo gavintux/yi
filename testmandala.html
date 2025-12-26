@@ -191,6 +191,28 @@
             return (yiq >= 128) ? 'text-stone-800' : 'text-white';
         };
 
+        // Simple String Compression for URL
+        const encodeShareData = (dataObj) => {
+            try {
+                const json = JSON.stringify(dataObj);
+                // standard utf8 to base64
+                return btoa(unescape(encodeURIComponent(json)));
+            } catch (e) {
+                console.error("Encoding failed", e);
+                return null;
+            }
+        };
+
+        const decodeShareData = (encodedString) => {
+            try {
+                const json = decodeURIComponent(escape(atob(encodedString)));
+                return JSON.parse(json);
+            } catch (e) {
+                console.error("Decoding failed", e);
+                return null;
+            }
+        };
+
         const EMOJI_LIST = ['🌿', '🌸', '🌼', '🍄', '🌱', '🍃', '🌻', '🌵', '🌺', '🍂', '🦋', '🐦', '☀️', '💧', '🏡', '📚', '🎨', '🍵', '🧘', '✨'];
 
         const Icons = {
@@ -224,7 +246,7 @@
             const [gridSize, setGridSize] = useState(USER_CONFIG.system.defaultGridSize); 
             const [viewStyle, setViewStyle] = useState(USER_CONFIG.system.defaultViewStyle);
             const [selectedCell, setSelectedCell] = useState(null);
-            const [isSharedView, setIsSharedView] = useState(false); // New: Track if viewing share
+            const [isSharedView, setIsSharedView] = useState(false); 
             
             // Search & Filter
             const [searchQuery, setSearchQuery] = useState("");
@@ -301,32 +323,29 @@
             // --- Share Logic (Check URL on load) ---
             useEffect(() => {
                 const params = new URLSearchParams(window.location.search);
-                const shareId = params.get('share');
-                if (shareId && db) {
+                const importData = params.get('import'); // New: Check for data param
+                
+                if (importData) {
                     setLoading(true);
-                    // Use 'mandala_shares' for public data - UPDATED COLLECTION NAME
-                    const path = `artifacts/${appId}/public/data/mandala_shares/${shareId}`;
-                    db.doc(path).get().then(doc => {
-                        if (doc.exists) {
-                            const f = doc.data();
-                            setData(f.cells || {});
-                            setGridSize(f.gridSize || 3);
-                            setDocMetadata({ 
-                                title: f.title || '分享的檔案', 
-                                category: f.category || '一般' 
-                            });
-                            setCurrentDocId(null); // Detach from original user doc
-                            setIsSharedView(true);
-                            setViewMode('editor');
-                        } else {
-                            alert("找不到分享的檔案，或是連結已失效。");
-                            // Clean URL
-                            window.history.replaceState({}, document.title, window.location.pathname);
-                        }
-                    }).catch(e => console.error("Load share error", e))
-                      .finally(() => setLoading(false));
+                    // Decode URL data
+                    const decoded = decodeShareData(importData);
+                    if (decoded) {
+                        setData(decoded.cells || {});
+                        setGridSize(decoded.gridSize || 3);
+                        setDocMetadata({ 
+                            title: decoded.title ? `${decoded.title} (分享副本)` : '分享的檔案', 
+                            category: decoded.category || '一般' 
+                        });
+                        setCurrentDocId(null);
+                        setIsSharedView(true);
+                        setViewMode('editor');
+                    } else {
+                        alert("分享連結格式錯誤或已損壞。");
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                    setLoading(false);
                 }
-            }, [db]); // Run when DB is ready
+            }, []); 
 
             // --- File Fetching ---
             useEffect(() => {
@@ -496,42 +515,44 @@
                 setLoading(false);
             };
 
-            const shareFile = async () => {
-                if (!data || Object.keys(data).length === 0) {
-                    alert("空檔案無法分享");
+            const shareViaUrl = () => {
+                setLoading(true);
+                // 1. Prepare Data
+                const shareObj = {
+                    title: docMetadata.title,
+                    category: docMetadata.category,
+                    gridSize: gridSize,
+                    cells: data
+                };
+
+                // 2. Encode
+                const encoded = encodeShareData(shareObj);
+                
+                setLoading(false);
+
+                if (!encoded) {
+                    alert("編碼失敗，請稍後再試。");
                     return;
                 }
-                setLoading(true);
-                try {
-                    // Use 'add' to let Firestore generate the ID and avoid ID collision/permission issues
-                    // Path: artifacts/{appId}/public/data/mandala_shares
-                    const collectionPath = `artifacts/${appId}/public/data/mandala_shares`;
-                    
-                    const docRef = await db.collection(collectionPath).add({
-                        title: docMetadata.title,
-                        category: docMetadata.category,
-                        cells: data,
-                        gridSize: gridSize,
-                        sharedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
 
-                    // Generate URL
-                    const url = `${window.location.origin}${window.location.pathname}?share=${docRef.id}`;
-                    
-                    // Copy to clipboard
-                    const textArea = document.createElement("textarea");
-                    textArea.value = url;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand("copy");
-                    document.body.removeChild(textArea);
-                    
-                    alert(`分享連結已複製！\n\n連結：${url}`);
-                } catch (e) {
-                    console.error("Share failed", e);
-                    alert(`分享失敗。\n錯誤代碼: ${e.code}\n錯誤訊息: ${e.message}\n\n請確認您的網路連線。`);
+                // 3. Length Check
+                if (encoded.length > 15000) { // Safety limit for various browsers/servers
+                    alert("此檔案內容過多（可能包含大圖片），無法透過網址分享。\n\n建議改用「匯出檔案」功能，將檔案傳送給朋友。");
+                    return;
                 }
-                setLoading(false);
+
+                // 4. Generate URL
+                const url = `${window.location.origin}${window.location.pathname}?import=${encoded}`;
+                
+                // 5. Copy
+                const textArea = document.createElement("textarea");
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textArea);
+                
+                alert(`分享連結已複製！\n\n連結：${url.substring(0, 50)}...`);
             };
 
             const handleFileMenu = (e) => {
@@ -544,7 +565,6 @@
                         setIsSharedView(false);
                     }
                 } else if (action === "save") {
-                    // In shared view, prevent direct saving (since it's a new copy, but effectively read-only context)
                     if (isSharedView) {
                         alert("這是分享的檔案，請使用「另存新檔」保存到您的花園。");
                         setShowSaveAsModal(true);
@@ -554,7 +574,6 @@
                 } else if (action === "save_as") {
                     setShowSaveAsModal(true);
                 } else if (action === "back") {
-                    // Reset URL params when going back
                     if (isSharedView) {
                         window.history.replaceState({}, document.title, window.location.pathname);
                     }
@@ -565,7 +584,7 @@
                 } else if (action === "export_drive") {
                     handleExportMarkdown(true);
                 } else if (action === "share") {
-                    shareFile();
+                    shareViaUrl(); // Use URL Sharing instead of DB
                 }
             };
 
