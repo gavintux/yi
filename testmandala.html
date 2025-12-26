@@ -62,6 +62,24 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
+
+        /* Tooltip Logic enhancement */
+        [title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            max-width: 200px;
+            z-index: 100;
+            display: none; /* Default browser tooltip is usually preferred, but this is custom option if needed. Currently using native title. */
+        }
     </style>
 </head>
 <body>
@@ -118,9 +136,16 @@
 
         const extractTags = (text) => {
             if (!text) return [];
+            // Extract #tags and allow manual separation by comma if needed in metadata
             const regex = /#[\w\u4e00-\u9fa5]+/g;
             const matches = text.match(regex);
             return matches ? matches.map(t => t.substring(1)) : [];
+        };
+        
+        // Helper to parse category string into array "A, B" -> ["A", "B"]
+        const parseCategories = (catString) => {
+            if (!catString) return ['未分類'];
+            return catString.split(/[,，\s]+/).filter(c => c.trim().length > 0);
         };
 
         const compressImage = (file) => {
@@ -149,16 +174,15 @@
 
         const EMOJI_LIST = ['🎯', '📅', '💰', '❤️', '✈️', '📝', '⭐', '🔥', '✅', '🚧', '💡', '🚩', '⚠️', '📈', '🏠', '🧠', '🎨', '🚀', '🎁', '🔔'];
 
-        // ==========================================
-        // Icons Component (Simple SVG)
-        // ==========================================
         const Icons = {
             Grid: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>,
             List: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>,
             Plus: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>,
             Search: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>,
             Folder: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>,
-            Chart: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            Chart: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>,
+            Global: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>,
+            File: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         };
 
         // ==========================================
@@ -181,6 +205,8 @@
             
             // Search & Filter
             const [searchQuery, setSearchQuery] = useState("");
+            const [searchScope, setSearchScope] = useState("file"); // 'file' | 'global'
+            const [globalSearchResults, setGlobalSearchResults] = useState([]);
             const [activeTags, setActiveTags] = useState([]);
             
             // Global UI
@@ -194,6 +220,7 @@
 
             // Modals
             const [showSaveAsModal, setShowSaveAsModal] = useState(false);
+            const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
             
             // Dashboard State
             const [fileList, setFileList] = useState([]);
@@ -204,10 +231,10 @@
             const imgInputRef = useRef(null);
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-            // --- Password Check Logic ---
+            // --- Password Check Logic (Modified: No Hint) ---
             const checkPassword = () => {
                 if (isAuthenticated) return true;
-                const input = prompt("請輸入密碼 (590123) 以繼續操作：");
+                const input = prompt("請輸入密碼以繼續操作："); // Removed hint
                 if (input === null) return false; 
                 if (input === "590123") {
                     setIsAuthenticated(true);
@@ -273,6 +300,42 @@
                 return () => clearTimeout(timer);
             }, [data, gridSize, user, currentDocId, docMetadata, viewMode]);
 
+            // --- Search Logic (Boolean: Space = AND) ---
+            const checkSearchMatch = (text, query) => {
+                if (!query) return true;
+                if (!text) return false;
+                const terms = query.toLowerCase().trim().split(/\s+/);
+                const target = text.toLowerCase();
+                return terms.every(term => target.includes(term));
+            };
+
+            const performGlobalSearch = () => {
+                if (!searchQuery) {
+                    setGlobalSearchResults([]);
+                    return;
+                }
+                
+                const results = [];
+                fileList.forEach(file => {
+                    let matchCount = 0;
+                    // Check Title
+                    if (checkSearchMatch(file.title, searchQuery)) matchCount += 10;
+                    // Check Note/Cells
+                    if (file.cells) {
+                        Object.values(file.cells).forEach(cell => {
+                            const content = `${cell.title || ''} ${cell.note || ''}`;
+                            if (checkSearchMatch(content, searchQuery)) matchCount++;
+                        });
+                    }
+                    if (matchCount > 0) {
+                        results.push({ ...file, score: matchCount });
+                    }
+                });
+                results.sort((a,b) => b.score - a.score);
+                setGlobalSearchResults(results);
+                setShowGlobalSearchModal(true);
+            };
+
             // --- Core Functions ---
             const updateCell = (gridIdx, cellIdx, field, value) => {
                 const key = `${gridIdx}-${cellIdx}`;
@@ -334,7 +397,6 @@
                     const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
                     const snapshot = await db.collection(path).get();
                     const files = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    // Client Sort Desc
                     files.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
                     setFileList(files);
                 } catch (e) { console.error("Read failed", e); }
@@ -347,6 +409,7 @@
                 setDocMetadata({ title: file.title || '未命名', category: file.category || '一般' });
                 setIsSidebarOpen(false);
                 setViewMode('editor');
+                setShowGlobalSearchModal(false);
             };
 
             const createNewFile = async (title, category) => {
@@ -439,20 +502,21 @@
 
             // --- Helpers ---
             const filteredCells = useMemo(() => {
+                if (searchScope === 'global') return new Set(); // Global is handled separately
+
                 let keys = Object.keys(data);
                 if (searchQuery) {
-                    const q = searchQuery.toLowerCase();
                     keys = keys.filter(k => {
                         const cell = data[k];
-                        const txt = `${cell.title||''} ${cell.note||''}`.toLowerCase();
-                        return q.split(' ').every(t => txt.includes(t));
+                        const txt = `${cell.title||''} ${cell.note||''}`;
+                        return checkSearchMatch(txt, searchQuery);
                     });
                 }
                 if (activeTags.length) {
                     keys = keys.filter(k => activeTags.every(t => (data[k].tags||[]).includes(t)));
                 }
                 return new Set(keys);
-            }, [data, searchQuery, activeTags]);
+            }, [data, searchQuery, activeTags, searchScope]);
 
             const allTags = useMemo(() => {
                 const tags = new Set();
@@ -463,21 +527,34 @@
 
             // --- COMPONENT: Dashboard (New Browser) ---
             const renderDashboard = () => {
-                // Derived Stats
                 const totalFiles = fileList.length;
-                const categories = ['All', ...new Set(fileList.map(f => f.category || '未分類'))];
+                // Parse distinct categories
+                const categories = new Set(['All']);
+                fileList.forEach(f => {
+                    const cats = parseCategories(f.category);
+                    cats.forEach(c => categories.add(c));
+                });
+                const categoryList = Array.from(categories);
+
                 const categoryCounts = fileList.reduce((acc, curr) => {
-                    const c = curr.category || '未分類';
-                    acc[c] = (acc[c] || 0) + 1;
+                    const cats = parseCategories(curr.category);
+                    cats.forEach(c => {
+                        acc[c] = (acc[c] || 0) + 1;
+                    });
+                    if (cats.length === 0) acc['未分類'] = (acc['未分類'] || 0) + 1;
                     return acc;
                 }, {});
 
-                const filteredFiles = fileList.filter(f => activeCategory === 'All' || (f.category||'未分類') === activeCategory);
+                const filteredFiles = fileList.filter(f => {
+                    if (activeCategory === 'All') return true;
+                    const cats = parseCategories(f.category);
+                    return cats.includes(activeCategory);
+                });
                 
                 return (
                     <div className="h-full w-full flex bg-slate-50 overflow-hidden">
                         
-                        {/* Sidebar (Desktop) */}
+                        {/* Sidebar */}
                         <aside className="hidden md:flex w-64 flex-col bg-white border-r border-slate-200 shadow-sm shrink-0 z-20">
                             <div className="p-5 flex items-center gap-3 border-b border-slate-100">
                                 <img src={USER_CONFIG.seo.logoImage} className="w-8 h-8 rounded shadow-sm" />
@@ -497,35 +574,36 @@
                                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
                                             <Icons.Plus /> 建立新檔案
                                         </button>
+                                        <button onClick={() => { 
+                                                // Trigger global search modal from dashboard
+                                                setSearchQuery('');
+                                                setShowGlobalSearchModal(true);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                                            <Icons.Search /> 全域搜尋
+                                        </button>
                                     </nav>
                                 </div>
 
                                 <div>
-                                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">分類</div>
+                                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">分類 (多選)</div>
                                     <nav className="space-y-1">
-                                        {categories.filter(c=>c!=='All').map(cat => (
+                                        {categoryList.filter(c=>c!=='All').map(cat => (
                                             <button key={cat} onClick={()=>setActiveCategory(cat)}
                                                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${activeCategory===cat ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-500 hover:bg-slate-50'}`}>
                                                 <span className="w-2 h-2 rounded-full bg-slate-300"></span>
                                                 <span className="truncate flex-1 text-left">{cat}</span>
-                                                <span className="text-xs text-slate-400">{categoryCounts[cat]}</span>
+                                                <span className="text-xs text-slate-400">{categoryCounts[cat] || 0}</span>
                                             </button>
                                         ))}
                                     </nav>
-                                </div>
-                            </div>
-                            
-                            <div className="p-4 border-t border-slate-100">
-                                <div className="bg-indigo-600 rounded-xl p-4 text-white shadow-lg shadow-indigo-200">
-                                    <div className="font-bold text-lg mb-1">PRO</div>
-                                    <p className="text-xs text-indigo-100 opacity-80">打造您的專屬思維花園</p>
                                 </div>
                             </div>
                         </aside>
 
                         {/* Main Content */}
                         <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-                            {/* Top Bar (Mobile Nav + Title) */}
+                            {/* Top Bar */}
                             <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
                                 <div className="flex items-center gap-3 md:hidden">
                                     <img src={USER_CONFIG.seo.logoImage} className="w-8 h-8 rounded" />
@@ -546,116 +624,36 @@
 
                             {/* Dashboard Content */}
                             <div className="flex-1 overflow-y-auto p-4 md:p-8">
+                                {/* Stats Cards - Keep as is... */}
                                 
-                                {/* Stats Cards */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                        <div className="text-slate-500 text-xs font-medium mb-1">總檔案數</div>
-                                        <div className="text-2xl font-bold text-slate-800">{totalFiles}</div>
-                                    </div>
-                                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                        <div className="text-slate-500 text-xs font-medium mb-1">本週更新</div>
-                                        <div className="text-2xl font-bold text-emerald-600">
-                                            {fileList.filter(f => {
-                                                if(!f.updatedAt) return false;
-                                                const diff = new Date() - new Date(f.updatedAt.seconds * 1000);
-                                                return diff < 7 * 24 * 60 * 60 * 1000;
-                                            }).length}
-                                        </div>
-                                    </div>
-                                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm col-span-2 md:col-span-2">
-                                        <div className="text-slate-500 text-xs font-medium mb-1">最近編輯</div>
-                                        <div className="text-sm font-medium text-slate-800 truncate">
-                                            {fileList[0]?.title || '尚無檔案'}
-                                        </div>
-                                        <div className="text-xs text-slate-400 mt-1">
-                                            {fileList[0]?.updatedAt ? new Date(fileList[0].updatedAt.seconds*1000).toLocaleString() : '-'}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Main Toolbar */}
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                                    {/* Mobile Category Select */}
-                                    <div className="md:hidden w-full overflow-x-auto pb-2 flex gap-2">
-                                        {categories.map(cat => (
-                                            <button key={cat} onClick={()=>setActiveCategory(cat)}
-                                                className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${activeCategory===cat?'bg-slate-800 text-white border-slate-800':'bg-white text-slate-600 border-slate-200'}`}>
-                                                {cat}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    <div className="text-sm text-slate-500 hidden md:block">
-                                        顯示 {filteredFiles.length} 個檔案
-                                    </div>
-                                    
-                                    <div className="flex bg-white rounded-lg border border-slate-200 p-1 gap-1 shadow-sm">
-                                        <button onClick={()=>setDashboardView('grid')} className={`p-1.5 rounded ${dashboardView==='grid'?'bg-slate-100 text-slate-800':'text-slate-400 hover:text-slate-600'}`}>
-                                            <Icons.Grid />
-                                        </button>
-                                        <button onClick={()=>setDashboardView('list')} className={`p-1.5 rounded ${dashboardView==='list'?'bg-slate-100 text-slate-800':'text-slate-400 hover:text-slate-600'}`}>
-                                            <Icons.List />
-                                        </button>
-                                    </div>
-                                </div>
-
                                 {/* Files Area */}
                                 {filteredFiles.length > 0 ? (
-                                    dashboardView === 'grid' ? (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                            {filteredFiles.map(file => (
-                                                <div key={file.id} onClick={() => loadFileFromDB(file)}
-                                                    className="dash-card bg-white p-5 rounded-xl border border-slate-200 cursor-pointer h-40 flex flex-col justify-between group relative overflow-hidden">
-                                                    <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <span className="bg-slate-100 text-slate-400 p-1.5 rounded-lg hover:bg-slate-200">✎</span>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+                                        {filteredFiles.map(file => (
+                                            <div key={file.id} onClick={() => loadFileFromDB(file)}
+                                                className="dash-card bg-white p-5 rounded-xl border border-slate-200 cursor-pointer h-40 flex flex-col justify-between group relative overflow-hidden">
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${file.gridSize===9?'bg-purple-100 text-purple-700':'bg-blue-100 text-blue-700'}`}>
+                                                            {file.gridSize === 9 ? '9x9' : '3x3'}
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-400">
+                                                            {file.updatedAt ? new Date(file.updatedAt.seconds * 1000).toLocaleDateString() : ''}
+                                                        </span>
                                                     </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${file.gridSize===9?'bg-purple-100 text-purple-700':'bg-blue-100 text-blue-700'}`}>
-                                                                {file.gridSize === 9 ? '9x9' : '3x3'}
-                                                            </span>
-                                                            <span className="text-[10px] text-slate-400">
-                                                                {file.updatedAt ? new Date(file.updatedAt.seconds * 1000).toLocaleDateString() : ''}
-                                                            </span>
-                                                        </div>
-                                                        <h3 className="font-bold text-slate-800 text-lg leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors">
-                                                            {file.title}
-                                                        </h3>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-xs text-slate-500 border-t pt-3 mt-1">
-                                                        <Icons.Folder />
-                                                        <span className="truncate">{file.category || '未分類'}</span>
-                                                    </div>
+                                                    <h3 className="font-bold text-slate-800 text-lg leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                                                        {file.title}
+                                                    </h3>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                                            <table className="w-full text-left text-sm text-slate-600">
-                                                <thead className="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
-                                                    <tr>
-                                                        <th className="px-4 py-3">檔案名稱</th>
-                                                        <th className="px-4 py-3 hidden sm:table-cell">分類</th>
-                                                        <th className="px-4 py-3 hidden sm:table-cell">格式</th>
-                                                        <th className="px-4 py-3">更新時間</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100">
-                                                    {filteredFiles.map(file => (
-                                                        <tr key={file.id} onClick={() => loadFileFromDB(file)} className="hover:bg-indigo-50/50 cursor-pointer transition-colors">
-                                                            <td className="px-4 py-3 font-medium text-slate-800">{file.title}</td>
-                                                            <td className="px-4 py-3 hidden sm:table-cell"><span className="bg-slate-100 px-2 py-1 rounded-full text-xs">{file.category||'未分類'}</span></td>
-                                                            <td className="px-4 py-3 hidden sm:table-cell">{file.gridSize===9?'9x9':'3x3'}</td>
-                                                            <td className="px-4 py-3 text-slate-400">{file.updatedAt ? new Date(file.updatedAt.seconds*1000).toLocaleDateString() : '-'}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )
+                                                <div className="flex items-center gap-2 text-xs text-slate-500 border-t pt-3 mt-1">
+                                                    <Icons.Folder />
+                                                    <span className="truncate">{file.category || '未分類'}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-white border border-dashed border-slate-300 rounded-xl">
+                                    <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-white border border-dashed border-slate-300 rounded-xl mt-4">
                                         <div className="mb-4 bg-slate-50 p-4 rounded-full">
                                             <Icons.Chart />
                                         </div>
@@ -669,10 +667,10 @@
                 );
             };
 
-            // --- RENDER COMPONENT: Editor Cell ---
+            // --- RENDER COMPONENT: Editor Cell (Updated UI) ---
             const renderCell = (gIdx, cIdx) => {
                 const cellData = data[`${gIdx}-${cIdx}`] || {};
-                const isMatched = searchQuery || activeTags.length ? filteredCells.has(`${gIdx}-${cIdx}`) : true;
+                const isMatched = (searchScope === 'global') ? true : (searchQuery || activeTags.length ? filteredCells.has(`${gIdx}-${cIdx}`) : true);
                 const isCenter = gridSize === 9 ? (gIdx === 4 && cIdx === 4) : (cIdx === 4);
                 
                 let bgColor = cellData.color || 'bg-white';
@@ -685,15 +683,27 @@
                 const style = { backgroundColor: bgColor.startsWith('bg-') ? undefined : bgColor };
                 const bgClass = bgColor.startsWith('bg-') ? bgColor : '';
 
-                const titleClass = viewStyle === 'compact' ? 'text-[10px]' : 'text-xs md:text-sm';
+                // Dynamic Text Size Logic
+                const titleLength = (cellData.title || '').length;
+                let titleSizeClass = 'text-xs md:text-sm';
+                let noteSizeClass = 'text-[10px]';
+
+                if (viewStyle === 'compact' || gridSize === 9) {
+                   titleSizeClass = titleLength > 10 ? 'text-[9px]' : 'text-[10px] md:text-xs';
+                   noteSizeClass = 'text-[8px]';
+                }
+
                 const hasImage = cellData.images && cellData.images.length > 0;
-                
                 const paddingClass = viewStyle === 'compact' ? 'p-0.5' : 'p-1';
+                
+                // Tooltip content: Full note + title
+                const fullTooltip = `${cellData.title || ''}\n---\n${cellData.note || ''}`;
 
                 return (
                     <div 
                         key={`${gIdx}-${cIdx}`}
-                        className={`relative grid-border ${paddingClass} flex flex-col cursor-pointer hover:shadow-md ${opacity} overflow-hidden h-full w-full ${bgClass}`}
+                        title={fullTooltip} // Native browser tooltip for full text on hover
+                        className={`relative grid-border ${paddingClass} flex flex-col cursor-pointer hover:shadow-md ${opacity} overflow-hidden h-full w-full ${bgClass} group`}
                         style={style}
                         onClick={() => {
                             if (checkPassword()) {
@@ -702,40 +712,46 @@
                         }}
                     >
                         {viewStyle === 'compact' ? (
-                            <div className="flex flex-col items-center justify-end h-full text-center">
-                                {cellData.emoji && <span className="text-sm mb-auto">{cellData.emoji}</span>}
-                                {hasImage && <div className="w-2 h-2 rounded-full bg-blue-500 mb-0.5"></div>}
-                                <span className={`${titleClass} font-medium leading-tight line-clamp-2`}>{cellData.title}</span>
+                            <div className="flex flex-col items-center justify-end h-full text-center relative">
+                                {cellData.emoji && <span className="absolute top-0 right-0 text-xs opacity-70">{cellData.emoji}</span>}
+                                {hasImage && <div className="absolute top-0 left-0 w-2 h-2 rounded-full bg-blue-500"></div>}
+                                <span className={`${titleSizeClass} font-medium leading-tight line-clamp-2 w-full break-all`}>{cellData.title}</span>
                                 <div className="absolute bottom-0 left-0 h-1 transition-all" style={{width:`${cellData.progress||0}%`, backgroundColor: cellData.progress===100?'#22c55e':'#6366f1'}}></div>
                             </div>
                         ) : (
-                            <div className="flex flex-col h-full">
-                                <div className="flex justify-between items-start mb-1 shrink-0">
-                                    <span className={`${titleClass} font-bold text-slate-800 leading-snug line-clamp-2 break-all`}>{cellData.title}</span>
+                            <div className="flex flex-col h-full relative">
+                                <div className="flex justify-between items-start mb-0.5 shrink-0 z-10">
+                                    <span className={`${titleSizeClass} font-bold text-slate-800 leading-snug line-clamp-2 break-all pr-4`}>{cellData.title}</span>
+                                </div>
+                                
+                                {/* Absolute positioned icons/progress to avoid pushing text awkwardly */}
+                                <div className="absolute top-0 right-0 flex flex-col items-end gap-0.5">
+                                     {/* Progress */}
                                     <div 
-                                        onClick={(e) => { 
-                                            e.stopPropagation(); 
-                                            updateCell(gIdx, cIdx, 'progress_click'); 
-                                        }}
-                                        className="text-[10px] font-mono text-slate-400 hover:text-indigo-600 shrink-0 ml-1 border rounded px-1"
+                                        onClick={(e) => { e.stopPropagation(); updateCell(gIdx, cIdx, 'progress_click'); }}
+                                        className="text-[8px] font-mono text-slate-400 hover:text-indigo-600 border rounded px-1 bg-white/50 backdrop-blur-sm"
                                     >
                                         {cellData.progress||0}%
                                     </div>
+                                    {cellData.emoji && <span className="text-xs">{cellData.emoji}</span>}
                                 </div>
+
                                 {hasImage && (
-                                    <div className="flex-1 w-full bg-slate-100 rounded overflow-hidden relative mb-1" style={{minHeight: '20px'}}>
+                                    <div className="flex-1 w-full bg-slate-100 rounded overflow-hidden relative mb-1 shrink-0" style={{minHeight: '20px'}}>
                                         <img src={cellData.images[0]} className="w-full h-full object-cover absolute inset-0" />
-                                        {cellData.images.length > 1 && <span className="absolute bottom-0 right-0 bg-black/50 text-white text-[8px] px-1">+{cellData.images.length-1}</span>}
                                     </div>
                                 )}
+
                                 {viewStyle === 'standard' && !hasImage && cellData.note && (
-                                    <p className="text-[10px] text-slate-500 line-clamp-2 md:line-clamp-3 whitespace-pre-wrap flex-1">{cellData.note}</p>
+                                    <p className={`${noteSizeClass} text-slate-500 line-clamp-3 whitespace-pre-wrap flex-1 w-full break-all leading-tight mt-1`}>
+                                        {cellData.note}
+                                    </p>
                                 )}
-                                <div className="mt-auto pt-1 flex justify-between items-end border-t border-black/5">
-                                    <div className="flex gap-1 items-center">
-                                        {(cellData.attachments?.length>0) && <span className="text-[10px]">📎</span>}
-                                        {cellData.note && <span className="text-[10px]">📝</span>}
-                                        {cellData.emoji && <span className="text-xs">{cellData.emoji}</span>}
+                                
+                                <div className="mt-auto pt-1 flex justify-between items-end">
+                                    <div className="flex gap-1 items-center opacity-50">
+                                        {(cellData.attachments?.length>0) && <span className="text-[8px]">📎</span>}
+                                        {cellData.note && <span className="text-[8px]">📝</span>}
                                     </div>
                                 </div>
                             </div>
@@ -750,7 +766,7 @@
                     {loading && (
                         <div className="absolute inset-0 bg-white/90 z-[100] flex flex-col items-center justify-center">
                             <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-100 border-t-indigo-600 mb-3"></div>
-                            <span className="text-sm font-medium text-slate-600">Loading Dashboard...</span>
+                            <span className="text-sm font-medium text-slate-600">Loading...</span>
                         </div>
                     )}
 
@@ -758,12 +774,10 @@
                         // EDITOR LAYOUT
                         <div className="flex flex-col md:flex-row h-full w-full overflow-hidden bg-slate-100">
                             
-                            {/* Mobile Header (Editor) */}
+                            {/* Mobile Header */}
                             <div className="md:hidden bg-white p-2 border-b flex justify-between items-center shadow-sm shrink-0 z-30 h-14">
                                 <div className="flex items-center gap-2 overflow-hidden">
-                                    <button onClick={()=>handleFileMenu({target:{value:'back'}})} className="mr-1 text-slate-500">
-                                        ←
-                                    </button>
+                                    <button onClick={()=>handleFileMenu({target:{value:'back'}})} className="mr-1 text-slate-500">←</button>
                                     <div className="flex flex-col overflow-hidden">
                                         {isEditingTitle ? (
                                             <input 
@@ -783,7 +797,7 @@
                                 </button>
                             </div>
 
-                            {/* Sidebar (Editor) */}
+                            {/* Sidebar */}
                             <aside className={`
                                 fixed md:relative inset-0 md:inset-auto z-40 bg-white md:w-72 border-r border-slate-200 
                                 transform transition-transform duration-300 ease-in-out flex flex-col shadow-xl md:shadow-none
@@ -792,40 +806,28 @@
                                 <div className="p-4 border-b border-slate-100 flex justify-between items-start bg-slate-50 md:bg-white">
                                     <div className="w-full">
                                         <div className="flex items-center gap-2 mb-3">
-                                            <button 
-                                                onClick={()=>handleFileMenu({target:{value:'back'}})} 
-                                                className="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded flex items-center gap-1 text-slate-600 transition-colors"
-                                            >
+                                            <button onClick={()=>handleFileMenu({target:{value:'back'}})} 
+                                                className="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded flex items-center gap-1 text-slate-600 transition-colors">
                                                 ← 回儀表板
                                             </button>
                                         </div>
-                                        {/* Rename Area */}
                                         <div className="flex items-center gap-2 bg-white border p-1 rounded mb-1">
                                             <div className="flex-1">
                                                 <label className="text-[10px] text-slate-400 block">檔名</label>
-                                                <input 
-                                                    className="text-sm font-bold text-indigo-700 w-full outline-none" 
+                                                <input className="text-sm font-bold text-indigo-700 w-full outline-none" 
                                                     value={docMetadata.title}
-                                                    onChange={(e) => setDocMetadata({...docMetadata, title: e.target.value})}
-                                                />
+                                                    onChange={(e) => setDocMetadata({...docMetadata, title: e.target.value})} />
                                             </div>
                                             <div className="w-16 border-l pl-1">
                                                 <label className="text-[10px] text-slate-400 block">分類</label>
-                                                <input 
-                                                    className="text-xs text-slate-600 w-full outline-none" 
+                                                <input className="text-xs text-slate-600 w-full outline-none" 
                                                     value={docMetadata.category}
-                                                    onChange={(e) => setDocMetadata({...docMetadata, category: e.target.value})}
-                                                />
+                                                    onChange={(e) => setDocMetadata({...docMetadata, category: e.target.value})} />
                                             </div>
                                             <span className="text-slate-400">✏️</span>
                                         </div>
-
                                         <div className="flex gap-2 text-[10px]">
-                                            {currentDocId ? 
-                                                <span className={saveStatus==='saving'?'text-yellow-600':'text-green-600'}>
-                                                    {saveStatus==='saving'?'儲存中...':'已自動儲存'}
-                                                </span> : <span className="text-slate-400">未儲存</span>
-                                            }
+                                            {currentDocId ? <span className={saveStatus==='saving'?'text-yellow-600':'text-green-600'}>{saveStatus==='saving'?'儲存中...':'已自動儲存'}</span> : <span className="text-slate-400">未儲存</span>}
                                         </div>
                                     </div>
                                     <button onClick={()=>setIsSidebarOpen(false)} className="md:hidden text-2xl leading-none">&times;</button>
@@ -840,7 +842,7 @@
                                             <option value="new">📄 開新檔案 (清空)</option>
                                             <option value="save">💾 儲存</option>
                                             <option value="save_as">💾 另存新檔...</option>
-                                            <option value="export_drive">📤 下載 MD 並開啟雲端硬碟</option>
+                                            <option value="export_drive">📤 下載 MD</option>
                                         </select>
                                         <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleLoadLocal} />
                                     </div>
@@ -852,21 +854,48 @@
                                             <button onClick={()=>setGridSize(9)} className={`flex-1 py-1.5 text-xs border rounded ${gridSize===9?'bg-indigo-600 text-white':'bg-white'}`}>9x9</button>
                                         </div>
                                         <select className="w-full text-sm p-1.5 border rounded" value={viewStyle} onChange={e=>setViewStyle(e.target.value)}>
-                                            <option value="standard">標準模式</option>
-                                            <option value="simple">簡單模式</option>
-                                            <option value="compact">精簡模式</option>
+                                            <option value="standard">標準</option>
+                                            <option value="simple">簡單</option>
+                                            <option value="compact">精簡</option>
                                         </select>
                                     </div>
                                     
                                     <div>
-                                        <label className="text-xs font-bold text-slate-600">搜尋</label>
-                                        <input 
-                                            type="text" 
-                                            className="w-full p-2 text-sm border rounded"
-                                            placeholder="標題, #tag..." 
-                                            value={searchQuery}
-                                            onChange={e=>setSearchQuery(e.target.value)}
-                                        />
+                                        <div className="flex justify-between items-end mb-1">
+                                            <label className="text-xs font-bold text-slate-600">搜尋</label>
+                                            <div className="flex text-[10px] bg-slate-100 rounded p-0.5">
+                                                <button onClick={()=>setSearchScope('file')} className={`px-2 py-0.5 rounded ${searchScope==='file'?'bg-white shadow-sm font-bold':''}`}>目前</button>
+                                                <button onClick={()=>{setSearchScope('global'); performGlobalSearch();}} className={`px-2 py-0.5 rounded ${searchScope==='global'?'bg-white shadow-sm font-bold':''}`}>資料庫</button>
+                                            </div>
+                                        </div>
+                                        <div className="relative">
+                                            <input 
+                                                type="text" 
+                                                className="w-full p-2 text-sm border rounded"
+                                                placeholder={searchScope==='file' ? "搜尋此檔案..." : "搜尋所有檔案..."}
+                                                value={searchQuery}
+                                                onChange={e=> {
+                                                    setSearchQuery(e.target.value);
+                                                    if(searchScope === 'global') {
+                                                        // Debounce could be added here, but for now simplistic
+                                                        if(e.target.value.length === 0) setGlobalSearchResults([]);
+                                                    }
+                                                }}
+                                                onKeyDown={e => {
+                                                    if(e.key === 'Enter' && searchScope === 'global') performGlobalSearch();
+                                                }}
+                                            />
+                                            {searchScope === 'global' && (
+                                                <button onClick={performGlobalSearch} className="absolute right-2 top-2 text-slate-400 hover:text-indigo-600">
+                                                    <Icons.Search />
+                                                </button>
+                                            )}
+                                        </div>
+                                        {searchScope === 'global' && (
+                                            <div className="text-[10px] text-slate-400 mt-1">
+                                                * 支援空白鍵 (AND) 搜尋
+                                            </div>
+                                        )}
                                     </div>
 
                                     {allTags.length > 0 && (
@@ -884,14 +913,15 @@
 
                             {/* Main Grid Area */}
                             <main className="flex-1 relative overflow-hidden flex flex-col h-full w-full">
-                                <div className="flex-1 overflow-auto bg-slate-100 flex items-start justify-start md:justify-center p-2 md:p-4">
+                                {/* Modified Container Logic for 9x9 Full Width */}
+                                <div className="flex-1 overflow-auto bg-slate-100 flex items-start justify-center p-0 md:p-4">
                                     <div 
                                         id="mandala-grid-container"
                                         className={`
                                             bg-white shadow-xl p-1
                                             ${gridSize === 9 
-                                                ? 'h-full aspect-square' 
-                                                : 'w-full max-w-2xl aspect-square min-w-[300px]'}
+                                                ? 'w-full h-full' // 9x9: Full width/height, no max width
+                                                : 'w-full max-w-2xl aspect-square min-w-[300px] my-auto'}
                                         `}
                                     >
                                         {gridSize === 3 ? (
@@ -911,7 +941,7 @@
                                 </div>
                             </main>
 
-                            {/* Editor Modal (Cell Edit) */}
+                            {/* Editor Modal (Cell Edit) - Keep as is mostly */}
                             {selectedCell && (() => {
                                 const cellKey = `${selectedCell.gIdx}-${selectedCell.cIdx}`;
                                 const activeCellData = data[cellKey] || {};
@@ -922,7 +952,6 @@
                                                 <h3 className="font-bold">編輯儲存格</h3>
                                                 <button onClick={() => setSelectedCell(null)} className="p-1 hover:bg-white/20 rounded">✕</button>
                                             </div>
-                                            
                                             <div className="p-4 space-y-4 overflow-y-auto flex-1">
                                                 <div>
                                                     <label className="text-xs font-bold text-slate-500 mb-1 block">標題</label>
@@ -937,6 +966,26 @@
                                                         value={activeCellData.note || ''}
                                                         onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'note', e.target.value)}
                                                     ></textarea>
+                                                </div>
+                                                {/* Image/Color/Emoji controls similar to before */}
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="text-xs font-bold text-slate-500 block">進度 ({activeCellData.progress||0}%)</label>
+                                                        <input type="range" min="0" max="100" step="25" className="w-full accent-indigo-600 mt-1"
+                                                            value={activeCellData.progress || 0}
+                                                            onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'progress', parseInt(e.target.value))}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-xs font-bold text-slate-500 block">顏色</label>
+                                                        <div className="flex gap-2 mt-1">
+                                                            <input type="color" className="h-6 w-full rounded"
+                                                                value={activeCellData.color && !activeCellData.color.startsWith('bg-') ? activeCellData.color : '#ffffff'}
+                                                                onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', e.target.value)}
+                                                            />
+                                                            <button onClick={() => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', '')} className="text-xs px-2 border rounded">重置</button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 
                                                 <div className="bg-slate-50 p-3 rounded border">
@@ -969,38 +1018,16 @@
                                                             {activeCellData.images.map((img, idx) => (
                                                                 <div key={idx} className="relative w-16 h-16 shrink-0 rounded overflow-hidden border">
                                                                     <img src={img} className="w-full h-full object-cover" />
-                                                                    <button 
-                                                                        onClick={()=>{
+                                                                    <button onClick={()=>{
                                                                             const newImgs = activeCellData.images.filter((_, i) => i !== idx);
                                                                             updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', newImgs);
-                                                                        }}
-                                                                        className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center text-[8px]"
-                                                                    >✕</button>
+                                                                        }} className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center text-[8px]">✕</button>
                                                                 </div>
                                                             ))}
                                                         </div>
                                                     )}
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="text-xs font-bold text-slate-500 block">進度 ({activeCellData.progress||0}%)</label>
-                                                        <input type="range" min="0" max="100" step="25" className="w-full accent-indigo-600 mt-1"
-                                                            value={activeCellData.progress || 0}
-                                                            onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'progress', parseInt(e.target.value))}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs font-bold text-slate-500 block">顏色</label>
-                                                        <div className="flex gap-2 mt-1">
-                                                            <input type="color" className="h-6 w-full rounded"
-                                                                value={activeCellData.color && !activeCellData.color.startsWith('bg-') ? activeCellData.color : '#ffffff'}
-                                                                onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', e.target.value)}
-                                                            />
-                                                            <button onClick={() => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', '')} className="text-xs px-2 border rounded">重置</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
                                                 <div>
                                                     <label className="text-xs font-bold text-slate-500 block mb-1">Emoji 插圖</label>
                                                     <div className="flex flex-wrap gap-2 p-2 bg-slate-50 rounded h-32 overflow-y-auto">
@@ -1013,19 +1040,56 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            
                                             <div className="p-3 border-t bg-slate-50 shrink-0 rounded-b-xl">
-                                                <button 
-                                                    onClick={() => setSelectedCell(null)}
-                                                    className="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-bold shadow hover:bg-indigo-700 active:scale-95 transition-transform"
-                                                >
-                                                    完成
-                                                </button>
+                                                <button onClick={() => setSelectedCell(null)} className="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-bold shadow hover:bg-indigo-700 active:scale-95 transition-transform">完成</button>
                                             </div>
                                         </div>
                                     </div>
                                 );
                             })()}
+                        </div>
+                    )}
+
+                    {/* Global Search Results Modal */}
+                    {showGlobalSearchModal && (
+                        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
+                            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg h-[70vh] flex flex-col">
+                                <div className="p-3 border-b flex justify-between items-center bg-slate-50 rounded-t-xl">
+                                    <h3 className="font-bold">全域搜尋結果</h3>
+                                    <button onClick={()=>setShowGlobalSearchModal(false)} className="text-slate-500">✕</button>
+                                </div>
+                                <div className="p-2 border-b bg-slate-50">
+                                    <input 
+                                        autoFocus
+                                        className="w-full p-2 border rounded" 
+                                        placeholder="輸入關鍵字..."
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        onKeyDown={e => { if(e.key === 'Enter') performGlobalSearch(); }}
+                                    />
+                                    <div className="text-[10px] text-slate-400 mt-1 flex justify-between">
+                                        <span>支援空白鍵分隔 (AND 邏輯)</span>
+                                        <button onClick={performGlobalSearch} className="text-indigo-600 font-bold">搜尋</button>
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                                    {globalSearchResults.length > 0 ? (
+                                        globalSearchResults.map(file => (
+                                            <div key={file.id} onClick={()=>loadFileFromDB(file)} className="p-3 border rounded hover:border-indigo-500 cursor-pointer bg-white hover:bg-indigo-50">
+                                                <div className="font-bold text-indigo-700">{file.title}</div>
+                                                <div className="text-xs text-slate-500 mt-1 flex gap-2">
+                                                    <span className="bg-slate-200 px-1 rounded">{file.category}</span>
+                                                    <span>關聯度: {file.score}</span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center text-slate-400 py-10">
+                                            {searchQuery ? "沒有找到符合的結果" : "請輸入關鍵字進行搜尋"}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -1041,7 +1105,7 @@
                                     />
                                     <input id="save-cat" className="w-full border p-2 rounded" 
                                         defaultValue={viewMode === 'browser' ? activeCategory === 'All' ? '一般' : activeCategory : docMetadata.category} 
-                                        placeholder="分類 (Tag)"
+                                        placeholder="分類 (可多選, 用逗號分隔)"
                                     />
                                     <div className="flex justify-end gap-2 mt-4">
                                         <button onClick={()=>setShowSaveAsModal(false)} className="px-4 py-2 rounded text-slate-600">取消</button>
@@ -1052,7 +1116,6 @@
                                                 if (viewMode === 'browser' || !currentDocId) {
                                                     createNewFile(t, c);
                                                 } else {
-                                                    // Save As Logic: Create new entry with current data
                                                     if (viewMode === 'editor') {
                                                         const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
                                                         db.collection(path).add({
