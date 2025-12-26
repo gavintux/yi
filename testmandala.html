@@ -312,7 +312,7 @@
                             setData(f.cells || {});
                             setGridSize(f.gridSize || 3);
                             setDocMetadata({ 
-                                title: f.title ? `${f.title} (分享副本)` : '分享的檔案', 
+                                title: f.title || '分享的檔案', 
                                 category: f.category || '一般' 
                             });
                             setCurrentDocId(null); // Detach from original user doc
@@ -339,6 +339,9 @@
             // --- Auto Save ---
             useEffect(() => {
                 if (!user || !currentDocId || !db || viewMode !== 'editor') return;
+                // Disable auto-save for shared view
+                if (isSharedView) return; 
+
                 const timer = setTimeout(async () => {
                     setSaveStatus('saving');
                     try {
@@ -354,7 +357,7 @@
                     } catch (e) { setSaveStatus('error'); }
                 }, 2000);
                 return () => clearTimeout(timer);
-            }, [data, gridSize, user, currentDocId, docMetadata, viewMode]);
+            }, [data, gridSize, user, currentDocId, docMetadata, viewMode, isSharedView]);
 
             // --- Search Logic ---
             const checkSearchMatch = (text, query) => {
@@ -392,6 +395,9 @@
 
             // --- Core Functions ---
             const updateCell = (gridIdx, cellIdx, field, value) => {
+                // LOCK EDIT IN SHARED VIEW
+                if (isSharedView) return;
+
                 const key = `${gridIdx}-${cellIdx}`;
                 const currentCell = data[key] || {};
                 let updatedData = { ...data };
@@ -539,6 +545,7 @@
                         setIsSharedView(false);
                     }
                 } else if (action === "save") {
+                    // In shared view, prevent direct saving (since it's a new copy, but effectively read-only context)
                     if (isSharedView) {
                         alert("這是分享的檔案，請使用「另存新檔」保存到您的花園。");
                         setShowSaveAsModal(true);
@@ -637,43 +644,25 @@
             // --- COMPONENT: Dashboard (New Browser) ---
             const renderDashboard = () => {
                 const totalFiles = fileList.length;
-                
-                // --- Category Logic ---
-                // Flatten and count all categories
                 const categoryCounts = fileList.reduce((acc, curr) => {
                     const cats = parseCategories(curr.category);
-                    cats.forEach(c => {
-                        acc[c] = (acc[c] || 0) + 1;
-                    });
+                    cats.forEach(c => { acc[c] = (acc[c] || 0) + 1; });
                     if (cats.length === 0) acc['未分類'] = (acc['未分類'] || 0) + 1;
                     return acc;
                 }, {});
 
-                // Create sorted unique category list (All + others by count desc)
-                const categoryList = Object.keys(categoryCounts)
-                    .sort((a, b) => categoryCounts[b] - categoryCounts[a]);
-                
-                // Add 'All' to front
+                const categoryList = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
                 const fullCategoryList = ['All', ...categoryList];
+                const displayCategories = showAllCategories ? fullCategoryList : fullCategoryList.slice(0, 8);
 
-                // Determine display list for sidebar
-                const displayCategories = showAllCategories 
-                    ? fullCategoryList 
-                    : fullCategoryList.slice(0, 8); // Show top 8 (1 'All' + 7 others)
-
-                // --- File Filtering & Pagination ---
                 const filteredFiles = fileList.filter(f => {
                     if (activeCategory === 'All') return true;
                     const cats = parseCategories(f.category);
-                    // Handle "未分類" case implicitly via parseCategories default or checking empty
                     if (activeCategory === '未分類' && (!f.category || f.category.trim() === '')) return true;
                     return cats.includes(activeCategory);
                 });
 
                 const totalPages = Math.ceil(filteredFiles.length / ITEMS_PER_PAGE);
-                
-                // Safety check if current page is out of bounds after filter change
-                // We'll reset page in the onClick handler, but good to clamp here for display
                 const validPage = Math.min(Math.max(1, currentPage), Math.max(1, totalPages));
                 const paginatedFiles = filteredFiles.slice((validPage - 1) * ITEMS_PER_PAGE, validPage * ITEMS_PER_PAGE);
                 
@@ -700,10 +689,7 @@
                                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">
                                             <Icons.Plus /> 建立新檔案
                                         </button>
-                                        <button onClick={() => { 
-                                                setSearchQuery('');
-                                                setShowGlobalSearchModal(true);
-                                            }}
+                                        <button onClick={() => { setSearchQuery(''); setShowGlobalSearchModal(true); }}
                                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">
                                             <Icons.Search /> 全域搜尋
                                         </button>
@@ -723,17 +709,12 @@
                                                 <span className="text-xs text-stone-400">{categoryCounts[cat] || 0}</span>
                                             </button>
                                         ))}
-                                        
                                         {fullCategoryList.length > 8 && (
                                             <button 
                                                 onClick={() => setShowAllCategories(!showAllCategories)}
                                                 className="w-full flex items-center justify-center gap-2 px-3 py-2 mt-2 text-xs text-stone-400 hover:text-emerald-600 transition-colors border border-dashed border-stone-200 rounded-lg hover:bg-stone-50"
                                             >
-                                                {showAllCategories ? (
-                                                    <><Icons.ChevronUp /> 收起分類</>
-                                                ) : (
-                                                    <><Icons.ChevronDown /> 顯示更多 ({fullCategoryList.length - 8})</>
-                                                )}
+                                                {showAllCategories ? (<><Icons.ChevronUp /> 收起分類</>) : (<><Icons.ChevronDown /> 顯示更多 ({fullCategoryList.length - 8})</>)}
                                             </button>
                                         )}
                                     </nav>
@@ -749,11 +730,9 @@
                                     <img src={USER_CONFIG.seo.logoImage} className="w-8 h-8 rounded" />
                                     <span className="font-bold text-stone-800 garden-title">Mandala</span>
                                 </div>
-                                
                                 <h2 className="hidden md:block font-bold text-xl text-stone-800 garden-title">
                                     {activeCategory === 'All' ? '花園儀表板' : activeCategory}
                                 </h2>
-
                                 <div className="flex items-center gap-2">
                                     <button onClick={() => { if(checkPassword()) setShowSaveAsModal(true); }}
                                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm flex items-center gap-2 transition-all active:scale-95">
@@ -764,8 +743,6 @@
 
                             {/* Dashboard Content */}
                             <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col">
-                                
-                                {/* Files Area */}
                                 {paginatedFiles.length > 0 ? (
                                     <>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4 flex-1 content-start">
@@ -792,35 +769,17 @@
                                                 </div>
                                             ))}
                                         </div>
-
-                                        {/* Pagination Controls */}
                                         {totalPages > 1 && (
                                             <div className="flex justify-center items-center gap-4 mt-8 pb-4 shrink-0">
-                                                <button 
-                                                    disabled={validPage === 1}
-                                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                                    className="px-4 py-2 rounded-lg border border-stone-200 text-sm hover:bg-white disabled:opacity-50 disabled:hover:bg-transparent bg-stone-50 text-stone-600"
-                                                >
-                                                    上一頁
-                                                </button>
-                                                <span className="text-sm font-medium text-stone-500">
-                                                    {validPage} / {totalPages}
-                                                </span>
-                                                <button 
-                                                    disabled={validPage === totalPages}
-                                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                                    className="px-4 py-2 rounded-lg border border-stone-200 text-sm hover:bg-white disabled:opacity-50 disabled:hover:bg-transparent bg-stone-50 text-stone-600"
-                                                >
-                                                    下一頁
-                                                </button>
+                                                <button disabled={validPage === 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="px-4 py-2 rounded-lg border border-stone-200 text-sm hover:bg-white disabled:opacity-50 disabled:hover:bg-transparent bg-stone-50 text-stone-600">上一頁</button>
+                                                <span className="text-sm font-medium text-stone-500">{validPage} / {totalPages}</span>
+                                                <button disabled={validPage === totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="px-4 py-2 rounded-lg border border-stone-200 text-sm hover:bg-white disabled:opacity-50 disabled:hover:bg-transparent bg-stone-50 text-stone-600">下一頁</button>
                                             </div>
                                         )}
                                     </>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center py-20 text-stone-400 bg-white border border-dashed border-stone-300 rounded-xl mt-4">
-                                        <div className="mb-4 bg-stone-50 p-4 rounded-full text-stone-400">
-                                            <Icons.Chart />
-                                        </div>
+                                        <div className="mb-4 bg-stone-50 p-4 rounded-full text-stone-400"><Icons.Chart /></div>
                                         <p>這裡目前沒有檔案</p>
                                         <button onClick={()=>{ setActiveCategory('All'); setCurrentPage(1); }} className="mt-2 text-emerald-600 text-sm hover:underline">顯示所有檔案</button>
                                     </div>
@@ -831,34 +790,27 @@
                 );
             };
 
-            // --- RENDER COMPONENT: Editor Cell (Updated UI) ---
+            // --- RENDER COMPONENT: Editor Cell ---
             const renderCell = (gIdx, cIdx) => {
                 const cellData = data[`${gIdx}-${cIdx}`] || {};
                 const isMatched = (searchScope === 'global') ? true : (searchQuery || activeTags.length ? filteredCells.has(`${gIdx}-${cIdx}`) : true);
                 const isCenter = gridSize === 9 ? (gIdx === 4 && cIdx === 4) : (cIdx === 4);
-                
                 let bgColor = cellData.color || 'bg-white';
                 if (!cellData.color) {
-                    if (isCenter) bgColor = 'bg-[#fdfcdc]'; // Creamy yellow
-                    else if (gridSize === 9 && cIdx === 4) bgColor = 'bg-[#ecfdf5]'; // Emerald-50
+                    if (isCenter) bgColor = 'bg-[#fdfcdc]';
+                    else if (gridSize === 9 && cIdx === 4) bgColor = 'bg-[#ecfdf5]';
                 }
-
                 const opacity = isMatched ? 'opacity-100' : 'opacity-20 grayscale';
                 const style = { backgroundColor: bgColor.startsWith('bg-') ? undefined : bgColor };
                 const bgClass = bgColor.startsWith('bg-') ? bgColor : '';
-                
-                // Smart Text Color
                 const textColorClass = getContrastColor(bgColor.startsWith('bg-') ? (bgColor.includes('slate') ? '#334155' : '#ffffff') : bgColor);
-
                 const titleLength = (cellData.title || '').length;
                 let titleSizeClass = 'text-xs md:text-sm';
                 let noteSizeClass = 'text-[10px]';
-
                 if (viewStyle === 'compact' || gridSize === 9) {
                    titleSizeClass = titleLength > 10 ? 'text-[9px]' : 'text-[10px] md:text-xs';
                    noteSizeClass = 'text-[8px]';
                 }
-
                 const hasImage = cellData.images && cellData.images.length > 0;
                 const paddingClass = viewStyle === 'compact' ? 'p-0.5' : 'p-1';
                 const fullTooltip = `${cellData.title || ''}\n---\n${cellData.note || ''}`;
@@ -870,8 +822,6 @@
                         className={`relative grid-border ${paddingClass} flex flex-col cursor-pointer hover:shadow-md ${opacity} overflow-hidden h-full w-full ${bgClass} group ${textColorClass}`}
                         style={style}
                         onClick={() => {
-                            // If viewing a shared file, editing might be allowed locally but cannot save to original
-                            // Check password is still required for "Edit" actions
                             if (checkPassword()) {
                                 setSelectedCell({ gIdx, cIdx, data: cellData });
                             }
@@ -889,7 +839,6 @@
                                 <div className="flex justify-between items-start mb-0.5 shrink-0 z-10">
                                     <span className={`${titleSizeClass} font-bold leading-snug line-clamp-2 break-all pr-4 garden-title`}>{cellData.title}</span>
                                 </div>
-                                
                                 <div className="absolute top-0 right-0 flex flex-col items-end gap-0.5">
                                     <div 
                                         onClick={(e) => { e.stopPropagation(); updateCell(gIdx, cIdx, 'progress_click'); }}
@@ -899,19 +848,14 @@
                                     </div>
                                     {cellData.emoji && <span className="text-xs">{cellData.emoji}</span>}
                                 </div>
-
                                 {hasImage && (
                                     <div className="flex-1 w-full bg-stone-100 rounded overflow-hidden relative mb-1 shrink-0" style={{minHeight: '20px'}}>
                                         <img src={cellData.images[0]} className="w-full h-full object-cover absolute inset-0" />
                                     </div>
                                 )}
-
                                 {viewStyle === 'standard' && !hasImage && cellData.note && (
-                                    <p className={`${noteSizeClass} opacity-80 line-clamp-3 whitespace-pre-wrap flex-1 w-full break-all leading-tight mt-1`}>
-                                        {cellData.note}
-                                    </p>
+                                    <p className={`${noteSizeClass} opacity-80 line-clamp-3 whitespace-pre-wrap flex-1 w-full break-all leading-tight mt-1`}>{cellData.note}</p>
                                 )}
-                                
                                 <div className="mt-auto pt-1 flex justify-between items-end">
                                     <div className="flex gap-1 items-center opacity-50">
                                         {(cellData.attachments?.length>0) && <span className="text-[8px]">📎</span>}
@@ -946,13 +890,14 @@
                                         {isEditingTitle ? (
                                             <input 
                                                 autoFocus
-                                                className="text-sm font-bold border rounded px-1"
+                                                disabled={isSharedView}
+                                                className="text-sm font-bold border rounded px-1 disabled:bg-gray-100"
                                                 value={docMetadata.title}
                                                 onBlur={() => setIsEditingTitle(false)}
                                                 onChange={(e) => setDocMetadata({...docMetadata, title: e.target.value})}
                                             />
                                         ) : (
-                                            <span className="font-bold text-stone-800 truncate garden-title" onClick={()=>setIsEditingTitle(true)}>{docMetadata.title}</span>
+                                            <span className="font-bold text-stone-800 truncate garden-title" onClick={()=> !isSharedView && setIsEditingTitle(true)}>{docMetadata.title}</span>
                                         )}
                                     </div>
                                 </div>
@@ -975,23 +920,25 @@
                                                 ← 回儀表板
                                             </button>
                                             {isSharedView && (
-                                                <span className="ml-auto text-xs bg-rose-100 text-rose-600 px-2 py-1 rounded-full animate-pulse">檢視分享模式</span>
+                                                <span className="ml-auto text-xs bg-rose-100 text-rose-600 px-2 py-1 rounded-full animate-pulse font-bold">僅供瀏覽</span>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2 bg-white border border-stone-200 p-1 rounded mb-1">
                                             <div className="flex-1">
                                                 <label className="text-[10px] text-stone-400 block">檔名</label>
-                                                <input className="text-sm font-bold text-emerald-700 w-full outline-none garden-title" 
+                                                <input className="text-sm font-bold text-emerald-700 w-full outline-none garden-title disabled:text-gray-500" 
                                                     value={docMetadata.title}
+                                                    disabled={isSharedView}
                                                     onChange={(e) => setDocMetadata({...docMetadata, title: e.target.value})} />
                                             </div>
                                             <div className="w-16 border-l border-stone-200 pl-1">
                                                 <label className="text-[10px] text-stone-400 block">分類</label>
-                                                <input className="text-xs text-stone-600 w-full outline-none" 
+                                                <input className="text-xs text-stone-600 w-full outline-none disabled:text-gray-400" 
                                                     value={docMetadata.category}
+                                                    disabled={isSharedView}
                                                     onChange={(e) => setDocMetadata({...docMetadata, category: e.target.value})} />
                                             </div>
-                                            <span className="text-stone-400">✏️</span>
+                                            {!isSharedView && <span className="text-stone-400">✏️</span>}
                                         </div>
                                         <div className="flex gap-2 text-[10px]">
                                             {currentDocId ? 
@@ -1008,10 +955,10 @@
                                         <select className="w-full text-sm p-2 border border-stone-200 rounded bg-white text-stone-700" onChange={handleFileMenu} defaultValue="">
                                             <option value="" disabled>請選擇...</option>
                                             <option value="back">🏠 回到儀表板</option>
-                                            <option value="share">🔗 分享檔案連結</option>
+                                            {!isSharedView && <option value="share">🔗 分享檔案連結</option>}
                                             <option value="new">📄 開新畫布 (清空)</option>
-                                            <option value="save">💾 儲存</option>
-                                            <option value="save_as">💾 另存新檔...</option>
+                                            {!isSharedView && <option value="save">💾 儲存</option>}
+                                            <option value="save_as">{isSharedView ? '💾 另存為我的副本' : '💾 另存新檔...'}</option>
                                             <option value="export_drive">📤 下載 MD</option>
                                         </select>
                                         <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleLoadLocal} />
@@ -1035,7 +982,7 @@
                                             <label className="text-xs font-bold text-stone-600">搜尋</label>
                                             <div className="flex text-[10px] bg-stone-100 rounded p-0.5">
                                                 <button onClick={()=>setSearchScope('file')} className={`px-2 py-0.5 rounded ${searchScope==='file'?'bg-white shadow-sm font-bold text-emerald-700':'text-stone-500'}`}>目前</button>
-                                                <button onClick={()=>{setSearchScope('global'); performGlobalSearch();}} className={`px-2 py-0.5 rounded ${searchScope==='global'?'bg-white shadow-sm font-bold text-emerald-700':'text-stone-500'}`}>資料庫</button>
+                                                {!isSharedView && <button onClick={()=>{setSearchScope('global'); performGlobalSearch();}} className={`px-2 py-0.5 rounded ${searchScope==='global'?'bg-white shadow-sm font-bold text-emerald-700':'text-stone-500'}`}>資料庫</button>}
                                             </div>
                                         </div>
                                         <div className="relative">
@@ -1109,21 +1056,21 @@
                                 return (
                                     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-stone-800/50 backdrop-blur-sm p-4" onClick={() => setSelectedCell(null)}>
                                         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                                            <div className="bg-emerald-600 p-3 flex justify-between items-center text-white shrink-0 rounded-t-xl">
-                                                <h3 className="font-bold garden-title">編輯花園角落</h3>
+                                            <div className={`p-3 flex justify-between items-center text-white shrink-0 rounded-t-xl ${isSharedView ? 'bg-gray-500' : 'bg-emerald-600'}`}>
+                                                <h3 className="font-bold garden-title">{isSharedView ? '檢視花園角落 (唯讀)' : '編輯花園角落'}</h3>
                                                 <button onClick={() => setSelectedCell(null)} className="p-1 hover:bg-white/20 rounded">✕</button>
                                             </div>
                                             <div className="p-4 space-y-4 overflow-y-auto flex-1">
                                                 <div>
                                                     <label className="text-xs font-bold text-stone-500 mb-1 block">標題</label>
-                                                    <input type="text" className="w-full border border-stone-300 p-2 rounded focus:ring-2 focus:ring-emerald-500 outline-none"
+                                                    <input type="text" disabled={isSharedView} className="w-full border border-stone-300 p-2 rounded focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-gray-100 disabled:text-gray-600"
                                                         value={activeCellData.title || ''}
                                                         onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'title', e.target.value)}
                                                     />
                                                 </div>
                                                 <div>
                                                     <label className="text-xs font-bold text-stone-500 mb-1 block">備註 (#tag)</label>
-                                                    <textarea className="w-full border border-stone-300 p-2 rounded h-20 focus:ring-2 focus:ring-emerald-500 outline-none"
+                                                    <textarea disabled={isSharedView} className="w-full border border-stone-300 p-2 rounded h-20 focus:ring-2 focus:ring-emerald-500 outline-none disabled:bg-gray-100 disabled:text-gray-600"
                                                         value={activeCellData.note || ''}
                                                         onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'note', e.target.value)}
                                                     ></textarea>
@@ -1131,7 +1078,7 @@
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="text-xs font-bold text-stone-500 block">成長進度 ({activeCellData.progress||0}%)</label>
-                                                        <input type="range" min="0" max="100" step="25" className="w-full accent-emerald-600 mt-1"
+                                                        <input disabled={isSharedView} type="range" min="0" max="100" step="25" className="w-full accent-emerald-600 mt-1 disabled:opacity-50"
                                                             value={activeCellData.progress || 0}
                                                             onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'progress', parseInt(e.target.value))}
                                                         />
@@ -1139,52 +1086,60 @@
                                                     <div>
                                                         <label className="text-xs font-bold text-stone-500 block">顏色</label>
                                                         <div className="flex gap-2 mt-1">
-                                                            <input type="color" className="h-6 w-full rounded border border-stone-300"
+                                                            <input disabled={isSharedView} type="color" className="h-6 w-full rounded border border-stone-300 disabled:opacity-50"
                                                                 value={activeCellData.color && !activeCellData.color.startsWith('bg-') ? activeCellData.color : '#ffffff'}
                                                                 onChange={e => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', e.target.value)}
                                                             />
-                                                            <button onClick={() => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', '')} className="text-xs px-2 border border-stone-300 rounded text-stone-600 hover:bg-stone-50">重置</button>
+                                                            <button disabled={isSharedView} onClick={() => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'color', '')} className="text-xs px-2 border border-stone-300 rounded text-stone-600 hover:bg-stone-50 disabled:opacity-50">重置</button>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 
                                                 <div className="bg-[#fcfaf9] p-3 rounded border border-stone-200">
                                                     <label className="text-xs font-bold text-stone-500 block mb-2">圖片附檔</label>
-                                                    <div className="flex gap-2 mb-2">
-                                                        <input 
-                                                            id="img-url-input" 
-                                                            className="flex-1 text-xs p-1 border border-stone-300 rounded" 
-                                                            placeholder="貼上圖片網址..."
-                                                        />
-                                                        <button onClick={()=>{
-                                                            const url = document.getElementById('img-url-input').value;
-                                                            addImageUrl(url);
-                                                            document.getElementById('img-url-input').value = '';
-                                                        }} className="bg-white border border-stone-300 px-2 py-1 rounded text-xs text-stone-600">加入</button>
-                                                    </div>
-                                                    <input 
-                                                        type="file" 
-                                                        ref={imgInputRef} 
-                                                        accept="image/*" 
-                                                        className="hidden" 
-                                                        onChange={(e) => addImage(e.target.files[0])}
-                                                    />
-                                                    <button onClick={()=>imgInputRef.current?.click()} className="w-full py-1 bg-white border border-dashed border-stone-300 rounded text-xs text-stone-500 hover:border-emerald-400">
-                                                        ＋ 上傳本機圖片
-                                                    </button>
+                                                    {!isSharedView && (
+                                                        <>
+                                                            <div className="flex gap-2 mb-2">
+                                                                <input 
+                                                                    id="img-url-input" 
+                                                                    className="flex-1 text-xs p-1 border border-stone-300 rounded" 
+                                                                    placeholder="貼上圖片網址..."
+                                                                />
+                                                                <button onClick={()=>{
+                                                                    const url = document.getElementById('img-url-input').value;
+                                                                    addImageUrl(url);
+                                                                    document.getElementById('img-url-input').value = '';
+                                                                }} className="bg-white border border-stone-300 px-2 py-1 rounded text-xs text-stone-600">加入</button>
+                                                            </div>
+                                                            <input 
+                                                                type="file" 
+                                                                ref={imgInputRef} 
+                                                                accept="image/*" 
+                                                                className="hidden" 
+                                                                onChange={(e) => addImage(e.target.files[0])}
+                                                            />
+                                                            <button onClick={()=>imgInputRef.current?.click()} className="w-full py-1 bg-white border border-dashed border-stone-300 rounded text-xs text-stone-500 hover:border-emerald-400">
+                                                                ＋ 上傳本機圖片
+                                                            </button>
+                                                        </>
+                                                    )}
                                                     
-                                                    {activeCellData.images && activeCellData.images.length > 0 && (
+                                                    {activeCellData.images && activeCellData.images.length > 0 ? (
                                                         <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
                                                             {activeCellData.images.map((img, idx) => (
                                                                 <div key={idx} className="relative w-16 h-16 shrink-0 rounded overflow-hidden border border-stone-200">
                                                                     <img src={img} className="w-full h-full object-cover" />
-                                                                    <button onClick={()=>{
-                                                                            const newImgs = activeCellData.images.filter((_, i) => i !== idx);
-                                                                            updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', newImgs);
-                                                                        }} className="absolute top-0 right-0 bg-rose-500 text-white w-4 h-4 flex items-center justify-center text-[8px]">✕</button>
+                                                                    {!isSharedView && (
+                                                                        <button onClick={()=>{
+                                                                                const newImgs = activeCellData.images.filter((_, i) => i !== idx);
+                                                                                updateCell(selectedCell.gIdx, selectedCell.cIdx, 'images', newImgs);
+                                                                            }} className="absolute top-0 right-0 bg-rose-500 text-white w-4 h-4 flex items-center justify-center text-[8px]">✕</button>
+                                                                    )}
                                                                 </div>
                                                             ))}
                                                         </div>
+                                                    ) : (
+                                                        isSharedView && <span className="text-xs text-gray-400">無圖片</span>
                                                     )}
                                                 </div>
 
@@ -1192,8 +1147,8 @@
                                                     <label className="text-xs font-bold text-stone-500 block mb-1">花園裝飾 (Emoji)</label>
                                                     <div className="flex flex-wrap gap-2 p-2 bg-[#fcfaf9] rounded h-32 overflow-y-auto border border-stone-200">
                                                         {EMOJI_LIST.map(em => (
-                                                            <button key={em} onClick={() => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'emoji', activeCellData.emoji===em?'':em)}
-                                                                className={`p-1.5 rounded text-lg ${activeCellData.emoji===em?'bg-emerald-100 ring-2 ring-emerald-300':'hover:bg-white'}`}>
+                                                            <button key={em} disabled={isSharedView} onClick={() => updateCell(selectedCell.gIdx, selectedCell.cIdx, 'emoji', activeCellData.emoji===em?'':em)}
+                                                                className={`p-1.5 rounded text-lg ${activeCellData.emoji===em?'bg-emerald-100 ring-2 ring-emerald-300':'hover:bg-white'} ${isSharedView ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                                                 {em}
                                                             </button>
                                                         ))}
@@ -1201,7 +1156,9 @@
                                                 </div>
                                             </div>
                                             <div className="p-3 border-t border-stone-100 bg-[#fcfaf9] shrink-0 rounded-b-xl">
-                                                <button onClick={() => setSelectedCell(null)} className="w-full py-2.5 bg-emerald-600 text-white rounded-lg font-bold shadow hover:bg-emerald-700 active:scale-95 transition-transform">完成</button>
+                                                <button onClick={() => setSelectedCell(null)} className={`w-full py-2.5 text-white rounded-lg font-bold shadow active:scale-95 transition-transform ${isSharedView ? 'bg-gray-500 hover:bg-gray-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
+                                                    {isSharedView ? '關閉' : '完成'}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
