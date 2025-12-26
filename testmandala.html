@@ -191,28 +191,6 @@
             return (yiq >= 128) ? 'text-stone-800' : 'text-white';
         };
 
-        // Simple String Compression for URL
-        const encodeShareData = (dataObj) => {
-            try {
-                const json = JSON.stringify(dataObj);
-                // standard utf8 to base64
-                return btoa(unescape(encodeURIComponent(json)));
-            } catch (e) {
-                console.error("Encoding failed", e);
-                return null;
-            }
-        };
-
-        const decodeShareData = (encodedString) => {
-            try {
-                const json = decodeURIComponent(escape(atob(encodedString)));
-                return JSON.parse(json);
-            } catch (e) {
-                console.error("Decoding failed", e);
-                return null;
-            }
-        };
-
         const EMOJI_LIST = ['🌿', '🌸', '🌼', '🍄', '🌱', '🍃', '🌻', '🌵', '🌺', '🍂', '🦋', '🐦', '☀️', '💧', '🏡', '📚', '🎨', '🍵', '🧘', '✨'];
 
         const Icons = {
@@ -226,7 +204,9 @@
             File: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>,
             ChevronDown: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>,
             ChevronUp: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg>,
-            Share: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+            Share: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>,
+            Download: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>,
+            Clipboard: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
         };
 
         // ==========================================
@@ -266,6 +246,9 @@
             // Modals
             const [showSaveAsModal, setShowSaveAsModal] = useState(false);
             const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
+            const [showShareModal, setShowShareModal] = useState(false); // NEW
+            const [showImportModal, setShowImportModal] = useState(false); // NEW
+            const [importCode, setImportCode] = useState(""); // NEW
             
             // Dashboard State
             const [fileList, setFileList] = useState([]);
@@ -320,33 +303,6 @@
                 }
             }, []);
 
-            // --- Share Logic (Check URL on load) ---
-            useEffect(() => {
-                const params = new URLSearchParams(window.location.search);
-                const importData = params.get('import'); // New: Check for data param
-                
-                if (importData) {
-                    setLoading(true);
-                    // Decode URL data
-                    const decoded = decodeShareData(importData);
-                    if (decoded) {
-                        setData(decoded.cells || {});
-                        setGridSize(decoded.gridSize || 3);
-                        setDocMetadata({ 
-                            title: decoded.title ? `${decoded.title} (分享副本)` : '分享的檔案', 
-                            category: decoded.category || '一般' 
-                        });
-                        setCurrentDocId(null);
-                        setIsSharedView(true);
-                        setViewMode('editor');
-                    } else {
-                        alert("分享連結格式錯誤或已損壞。");
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                    }
-                    setLoading(false);
-                }
-            }, []); 
-
             // --- File Fetching ---
             useEffect(() => {
                 if (user && viewMode === 'browser') {
@@ -392,7 +348,7 @@
                     setGlobalSearchResults([]);
                     return;
                 }
-                
+                // Local search in fetched file list
                 const results = [];
                 fileList.forEach(file => {
                     let matchCount = 0;
@@ -414,7 +370,6 @@
 
             // --- Core Functions ---
             const updateCell = (gridIdx, cellIdx, field, value) => {
-                // LOCK EDIT IN SHARED VIEW
                 if (isSharedView) return;
 
                 const key = `${gridIdx}-${cellIdx}`;
@@ -515,46 +470,67 @@
                 setLoading(false);
             };
 
-            const shareViaUrl = () => {
-                setLoading(true);
-                // 1. Prepare Data
+            // --- New Sharing Logic ---
+            const handleExportFile = () => {
+                const shareObj = {
+                    title: docMetadata.title,
+                    category: docMetadata.category,
+                    gridSize: gridSize,
+                    cells: data,
+                    isShareFile: true
+                };
+                const blob = new Blob([JSON.stringify(shareObj)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Mandala_Share_${docMetadata.title}.json`;
+                a.click();
+                setShowShareModal(false);
+            };
+
+            const handleCopyCode = () => {
                 const shareObj = {
                     title: docMetadata.title,
                     category: docMetadata.category,
                     gridSize: gridSize,
                     cells: data
                 };
-
-                // 2. Encode
-                const encoded = encodeShareData(shareObj);
+                const json = JSON.stringify(shareObj);
                 
-                setLoading(false);
-
-                if (!encoded) {
-                    alert("編碼失敗，請稍後再試。");
-                    return;
-                }
-
-                // 3. Length Check
-                if (encoded.length > 15000) { // Safety limit for various browsers/servers
-                    alert("此檔案內容過多（可能包含大圖片），無法透過網址分享。\n\n建議改用「匯出檔案」功能，將檔案傳送給朋友。");
-                    return;
-                }
-
-                // 4. Generate URL
-                const url = `${window.location.origin}${window.location.pathname}?import=${encoded}`;
-                
-                // 5. Copy
+                // Simple clipboard write
                 const textArea = document.createElement("textarea");
-                textArea.value = url;
+                textArea.value = json;
                 document.body.appendChild(textArea);
                 textArea.select();
                 document.execCommand("copy");
                 document.body.removeChild(textArea);
-                
-                alert(`分享連結已複製！\n\n連結：${url.substring(0, 50)}...`);
+                alert("代碼已複製到剪貼簿！請直接傳送給朋友。\n(對方可使用「匯入/開啟代碼」功能開啟)");
+                setShowShareModal(false);
             };
 
+            const handleImportCodeSubmit = () => {
+                if(!importCode) return;
+                try {
+                    const parsed = JSON.parse(importCode);
+                    if (confirm("即將開啟分享的曼陀羅，這將覆蓋目前畫面。\n(確認後請記得另存新檔)")) {
+                        setData(parsed.cells || {});
+                        setGridSize(parsed.gridSize || 3);
+                        setCurrentDocId(null); // Detach
+                        setDocMetadata({ 
+                            title: parsed.title ? `${parsed.title} (分享副本)` : '匯入的分享', 
+                            category: parsed.category || '一般' 
+                        });
+                        setIsSharedView(true); // Read only initially
+                        setViewMode('editor');
+                        setShowImportModal(false);
+                        setImportCode("");
+                    }
+                } catch(e) {
+                    alert("代碼格式錯誤，請確認是否完整複製。");
+                }
+            };
+
+            // --- Menu Logic ---
             const handleFileMenu = (e) => {
                 const action = e.target.value;
                 e.target.value = "";
@@ -574,17 +550,14 @@
                 } else if (action === "save_as") {
                     setShowSaveAsModal(true);
                 } else if (action === "back") {
-                    if (isSharedView) {
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                    }
                     setViewMode('browser');
                     setIsSharedView(false);
                 } else if (action === "import") {
-                    fileInputRef.current?.click();
+                    fileInputRef.current?.click(); // Keep file import support
                 } else if (action === "export_drive") {
                     handleExportMarkdown(true);
                 } else if (action === "share") {
-                    shareViaUrl(); // Use URL Sharing instead of DB
+                    setShowShareModal(true);
                 }
             };
 
@@ -599,8 +572,13 @@
                             setData(parsed.cells || {});
                             setGridSize(parsed.gridSize || 3);
                             setCurrentDocId(null);
-                            setDocMetadata(parsed.metadata || { title: '匯入檔案', category: '一般' });
-                            setIsSharedView(false);
+                            setDocMetadata({ 
+                                title: parsed.title || '匯入檔案', 
+                                category: parsed.category || '一般' 
+                            });
+                            setIsSharedView(true); // Treat imported file as shared/readonly first
+                            if(viewMode === 'browser') setViewMode('editor'); // Switch to editor if in browser
+                            setShowImportModal(false);
                         }
                     } catch(err) { alert("格式錯誤"); }
                     e.target.value = '';
@@ -662,9 +640,6 @@
             // --- COMPONENT: Dashboard (New Browser) ---
             const renderDashboard = () => {
                 const totalFiles = fileList.length;
-                
-                // --- Category Logic ---
-                // Flatten and count all categories
                 const categoryCounts = fileList.reduce((acc, curr) => {
                     const cats = parseCategories(curr.category);
                     cats.forEach(c => { acc[c] = (acc[c] || 0) + 1; });
@@ -714,6 +689,10 @@
                                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">
                                             <Icons.Search /> 全域搜尋
                                         </button>
+                                        <button onClick={() => setShowImportModal(true)}
+                                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">
+                                            <Icons.Share /> 匯入分享
+                                        </button>
                                     </nav>
                                 </div>
 
@@ -755,6 +734,10 @@
                                     {activeCategory === 'All' ? '花園儀表板' : activeCategory}
                                 </h2>
                                 <div className="flex items-center gap-2">
+                                    <button onClick={() => setShowImportModal(true)} 
+                                        className="md:hidden p-2 text-stone-500 hover:bg-stone-100 rounded-lg">
+                                        <Icons.Share />
+                                    </button>
                                     <button onClick={() => { if(checkPassword()) setShowSaveAsModal(true); }}
                                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm flex items-center gap-2 transition-all active:scale-95">
                                         <Icons.Plus /> <span className="hidden sm:inline">新增</span>
@@ -976,7 +959,7 @@
                                         <select className="w-full text-sm p-2 border border-stone-200 rounded bg-white text-stone-700" onChange={handleFileMenu} defaultValue="">
                                             <option value="" disabled>請選擇...</option>
                                             <option value="back">🏠 回到儀表板</option>
-                                            {!isSharedView && <option value="share">🔗 分享檔案連結</option>}
+                                            {!isSharedView && <option value="share">🔗 分享中心 (傳送/複製)</option>}
                                             <option value="new">📄 開新畫布 (清空)</option>
                                             {!isSharedView && <option value="save">💾 儲存</option>}
                                             <option value="save_as">{isSharedView ? '💾 另存為我的副本' : '💾 另存新檔...'}</option>
@@ -1070,7 +1053,7 @@
                                 </div>
                             </main>
 
-                            {/* Editor Modal (Cell Edit) */}
+                            {/* Editor Modal (Cell Edit) - Keep existing... */}
                             {selectedCell && (() => {
                                 const cellKey = `${selectedCell.gIdx}-${selectedCell.cIdx}`;
                                 const activeCellData = data[cellKey] || {};
@@ -1115,7 +1098,6 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
                                                 <div className="bg-[#fcfaf9] p-3 rounded border border-stone-200">
                                                     <label className="text-xs font-bold text-stone-500 block mb-2">圖片附檔</label>
                                                     {!isSharedView && (
@@ -1132,19 +1114,10 @@
                                                                     document.getElementById('img-url-input').value = '';
                                                                 }} className="bg-white border border-stone-300 px-2 py-1 rounded text-xs text-stone-600">加入</button>
                                                             </div>
-                                                            <input 
-                                                                type="file" 
-                                                                ref={imgInputRef} 
-                                                                accept="image/*" 
-                                                                className="hidden" 
-                                                                onChange={(e) => addImage(e.target.files[0])}
-                                                            />
-                                                            <button onClick={()=>imgInputRef.current?.click()} className="w-full py-1 bg-white border border-dashed border-stone-300 rounded text-xs text-stone-500 hover:border-emerald-400">
-                                                                ＋ 上傳本機圖片
-                                                            </button>
+                                                            <input type="file" ref={imgInputRef} accept="image/*" className="hidden" onChange={(e) => addImage(e.target.files[0])} />
+                                                            <button onClick={()=>imgInputRef.current?.click()} className="w-full py-1 bg-white border border-dashed border-stone-300 rounded text-xs text-stone-500 hover:border-emerald-400">＋ 上傳本機圖片</button>
                                                         </>
                                                     )}
-                                                    
                                                     {activeCellData.images && activeCellData.images.length > 0 ? (
                                                         <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
                                                             {activeCellData.images.map((img, idx) => (
@@ -1159,11 +1132,8 @@
                                                                 </div>
                                                             ))}
                                                         </div>
-                                                    ) : (
-                                                        isSharedView && <span className="text-xs text-gray-400">無圖片</span>
-                                                    )}
+                                                    ) : (isSharedView && <span className="text-xs text-gray-400">無圖片</span>)}
                                                 </div>
-
                                                 <div>
                                                     <label className="text-xs font-bold text-stone-500 block mb-1">花園裝飾 (Emoji)</label>
                                                     <div className="flex flex-wrap gap-2 p-2 bg-[#fcfaf9] rounded h-32 overflow-y-auto border border-stone-200">
@@ -1227,6 +1197,87 @@
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* NEW: Share Modal (File & Code) */}
+                    {showShareModal && (
+                        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-800/60 p-4">
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-5 border border-stone-100">
+                                <h3 className="font-bold mb-2 text-lg text-stone-700 garden-title flex items-center gap-2">
+                                    <Icons.Share /> 分享檔案
+                                </h3>
+                                <p className="text-xs text-stone-500 mb-4">因安全權限限制，請使用下列方式分享：</p>
+                                
+                                <div className="space-y-3">
+                                    <button onClick={handleExportFile} className="w-full flex items-center p-3 border border-emerald-200 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors group text-left">
+                                        <div className="bg-emerald-100 text-emerald-600 p-2 rounded-lg group-hover:bg-emerald-200 mr-3">
+                                            <Icons.Download />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-emerald-800 text-sm">下載分享檔 (.json)</div>
+                                            <div className="text-[10px] text-emerald-600">最穩定，支援圖片，適合備份傳送</div>
+                                        </div>
+                                    </button>
+
+                                    <button onClick={handleCopyCode} className="w-full flex items-center p-3 border border-stone-200 bg-white rounded-lg hover:bg-stone-50 transition-colors group text-left">
+                                        <div className="bg-stone-100 text-stone-500 p-2 rounded-lg group-hover:bg-stone-200 mr-3">
+                                            <Icons.Clipboard />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-stone-700 text-sm">複製文字代碼</div>
+                                            <div className="text-[10px] text-stone-500">適合純文字曼陀羅，可直接貼到通訊軟體</div>
+                                        </div>
+                                    </button>
+                                </div>
+                                
+                                <button onClick={()=>setShowShareModal(false)} className="mt-4 w-full py-2 text-sm text-stone-400 hover:text-stone-600">關閉</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* NEW: Import Modal */}
+                    {showImportModal && (
+                        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-stone-800/60 p-4">
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-5 border border-stone-100">
+                                <h3 className="font-bold mb-4 text-lg text-stone-700 garden-title flex items-center gap-2">
+                                    <Icons.Share /> 匯入分享
+                                </h3>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-stone-500 mb-1 block">方法 A：選擇檔案 (.json)</label>
+                                        <button onClick={()=>fileInputRef.current?.click()} className="w-full py-2 border border-dashed border-stone-300 rounded text-sm text-stone-500 hover:border-emerald-500 hover:text-emerald-600 bg-stone-50">
+                                            點擊上傳分享檔
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="relative flex py-1 items-center">
+                                        <div className="flex-grow border-t border-stone-200"></div>
+                                        <span className="flex-shrink-0 mx-2 text-stone-300 text-xs">OR</span>
+                                        <div className="flex-grow border-t border-stone-200"></div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-xs font-bold text-stone-500 mb-1 block">方法 B：貼上代碼</label>
+                                        <textarea 
+                                            className="w-full border border-stone-300 rounded p-2 text-xs h-24 focus:ring-1 focus:ring-emerald-500 outline-none font-mono"
+                                            placeholder="在此貼上別人分享的曼陀羅代碼..."
+                                            value={importCode}
+                                            onChange={e => setImportCode(e.target.value)}
+                                        ></textarea>
+                                        <button 
+                                            onClick={handleImportCodeSubmit}
+                                            disabled={!importCode}
+                                            className="mt-2 w-full py-2 bg-stone-700 text-white rounded text-sm hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            解析代碼並開啟
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <button onClick={()=>setShowImportModal(false)} className="mt-4 w-full py-2 text-sm text-stone-400 hover:text-stone-600">取消</button>
                             </div>
                         </div>
                     )}
