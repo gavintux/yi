@@ -923,6 +923,7 @@
                     <div className="border-t my-2 pt-2 mt-auto">
                         <button onClick={()=>{ setModalMode('new'); setShowSaveAsModal(true); setIsSidebarOpen(false); }} className="w-full text-left p-2"><Icons.Plus/> 新增檔案</button>
                         <button onClick={()=>{ setShowImportModal(true); setIsSidebarOpen(false); }} className="w-full text-left p-2"><Icons.Share/> 匯入檔案</button>
+                        <button onClick={()=>window.open(USER_CONFIG.seo.logoLink, '_blank')} className="w-full text-left p-2"><Icons.Home/> 個人首頁</button>
                         <button onClick={()=>auth.signOut()} className="w-full text-left p-2"><Icons.SignOut/> 登出</button>
                     </div>
                 </>
