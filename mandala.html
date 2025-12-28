@@ -82,20 +82,12 @@
         const db = firebase.firestore();
 
         // Utils
-        const getTintedColor = (hex, factor = 0.3) => { 
-            // Creates a pastel version of the color (mixed with white)
-            // Factor: 0 = white, 1 = original color. 
-            // Using 0.3 to ensure it's very light so text is readable
+        const getTransparentColor = (hex, opacity = 0.25) => { 
             if (!hex || !hex.startsWith('#')) return '#ffffff';
             let r = parseInt(hex.substring(1, 3), 16);
             let g = parseInt(hex.substring(3, 5), 16);
             let b = parseInt(hex.substring(5, 7), 16);
-            
-            r = Math.round(r * factor + 255 * (1 - factor));
-            g = Math.round(g * factor + 255 * (1 - factor));
-            b = Math.round(b * factor + 255 * (1 - factor));
-            
-            return `rgb(${r}, ${g}, ${b})`;
+            return `rgba(${r}, ${g}, ${b}, ${opacity})`;
         };
 
         const safeMarkdown = (text) => { try { return typeof marked !== 'undefined' ? marked.parse(text) : text; } catch { return text; } };
@@ -194,14 +186,22 @@
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'linkc-mandala-app-v1';
 
             // --- Effects ---
+            // 1. Auth Listener (Runs once)
             useEffect(() => {
                 const unsubscribe = auth.onAuthStateChanged(u => {
                     setUser(u);
-                    if (u && viewMode === 'browser') fetchFileList(u);
                     setLoading(false);
                 });
                 return () => unsubscribe();
             }, []);
+
+            // 2. File List Fetcher (Runs on user or viewMode change)
+            // This fixes the issue where list doesn't update after adding a file
+            useEffect(() => {
+                if (user && viewMode === 'browser') {
+                    fetchFileList(user);
+                }
+            }, [user, viewMode]);
 
             useEffect(() => {
                 if(!user || !currentDocId || !db || viewMode !== 'editor' || isSharedView) return;
@@ -343,9 +343,17 @@
                 const k = `${gIdx}-${cIdx}`;
                 const prev = data[k] || {};
                 let newData = { ...data, [k]: { ...prev, [field]: val } };
-                if (gridSize === 9 && field === 'title') {
-                    if (gIdx === 4 && cIdx !== 4) newData[`${cIdx}-4`] = { ...(data[`${cIdx}-4`]||{}), title: val };
-                    else if (gIdx !== 4 && cIdx === 4) newData[`4-${gIdx}`] = { ...(data[`4-${gIdx}`]||{}), title: val };
+                
+                // --- SYNC LOGIC ---
+                if (gridSize === 9 && (field === 'title' || field === 'color')) {
+                    if (gIdx === 4 && cIdx !== 4) {
+                        const targetK = `${cIdx}-4`;
+                        newData[targetK] = { ...(data[targetK]||{}), [field]: val };
+                    }
+                    else if (gIdx !== 4 && cIdx === 4) {
+                        const targetK = `4-${gIdx}`;
+                        newData[targetK] = { ...(data[targetK]||{}), [field]: val };
+                    }
                 }
                 setData(newData);
             };
@@ -355,6 +363,11 @@
                 const k = `${gIdx}-${cIdx}`;
                 const newData = { ...data };
                 delete newData[k];
+                // Sync clear actions too
+                if (gridSize === 9) {
+                    if (gIdx === 4 && cIdx !== 4) delete newData[`${cIdx}-4`];
+                    else if (gIdx !== 4 && cIdx === 4) delete newData[`4-${gIdx}`];
+                }
                 setData(newData);
             };
 
@@ -379,7 +392,7 @@
                      if ((zoomedGridIndex === null || zoomedGridIndex === 4) && cIdx !== 4) { setZoomedGridIndex(cIdx); return; }
                      if (zoomedGridIndex !== null && zoomedGridIndex !== 4 && cIdx === 4) { setZoomedGridIndex(4); return; }
                 }
-                setEditActiveField('title'); // Reset default active field
+                setEditActiveField('title'); 
                 setSelectedCell({ gIdx: (gridSize===3 && zoomedGridIndex!==null) ? zoomedGridIndex : gIdx, cIdx, data: cellData });
             };
 
@@ -693,11 +706,10 @@
                 // Defaults Logic
                 const defaultBg = ((targetGrid===4 && cIdx===4)?'#ecfdf5':(targetGrid===4?'#fdfcdc':(cIdx===4?'#fdfcdc':'#ffffff')));
                 
-                // Tint Logic (Mix with white for pastel effect if color is set)
-                // If user picks a color, we tint it (40% color, 60% white roughly) to ensure text readability
-                const finalBg = cellData.color ? getTintedColor(cellData.color, 0.4) : defaultBg;
+                // Transparency Logic (RGBA 0.25)
+                const finalBg = cellData.color ? getTransparentColor(cellData.color, 0.25) : defaultBg;
                 
-                // Text always dark because background is lightened
+                // Text color
                 const textColor = '#44403c'; 
 
                 return (
@@ -731,7 +743,7 @@
             const renderGrid = () => {
                 if (gridSize === 9 && zoomedGridIndex === null) {
                     return (
-                        <div className="grid grid-cols-3 grid-rows-3 gap-1 bg-stone-200 p-1 w-full h-full max-w-4xl max-h-4xl mx-auto aspect-square">
+                        <div className="grid grid-cols-3 grid-rows-3 gap-px bg-stone-200 w-full h-full mx-auto aspect-square">
                             {Array.from({length:9}).map((_, g) => (
                                 <div key={g} className={`grid grid-cols-3 grid-rows-3 gap-px bg-white ${g===4?'border-2 border-emerald-400 z-10':''}`}>
                                     {Array.from({length:9}).map((_, c) => renderCell(g, c))}
@@ -742,8 +754,8 @@
                 } else {
                     const activeGrid = zoomedGridIndex !== null ? zoomedGridIndex : 4;
                     return (
-                        <div className="flex flex-col h-full items-center justify-center p-2">
-                             <div className="w-full max-w-xl mb-2 flex items-center text-xs text-stone-500 gap-2">
+                        <div className="flex flex-col h-full items-center justify-center">
+                             <div className="w-full max-w-xl mb-2 flex items-center text-xs text-stone-500 gap-2 px-2">
                                 <span className="cursor-pointer hover:text-emerald-600" onClick={()=>setZoomedGridIndex(gridSize===9?null:4)}><Icons.Folder/> {gridSize===9?'全景':'主畫面'}</span>
                                 <span>/</span>
                                 <span className="font-bold text-stone-700">{activeGrid === 4 ? '核心主題' : `區域 ${activeGrid}`}</span>
