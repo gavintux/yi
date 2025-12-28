@@ -120,6 +120,29 @@
         const extractTags = (text) => (text?.match(/#[\w\u4e00-\u9fa5]+/g) || []).map(x => x.substring(1));
         const parseCategories = (s) => (!s ? ['未分類'] : s.split(/[,，\s]+/).filter(c=>c.trim().length>0));
         
+        // Advanced Search Matcher
+        const checkSearchMatch = (text, query) => {
+            if (!query) return true;
+            if (!text && text !== 0) return false;
+            const target = String(text).toLowerCase();
+            
+            // Boolean Logic: OR logic first (split by ' OR ')
+            const orGroups = query.split(/\s+OR\s+/i);
+            
+            return orGroups.some(group => {
+                // Inside OR group: AND logic (split by space)
+                const terms = group.trim().split(/\s+/);
+                return terms.every(term => {
+                    // NOT logic: -term
+                    if (term.startsWith('-')) {
+                        const cleanTerm = term.substring(1).toLowerCase();
+                        return cleanTerm && !target.includes(cleanTerm);
+                    }
+                    return target.includes(term.toLowerCase());
+                });
+            });
+        };
+
         // Helper to get formatted name
         const getUserName = (user) => {
             if (!user || !user.email) return "Guest";
@@ -127,17 +150,13 @@
             return name.charAt(0).toUpperCase() + name.slice(1);
         };
 
-        const EMOJI_LIST = [
-            '🌿', '🌸', '🌼', '🍄', '🌱', '🍃', '🌻', '🌵', '🌺', '🍂', '🌹', '🌷', '💐', '🪴', '🌲',
-            '🦋', '🐦', '🐞', '🐝', '🐜', '🐾', '🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁',
-            '☀️', '💧', '☁️', '🌈', '⚡', '❄️', '🌙', '⭐', '🪐', '🌋', '🌊', '🔥', '💨', '☔', '☃️',
-            '🏡', '📚', '🎨', '🍵', '🧘', '✨', '💡', '🎯', '🚀', '🔮', '🧩', '🎮', '🎸', '🎺', '🎻',
-            '✅', '❌', '❓', '❗', '💰', '💎', '🏆', '🥇', '🎁', '🎈', '🎉', '🕯️', '🔑', '🔓', '🔒',
-            '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '💯', '💢', '💥', '💫', '💬',
-            '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍',
-            '📅', '📆', '🕰️', '⏰', '📱', '💻', '📷', '🎥', '🎧', '🎤', '📞', '🔋', '🔌', '💾', '💿',
-            '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🚚', '🚛', '🚜', '🚲', '🛵'
-        ];
+        // --- NEW EMOJI STRUCTURE ---
+        const EMOJI_CATEGORIES = {
+            "表情": ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '👏', '👋', '👍', '👎', '👊', '✊', '🤛', '🤜', '🤞', '✌️', '🤟', '🤘', '👌', '🤏', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐️', '🖖', '🙏', '💪', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️'],
+            "自然": ['🌿', '🌸', '🌼', '🍄', '🌱', '🍃', '🌻', '🌵', '🌺', '🍂', '🌹', '🌷', '💐', '🪴', '🌲', '🌳', '🌴', '🪵', '🪨', '🌾', '🎋', '🍁', '🍇', '🍈', '🍉', '🍊', '🍋', '🍌', '🍍', '🥭', '🍎', '🍏', '🍐', '🍑', '🍒', '🍓', '🫐', '🥝', '🍅', '🫒', '🥥', '🥑', '🍆', '🥔', '🥕', '🌽', '🌶️', '🫑', '🥒', '🥬', '🥦', '🧄', '🧅', '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🪱', '🐛', '🦋', '🐌', '🐞', '🐜', '🪰', '🪲', '🪳', '🦟', '🦗', '🕷️', '🕸️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🦭', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🦣', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🦬', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🐓', '🦃', '🦚', '🦜', '🦢', '🦩', '🕊️', '🐇', '🦝', '🦨', '🦡', '🦫', '🦦', '🦥', '🐁', '🐀', '🐿️', '🦔', '🐾', '🐉', '🐲', '☀️', '🌤️', '⛅', '🌥️', '☁️', '🌦️', '🌧️', '⛈️', '🌩️', '🌨️', '❄️', '☃️', '⛄', '🌬️', '💨', '💧', '💦', '☔', '☂️', '🌊', '🌫️', '🌍', '🌎', '🌏', '🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘', '🌙', '🌚', '🌛', '🌜', '🌞', '⭐', '🌟', '🌠', '🌌', '🪐', '💫', '☄️', '🔥', '🌋'],
+            "物件": ['💡', '🔦', '🏮', '🪔', '📔', '📕', '📖', '📗', '📘', '📙', '📚', '📓', '📒', '📃', '📜', '📄', '📰', '🗞️', '📑', '🔖', '🏷️', '💰', '🪙', '💴', '💵', '💶', '💷', '💸', '💳', '🧾', '💹', '✉️', '📧', '📨', '📩', '📤', '📥', '📦', '📫', '📪', '📬', '📭', '📮', '🗳️', '✏️', '✒️', '🖋️', '🖊️', '🖌️', '🖍️', '📝', '💼', '📁', '📂', '🗂️', '📅', '📆', '🗒️', '🗓️', '📇', '📈', '📉', '📊', '📋', '📌', '📍', '📎', '🖇️', '📏', '📐', '✂️', '🗃️', '🗄️', '🗑️', '🔒', '🔓', '🔏', '🔐', '🔑', '🗝️', '🔨', '🪓', '⛏️', '⚒️', '🛠️', '🗡️', '⚔️', '🔫', '🪃', '🏹', '🛡️', '🪚', '🔧', '🪛', '🔩', '⚙️', '🗜️', '⚖️', '🦯', '🔗', '⛓️', '🪝', '🧰', '🧲', '🪜', '⚗️', '🧪', '🧫', '🧬', '🔬', '🔭', '📡', '💉', '🩸', '💊', '🩹', '🩺', '🚪', '🛗', '🪞', '🪟', '🛏️', '🛋️', '🪑', '🚽', '🪠', '🚿', '🛁', '🧼', '🪥', '🪒', '🧽', '🪣', '🧴', '🛎️', '🧸', '🪆', '🖼️', '🛍️', '🛒', '🎁', '🎈', '🎏', '🎀', '🪄', '🪅', '🎊', '🎉', '🎎', '🎐', '🧧', '⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '🕹️', '🗜️', '💽', '💾', '💿', '📀', '📼', '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️', '⏲️', '⏰', '🕰️', '⌛', '⏳', '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🏍️', '🛵', '🚲', '🦼', '🦽', '🛺', '🛹', '🛼', '🚨', '🚔', '🚍', '🚘', '🚖', '🚡', '🚠', '🚟', '🚃', '🚋', '🚞', '🚝', '🚄', '🚅', '🚈', '🚂', '🚆', '🚇', '🚊', '🚉', '✈️', '🛫', '🛬', '🛩️', '💺', '🛰️', '🚀', '🛸', '🚁', '🛶', '⛵', '🚤', '🛥️', '🛳️', '⛴️', '🚢', '⚓', '🚧', '⛽', '🚏', '🚦', '🚥', '🛑'],
+            "符號": ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹', '🈲', '🅰️', '🅱️', '🆎', '🆑', '🅾️', '🆘', '❌', '⭕', '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️', '🚷', '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕', '❓', '❔', '‼️', '⁉️', '🔅', '🔆', '〽️', '⚠️', '🚸', '🔱', '⚜️', '🔰', '♻️', '✅', '🈯', '💹', '❇️', '✳️', '❎', '🌐', '💠', 'Ⓜ️', '🌀', '💤', '🏧', '🚾', '♿', '🅿️', '🛗', '🈳', '🈂️', '🛂', '🛃', '🛄', '🛅', '🚹', '🚺', '🚼', '⚧', '🚻', '🚮', '🎦', '📶', '🈁', '🔣', 'ℹ️', '🔤', '🔡', '🔠', '🆖', '🆗', '🆙', '🆒', '🆕', '🆓', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔢', '#️⃣', '*️⃣', '⏏️', '▶️', '⏸️', '⏯️', '⏹️', '⏺️', '⏭️', '⏮️', '⏩', '⏪', '⏫', '⏬', '◀️', '🔼', '🔽', '➡️', '⬅️', '⬆️', '⬇️', '↗️', '↘️', '↙️', '↖️', '↕️', '↔️', '↪️', '↩️', '⤴️', '⤵️', '🔀', '🔁', '🔂', '🔄', '🔃', '🎵', '🎶', '➕', '➖', '➗', '✖️', '♾️', '💲', '💱', '™️', '©️', '®️', '👁️‍🗨️', '🔚', '🔙', '🔛', '🔝', '🔜', '〰️', '➰', '➿', '✔️', '☑️', '🔘', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪', '🟤', '🔺', '🔻', '🔸', '🔹', '🔶', '🔷', '🔳', '🔲', '▪️', '▫️', '◾', '◽', '◼️', '◻️', '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '⬛', '⬜', '🟫', '🔈', '🔇', '🔉', '🔊', '🔔', '🔕', '📣', '📢', '💬', '💭', '🗯️']
+        };
         
         const Icons = {
             Folder: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>,
@@ -156,7 +175,8 @@
             Link: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>,
             Photo: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>,
             Menu: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>,
-            X: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            X: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>,
+            Tag: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
         };
 
         const { useState, useEffect, useMemo, useRef } = React;
@@ -172,6 +192,8 @@
             const [loading, setLoading] = useState(true);
             const [isUploading, setIsUploading] = useState(false);
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+            const [showAllTags, setShowAllTags] = useState(false);
+            const [emojiTab, setEmojiTab] = useState('表情'); 
 
             // Data
             const [fileList, setFileList] = useState([]);
@@ -192,6 +214,7 @@
             const [showExportModal, setShowExportModal] = useState(false);
             const [showShareModal, setShowShareModal] = useState(false);
             const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
+            const [showMetadataModal, setShowMetadataModal] = useState(false);
             const [previewImage, setPreviewImage] = useState(null);
             const [editActiveField, setEditActiveField] = useState('title'); // 'title' or 'note'
             
@@ -209,9 +232,59 @@
             const fileInputRef = useRef(null);
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'linkc-mandala-app-v1';
 
-            // Counts
+            // Counts & Tags Calculation
             const activeFileCount = fileList.filter(f => !f.deleted).length;
             const trashFileCount = fileList.filter(f => f.deleted).length;
+
+            const tagStats = useMemo(() => {
+                const stats = {};
+                fileList.forEach(f => {
+                    if (f.deleted) return;
+                    const fileTags = new Set();
+                    
+                    // 1. From Category field
+                    if (f.category) {
+                        f.category.split(/[,，\s]+/).forEach(c => {
+                            if (c.trim() && c.trim() !== '未分類') fileTags.add(c.trim());
+                        });
+                    }
+                    
+                    // 2. From Hashtags in cells
+                    if (f.cells) {
+                        Object.values(f.cells).forEach(cell => {
+                            const content = (cell.title || '') + ' ' + (cell.note || '');
+                            const extracted = extractTags(content);
+                            extracted.forEach(t => fileTags.add(t));
+                        });
+                    }
+                    
+                    fileTags.forEach(t => {
+                        stats[t] = (stats[t] || 0) + 1;
+                    });
+                });
+                return Object.entries(stats).map(([name, count]) => ({ name, count })).sort((a,b) => b.count - a.count);
+            }, [fileList]);
+
+            // Filtered File List
+            const filteredFileList = useMemo(() => {
+                return fileList.filter(f => {
+                    if (activeCategory === 'Trash') return f.deleted;
+                    if (f.deleted) return false;
+                    
+                    if (activeCategory === 'All') return true;
+                    
+                    // Check if file belongs to active Tag
+                    const fileTags = new Set();
+                    if (f.category) f.category.split(/[,，\s]+/).forEach(c => c.trim() && fileTags.add(c.trim()));
+                    if (f.cells) {
+                        Object.values(f.cells).forEach(cell => {
+                            extractTags((cell.title || '') + ' ' + (cell.note || '')).forEach(t => fileTags.add(t));
+                        });
+                    }
+                    return fileTags.has(activeCategory);
+                });
+            }, [fileList, activeCategory]);
+
 
             // --- Effects ---
             // 1. Auth Listener (Runs once)
@@ -432,12 +505,27 @@
                 return '';
             };
 
+            // Enhanced Search Matcher
             const checkSearchMatch = (text, query) => {
                 if (!query) return true;
-                if (!text) return false;
-                const terms = query.toLowerCase().trim().split(/\s+/);
-                const target = text.toLowerCase();
-                return terms.every(term => target.includes(term));
+                if (!text && text !== 0) return false;
+                const target = String(text).toLowerCase();
+                
+                // Boolean Logic: OR logic first (split by ' OR ')
+                const orGroups = query.split(/\s+OR\s+/i);
+                
+                return orGroups.some(group => {
+                    // Inside OR group: AND logic (split by space)
+                    const terms = group.trim().split(/\s+/);
+                    return terms.every(term => {
+                        // NOT logic: -term
+                        if (term.startsWith('-')) {
+                            const cleanTerm = term.substring(1).toLowerCase();
+                            return cleanTerm && !target.includes(cleanTerm);
+                        }
+                        return target.includes(term.toLowerCase());
+                    });
+                });
             };
 
             const performGlobalSearch = () => {
@@ -447,6 +535,7 @@
                     if (file.deleted) return;
                     let matchCount = 0;
                     if (checkSearchMatch(file.title, searchQuery)) matchCount += 10;
+                    if (checkSearchMatch(file.category, searchQuery)) matchCount += 5; // Search category too
                     if (file.cells) {
                         Object.values(file.cells).forEach(cell => {
                             const content = `${cell.title || ''} ${cell.note || ''}`;
@@ -792,8 +881,54 @@
                 }
             };
 
+            // -- Sidebar Component --
+            const SidebarContent = () => (
+                <>
+                    <div className="mb-6 px-2 text-center">
+                        <div className="text-lg font-medium text-stone-500 font-serif leading-none">{getUserName(user)}'s</div>
+                        <div className="text-xl font-bold text-stone-800 garden-title mt-1">Mandala Garden</div>
+                    </div>
+                    
+                    <button 
+                        onClick={() => { setShowGlobalSearchModal(true); setIsSidebarOpen(false); }} 
+                        className="w-full text-left p-2 rounded flex items-center gap-2 hover:bg-stone-50 text-stone-600 mb-2 border border-stone-100"
+                    >
+                        <Icons.Search/> <span>全域搜尋...</span>
+                    </button>
+
+                    <button onClick={()=>{ setActiveCategory('All'); setIsSidebarOpen(false); }} className={`w-full text-left p-2 rounded ${activeCategory==='All'?'bg-emerald-50':''}`}><Icons.Folder/> 全部檔案 ({activeFileCount})</button>
+                    <button onClick={()=>{ setActiveCategory('Trash'); setIsSidebarOpen(false); }} className={`w-full text-left p-2 rounded ${activeCategory==='Trash'?'bg-rose-50':''}`}><Icons.Trash/> 垃圾筒 ({trashFileCount})</button>
+                    
+                    <div className="border-t my-2 pt-2">
+                        <div className="px-2 text-xs font-bold text-stone-400 mb-2 flex justify-between items-center">
+                            <span>標籤分類</span>
+                            <span className="text-[10px] bg-stone-100 px-1 rounded">{tagStats.length}</span>
+                        </div>
+                        <div className="space-y-1">
+                            {tagStats.length === 0 && <div className="px-2 text-xs text-stone-300">尚無標籤 (使用 #tag)</div>}
+                            {tagStats.slice(0, showAllTags ? undefined : 8).map(tag => (
+                                <button key={tag.name} onClick={()=>{ setActiveCategory(tag.name); setIsSidebarOpen(false); }} className={`w-full text-left p-2 rounded flex justify-between items-center text-sm ${activeCategory===tag.name?'bg-emerald-50 text-emerald-700':''}`}>
+                                    <span className="flex items-center gap-2 truncate"><Icons.Tag/> {tag.name}</span>
+                                    <span className="text-xs bg-stone-100 text-stone-500 px-2 py-0.5 rounded-full">{tag.count}</span>
+                                </button>
+                            ))}
+                            {tagStats.length > 8 && (
+                                <button onClick={()=>setShowAllTags(!showAllTags)} className="text-xs text-stone-400 w-full text-left px-2 py-1 hover:text-stone-600">
+                                    {showAllTags ? '收起標籤' : `顯示更多 (${tagStats.length - 8})`}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="border-t my-2 pt-2 mt-auto">
+                        <button onClick={()=>{ setModalMode('new'); setShowSaveAsModal(true); setIsSidebarOpen(false); }} className="w-full text-left p-2"><Icons.Plus/> 新增檔案</button>
+                        <button onClick={()=>{ setShowImportModal(true); setIsSidebarOpen(false); }} className="w-full text-left p-2"><Icons.Share/> 匯入檔案</button>
+                        <button onClick={()=>auth.signOut()} className="w-full text-left p-2"><Icons.SignOut/> 登出</button>
+                    </div>
+                </>
+            );
+
             // -- Main --
-            
             if (loading) {
                 return (
                     <div className="min-h-screen flex items-center justify-center bg-stone-100 p-4">
@@ -834,53 +969,36 @@
                             {isSidebarOpen && (
                                 <div className="fixed inset-0 z-50 flex md:hidden">
                                     <div className="fixed inset-0 bg-black/50" onClick={() => setIsSidebarOpen(false)}></div>
-                                    <div className="relative w-64 bg-white h-full shadow-xl flex flex-col p-4 space-y-2 animate-slide-in-left">
-                                        <div className="flex justify-between items-center mb-6 px-2">
-                                            <div>
-                                                <div className="text-lg font-medium text-stone-500 font-serif leading-none">{getUserName(user)}'s</div>
-                                                <div className="text-xl font-bold text-stone-800 garden-title mt-1">Mandala Garden</div>
-                                            </div>
-                                            <button onClick={() => setIsSidebarOpen(false)} className="text-stone-400"><Icons.X/></button>
-                                        </div>
-                                        <button onClick={()=>{ setActiveCategory('All'); setIsSidebarOpen(false); }} className={`w-full text-left p-2 rounded ${activeCategory==='All'?'bg-emerald-50':''}`}><Icons.Folder/> 全部檔案 ({activeFileCount})</button>
-                                        <button onClick={()=>{ setActiveCategory('Trash'); setIsSidebarOpen(false); }} className={`w-full text-left p-2 rounded ${activeCategory==='Trash'?'bg-rose-50':''}`}><Icons.Trash/> 垃圾筒 ({trashFileCount})</button>
-                                        <div className="border-t my-2"></div>
-                                        <button onClick={()=>{ setModalMode('new'); setShowSaveAsModal(true); setIsSidebarOpen(false); }} className="w-full text-left p-2"><Icons.Plus/> 新增</button>
-                                        <button onClick={()=>{ setShowImportModal(true); setIsSidebarOpen(false); }} className="w-full text-left p-2"><Icons.Share/> 匯入</button>
-                                        <button onClick={()=>auth.signOut()} className="w-full text-left p-2 mt-auto"><Icons.SignOut/> 登出</button>
+                                    <div className="relative w-72 bg-white h-full shadow-xl flex flex-col p-4 animate-slide-in-left">
+                                        <div className="absolute top-4 right-4"><button onClick={() => setIsSidebarOpen(false)} className="text-stone-400"><Icons.X/></button></div>
+                                        <SidebarContent />
                                     </div>
                                 </div>
                             )}
 
                             {/* Desktop Sidebar */}
-                            <aside className="w-64 bg-white border-r hidden md:flex flex-col p-4 space-y-2">
-                                <div className="mb-6 px-2 text-center">
-                                    <div className="text-lg font-medium text-stone-500 font-serif leading-none">{getUserName(user)}'s</div>
-                                    <div className="text-2xl font-bold text-stone-800 garden-title mt-1">Mandala Garden</div>
-                                </div>
-                                <button onClick={()=>setActiveCategory('All')} className={`w-full text-left p-2 rounded ${activeCategory==='All'?'bg-emerald-50':''}`}><Icons.Folder/> 全部檔案 ({activeFileCount})</button>
-                                <button onClick={()=>setActiveCategory('Trash')} className={`w-full text-left p-2 rounded ${activeCategory==='Trash'?'bg-rose-50':''}`}><Icons.Trash/> 垃圾筒 ({trashFileCount})</button>
-                                <div className="border-t my-2"></div>
-                                <button onClick={()=>{ setModalMode('new'); setShowSaveAsModal(true); }} className="w-full text-left p-2"><Icons.Plus/> 新增</button>
-                                <button onClick={()=>setShowImportModal(true)} className="w-full text-left p-2"><Icons.Share/> 匯入</button>
-                                <button onClick={()=>auth.signOut()} className="w-full text-left p-2 mt-auto"><Icons.SignOut/> 登出</button>
+                            <aside className="w-64 bg-white border-r hidden md:flex flex-col p-4">
+                                <SidebarContent />
                             </aside>
                             
                             <main className="flex-1 flex flex-col">
                                 <header className="h-14 border-b bg-white flex items-center px-4 justify-between sticky top-0 z-20">
                                     <div className="flex items-center gap-3">
                                         <button className="md:hidden text-stone-600" onClick={() => setIsSidebarOpen(true)}><Icons.Menu/></button>
-                                        <h2 className="font-bold text-lg">{activeCategory === 'All' ? '我的花園' : activeCategory}</h2>
+                                        <h2 className="font-bold text-lg flex items-center gap-2">
+                                            {activeCategory === 'All' ? '全部檔案' : (activeCategory === 'Trash' ? '垃圾筒' : `# ${activeCategory}`)}
+                                        </h2>
                                     </div>
                                     <button className="md:hidden bg-emerald-100 text-emerald-700 p-2 rounded-full" onClick={()=>{ setModalMode('new'); setShowSaveAsModal(true); }}><Icons.Plus/></button>
                                     <button className="hidden md:block" onClick={()=>{ setModalMode('new'); setShowSaveAsModal(true); }}><Icons.Plus/></button>
                                 </header>
                                 <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 content-start">
-                                    {fileList.filter(f => activeCategory==='Trash'?f.deleted:!f.deleted).map(f => (
+                                    {filteredFileList.length === 0 && <div className="col-span-full text-center text-stone-400 mt-10">沒有找到檔案</div>}
+                                    {filteredFileList.map(f => (
                                         <div key={f.id} className="bg-white p-4 rounded-xl border hover:shadow-md cursor-pointer h-32 flex flex-col justify-between" onClick={()=>loadFileFromDB(f)}>
-                                            <div className="font-bold">{f.title}</div>
+                                            <div className="font-bold truncate">{f.title}</div>
                                             <div className="text-xs text-stone-400 flex justify-between">
-                                                <span>{f.category}</span>
+                                                <span className="truncate max-w-[60%]">{f.category}</span>
                                                 {activeCategory==='Trash' && (
                                                     <div className="flex gap-2">
                                                         <button onClick={(e)=>{e.stopPropagation(); restoreFromTrash(f.id); }} className="text-emerald-600"><Icons.Restore/></button>
@@ -902,6 +1020,7 @@
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                     <button onClick={()=>{setViewMode('browser'); setZoomedGridIndex(null);}} className="text-stone-500 p-1">←</button>
                                     <input className="font-bold text-stone-800 border-none outline-none bg-transparent w-full min-w-0" value={docMetadata.title} onChange={e=>setDocMetadata({...docMetadata, title:e.target.value})} />
+                                    <button onClick={()=>setShowMetadataModal(true)} className="p-1 rounded hover:bg-stone-100 text-stone-500" title="編輯標籤"><Icons.Tag/></button>
                                 </div>
                                 <div className="flex gap-2 items-center shrink-0">
                                     <button className="hidden sm:block" onClick={()=>setShowExportModal(true)}><Icons.Export/></button>
@@ -930,6 +1049,7 @@
                     )}
 
                     {/* Modals */}
+                    {/* ... existing Modals: previewImage, selectedCell, showSaveAsModal, showImportModal, showShareModal, showExportModal ... */}
                     {previewImage && (
                         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[60]" onClick={()=>setPreviewImage(null)}>
                             <img src={previewImage} className="max-w-full max-h-full object-contain" />
@@ -971,11 +1091,37 @@
                                     </div>
                                     
                                     {/* Emoji Section - MOVED HERE */}
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between items-center"><span className="text-xs font-bold text-stone-500">插入Emoji</span><span className="text-[10px] text-stone-400">目前位置: {editActiveField === 'title' ? '標題' : '備註'}</span></div>
-                                        <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-hide border-b border-stone-100">
-                                            {EMOJI_LIST.map(emoji => (
-                                                <button key={emoji} onClick={() => handleEmojiClick(emoji)} className="text-lg hover:bg-stone-100 p-1 rounded transition min-w-[28px]">{emoji}</button>
+                                    <div className="space-y-2 border rounded-lg p-2 bg-stone-50/50">
+                                        <div className="flex justify-between items-center px-1">
+                                            <span className="text-xs font-bold text-stone-500 flex items-center gap-1">😀 插入 Emoji</span>
+                                            <span className="text-[10px] text-stone-400 bg-white px-2 py-0.5 rounded border">至: {editActiveField === 'title' ? '標題' : '備註'}</span>
+                                        </div>
+                                        
+                                        {/* Category Tabs */}
+                                        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
+                                            {Object.keys(EMOJI_CATEGORIES).map(cat => (
+                                                <button 
+                                                    key={cat}
+                                                    type="button"
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEmojiTab(cat); }}
+                                                    className={`px-3 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${emojiTab === cat ? 'bg-emerald-100 text-emerald-700 font-bold' : 'bg-white text-stone-500 hover:bg-stone-100'}`}
+                                                >
+                                                    {cat}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Emoji Grid */}
+                                        <div className="grid grid-cols-8 gap-1 h-32 overflow-y-auto p-1 bg-white rounded border border-stone-100">
+                                            {EMOJI_CATEGORIES[emojiTab].map(emoji => (
+                                                <button 
+                                                    key={emoji} 
+                                                    type="button"
+                                                    onClick={() => handleEmojiClick(emoji)} 
+                                                    className="aspect-square flex items-center justify-center text-lg hover:bg-emerald-50 rounded transition hover:scale-110 active:scale-95"
+                                                >
+                                                    {emoji}
+                                                </button>
                                             ))}
                                         </div>
                                     </div>
@@ -1043,6 +1189,28 @@
                         </div>
                     )}
 
+                    {/* Metadata Modal (New) */}
+                    {showMetadataModal && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                            <div className="bg-white p-6 rounded-xl w-80">
+                                <h3 className="font-bold mb-4">編輯檔案資訊</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs text-stone-500 mb-1">標題</label>
+                                        <input className="w-full border p-2 rounded" value={docMetadata.title} onChange={e=>setDocMetadata({...docMetadata, title:e.target.value})} placeholder="檔案標題" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-stone-500 mb-1">分類標籤</label>
+                                        <input className="w-full border p-2 rounded" value={docMetadata.category} onChange={e=>setDocMetadata({...docMetadata, category:e.target.value})} placeholder="例如: 工作, 靈感" />
+                                    </div>
+                                </div>
+                                <div className="flex justify-end mt-6">
+                                    <button onClick={()=>setShowMetadataModal(false)} className="px-4 py-2 bg-emerald-600 text-white rounded">完成</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {showImportModal && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                             <div className="bg-white p-6 rounded-xl w-96">
@@ -1079,17 +1247,79 @@
                     )}
 
                     {showGlobalSearchModal && (
-                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                            <div className="bg-white p-4 rounded-xl w-full max-w-lg h-[60vh] flex flex-col">
-                                <div className="flex justify-between items-center mb-4"><h3 className="font-bold">全域搜尋</h3><button onClick={()=>setShowGlobalSearchModal(false)}>✕</button></div>
-                                <div className="flex gap-2 mb-4"><input className="flex-1 border p-2 rounded" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} /><button onClick={performGlobalSearch}>搜</button></div>
-                                <div className="flex-1 overflow-y-auto space-y-2">
-                                    {globalSearchResults.map(f => (
-                                        <div key={f.id} className="border p-2 rounded cursor-pointer hover:bg-stone-50" onClick={()=>loadFileFromDB(f)}>
-                                            <div className="font-bold">{f.title}</div>
-                                            <div className="text-xs text-stone-500">匹配度: {f.score}</div>
+                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+                            <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[70vh] overflow-hidden transform transition-all scale-100">
+                                <div className="p-4 border-b flex justify-between items-center bg-stone-50/80">
+                                    <h3 className="font-bold text-stone-700 flex items-center gap-2 text-lg">
+                                        <span className="text-emerald-600"><Icons.Search/></span> 全域搜尋
+                                    </h3>
+                                    <button onClick={()=>setShowGlobalSearchModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-200 text-stone-500 transition">
+                                        <Icons.X/>
+                                    </button>
+                                </div>
+                                
+                                <div className="p-4 bg-white border-b border-stone-100">
+                                    <div className="flex gap-2">
+                                        <div className="relative flex-1 group">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400 group-focus-within:text-emerald-500 transition-colors">
+                                                <Icons.Search />
+                                            </div>
+                                            <input 
+                                                className="w-full pl-10 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all text-stone-700" 
+                                                value={searchQuery} 
+                                                onChange={e=>setSearchQuery(e.target.value)} 
+                                                onKeyDown={e => e.key === 'Enter' && performGlobalSearch()}
+                                                placeholder="輸入關鍵字..." 
+                                                autoFocus
+                                            />
                                         </div>
-                                    ))}
+                                        <button 
+                                            onClick={performGlobalSearch} 
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 rounded-xl font-medium transition-all shadow-md hover:shadow-lg active:scale-95 flex items-center justify-center"
+                                            title="搜尋"
+                                        >
+                                            <Icons.Search className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    <div className="mt-3 flex justify-center gap-3 text-[10px] text-stone-400 font-medium">
+                                        <span className="bg-stone-100 px-2 py-1 rounded-md">空格 = AND</span>
+                                        <span className="bg-stone-100 px-2 py-1 rounded-md">OR</span>
+                                        <span className="bg-stone-100 px-2 py-1 rounded-md">-關鍵字 = NOT</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto bg-stone-50/30 p-2">
+                                    {globalSearchResults.length === 0 && searchQuery && (
+                                        <div className="flex flex-col items-center justify-center py-12 text-stone-400">
+                                            <div className="text-4xl mb-3 opacity-50">🔍</div>
+                                            <div className="text-sm">找不到符合「{searchQuery}」的結果</div>
+                                        </div>
+                                    )}
+                                    {globalSearchResults.length === 0 && !searchQuery && (
+                                        <div className="flex flex-col items-center justify-center py-12 text-stone-300">
+                                            <div className="text-4xl mb-3 opacity-30">⌨️</div>
+                                            <div className="text-sm">請輸入關鍵字開始搜尋</div>
+                                        </div>
+                                    )}
+                                    <div className="space-y-2">
+                                        {globalSearchResults.map(f => (
+                                            <div 
+                                                key={f.id} 
+                                                className="bg-white border border-stone-100 p-3 rounded-xl cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all group" 
+                                                onClick={()=>{ loadFileFromDB(f); setShowGlobalSearchModal(false); }}
+                                            >
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <div className="font-bold text-stone-700 group-hover:text-emerald-700 transition-colors">{f.title}</div>
+                                                    <div className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-bold">
+                                                        匹配度: {f.score}
+                                                    </div>
+                                                </div>
+                                                <div className="text-xs text-stone-400 flex items-center gap-2">
+                                                    <span className="bg-stone-100 px-1.5 rounded text-[10px]">{f.category || '未分類'}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
