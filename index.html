@@ -150,7 +150,8 @@
         const User = (props) => ( <IconBase {...props}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></IconBase> );
         const Activity = (props) => ( <IconBase {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></IconBase> );
         const BarChart = (props) => ( <IconBase {...props}><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></IconBase> );
-        
+        const Grid = (props) => ( <IconBase {...props}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></IconBase> );
+
         // Custom Tai Chi Icon
         const TaiChi = (props) => (
             <IconBase {...props}>
@@ -187,6 +188,13 @@
                     url: "https://gavintux.github.io/yi/linkcmindomo.html",
                     icon: <Brain className="w-6 h-6" />,
                     color: "bg-amber-100 text-amber-700"
+                },
+                {
+                    title: "MandalaGarden",
+                    desc: "曼陀羅思考與靈感延伸",
+                    url: "http://gavintux.github.io/yi/linkcmandala.html",
+                    icon: <Grid className="w-6 h-6" />,
+                    color: "bg-indigo-100 text-indigo-700"
                 },
                 {
                     title: "系統圖表",
