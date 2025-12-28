@@ -209,6 +209,10 @@
             const fileInputRef = useRef(null);
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'linkc-mandala-app-v1';
 
+            // Counts
+            const activeFileCount = fileList.filter(f => !f.deleted).length;
+            const trashFileCount = fileList.filter(f => f.deleted).length;
+
             // --- Effects ---
             // 1. Auth Listener (Runs once)
             useEffect(() => {
@@ -838,8 +842,8 @@
                                             </div>
                                             <button onClick={() => setIsSidebarOpen(false)} className="text-stone-400"><Icons.X/></button>
                                         </div>
-                                        <button onClick={()=>{ setActiveCategory('All'); setIsSidebarOpen(false); }} className={`w-full text-left p-2 rounded ${activeCategory==='All'?'bg-emerald-50':''}`}><Icons.Folder/> 全部檔案</button>
-                                        <button onClick={()=>{ setActiveCategory('Trash'); setIsSidebarOpen(false); }} className={`w-full text-left p-2 rounded ${activeCategory==='Trash'?'bg-rose-50':''}`}><Icons.Trash/> 垃圾筒</button>
+                                        <button onClick={()=>{ setActiveCategory('All'); setIsSidebarOpen(false); }} className={`w-full text-left p-2 rounded ${activeCategory==='All'?'bg-emerald-50':''}`}><Icons.Folder/> 全部檔案 ({activeFileCount})</button>
+                                        <button onClick={()=>{ setActiveCategory('Trash'); setIsSidebarOpen(false); }} className={`w-full text-left p-2 rounded ${activeCategory==='Trash'?'bg-rose-50':''}`}><Icons.Trash/> 垃圾筒 ({trashFileCount})</button>
                                         <div className="border-t my-2"></div>
                                         <button onClick={()=>{ setModalMode('new'); setShowSaveAsModal(true); setIsSidebarOpen(false); }} className="w-full text-left p-2"><Icons.Plus/> 新增</button>
                                         <button onClick={()=>{ setShowImportModal(true); setIsSidebarOpen(false); }} className="w-full text-left p-2"><Icons.Share/> 匯入</button>
@@ -854,8 +858,8 @@
                                     <div className="text-lg font-medium text-stone-500 font-serif leading-none">{getUserName(user)}'s</div>
                                     <div className="text-2xl font-bold text-stone-800 garden-title mt-1">Mandala Garden</div>
                                 </div>
-                                <button onClick={()=>setActiveCategory('All')} className={`w-full text-left p-2 rounded ${activeCategory==='All'?'bg-emerald-50':''}`}><Icons.Folder/> 全部檔案</button>
-                                <button onClick={()=>setActiveCategory('Trash')} className={`w-full text-left p-2 rounded ${activeCategory==='Trash'?'bg-rose-50':''}`}><Icons.Trash/> 垃圾筒</button>
+                                <button onClick={()=>setActiveCategory('All')} className={`w-full text-left p-2 rounded ${activeCategory==='All'?'bg-emerald-50':''}`}><Icons.Folder/> 全部檔案 ({activeFileCount})</button>
+                                <button onClick={()=>setActiveCategory('Trash')} className={`w-full text-left p-2 rounded ${activeCategory==='Trash'?'bg-rose-50':''}`}><Icons.Trash/> 垃圾筒 ({trashFileCount})</button>
                                 <div className="border-t my-2"></div>
                                 <button onClick={()=>{ setModalMode('new'); setShowSaveAsModal(true); }} className="w-full text-left p-2"><Icons.Plus/> 新增</button>
                                 <button onClick={()=>setShowImportModal(true)} className="w-full text-left p-2"><Icons.Share/> 匯入</button>
@@ -937,7 +941,7 @@
                         <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50" onClick={()=>setSelectedCell(null)}>
                             <div className="bg-white w-full h-[90dvh] md:h-auto md:max-h-[85vh] md:w-full md:max-w-md rounded-t-xl md:rounded-xl overflow-hidden shadow-2xl flex flex-col transition-transform duration-300 animate-slide-up md:animate-none" onClick={e=>e.stopPropagation()}>
                                 <div className="p-3 bg-emerald-600 text-white font-bold flex justify-between items-center">
-                                    <span className="text-sm md:text-base">編輯內容 (區域 {selectedCell.gIdx} - 位置 {selectedCell.cIdx})</span>
+                                    <span className="text-sm md:text-base">編輯內容 {selectedCell.gIdx}-{selectedCell.cIdx}</span>
                                     <button onClick={()=>setSelectedCell(null)} className="text-white/80 hover:text-white px-2">✕</button>
                                 </div>
                                 <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-4">
