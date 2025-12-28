@@ -717,7 +717,7 @@
                          style={{backgroundColor: finalBg, color: textColor}}
                          onClick={() => handleCellClick(targetGrid, cIdx, cellData)}>
                         <div className="flex-1 overflow-hidden">
-                            <div className="font-bold text-xs md:text-sm leading-tight mb-1" dangerouslySetInnerHTML={{__html: safeMarkdownInline(cellData.title||'')}} />
+                            <div className="font-bold text-xs md:text-sm leading-tight mb-1 text-center" dangerouslySetInnerHTML={{__html: safeMarkdownInline(cellData.title||'')}} />
                             {viewStyle === 'standard' && <div className="text-[10px] opacity-80 overflow-hidden md-content" dangerouslySetInnerHTML={{__html: safeMarkdown(cellData.note||'')}} />}
                         </div>
                         {navClass && <div className="edit-btn-overlay" onClick={(e)=>{ e.stopPropagation(); setSelectedCell({ gIdx: targetGrid, cIdx, data: cellData }); }}><Icons.Pencil/></div>}
@@ -876,7 +876,7 @@
                     {selectedCell && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={()=>setSelectedCell(null)}>
                             <div className="bg-white w-full max-w-md rounded-xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" onClick={e=>e.stopPropagation()}>
-                                <div className="p-3 bg-emerald-600 text-white font-bold flex justify-between"><span>編輯內容</span><button onClick={()=>setSelectedCell(null)}>✕</button></div>
+                                <div className="p-3 bg-emerald-600 text-white font-bold flex justify-between"><span>編輯內容 (區域 {selectedCell.gIdx} - 位置 {selectedCell.cIdx})</span><button onClick={()=>setSelectedCell(null)}>✕</button></div>
                                 <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-4">
                                     
                                     {/* Title Section */}
