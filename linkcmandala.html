@@ -586,29 +586,54 @@
 
             const handleExportJPG = async () => {
                 setLoading(true);
-                const element = document.getElementById('mandala-grid-container');
-                if (!element) return;
-                const exportContainer = element.cloneNode(true);
-                exportContainer.style.width = '1200px'; 
-                exportContainer.style.height = 'auto';
-                exportContainer.style.position = 'fixed';
-                exportContainer.style.top = '-9999px';
-                exportContainer.style.zIndex = '-999';
-                exportContainer.classList.add('export-mode');
-                const header = document.createElement('div');
-                header.style.textAlign = 'center';
-                header.style.marginBottom = '20px';
-                header.innerHTML = `<h1 class="garden-title" style="font-size:32px; color:#44403c; margin-bottom:5px;">${docMetadata.title}</h1><p style="font-size:14px; color:#78716c;">${docMetadata.category} | Linkc Mandala</p>`;
-                exportContainer.insertBefore(header, exportContainer.firstChild);
-                document.body.appendChild(exportContainer);
                 try {
-                    const canvas = await html2canvas(exportContainer, { scale: 2, useCORS: true, backgroundColor: '#fcfaf9' });
+                    const element = document.getElementById('mandala-grid-container');
+                    if (!element) throw new Error("找不到表格元件");
+                    
+                    const exportContainer = element.cloneNode(true);
+                    exportContainer.style.width = '1200px'; 
+                    exportContainer.style.height = 'auto';
+                    exportContainer.style.maxHeight = 'none';
+                    exportContainer.style.overflow = 'visible';
+                    
+                    // Use a safer off-screen method for cross-browser/desktop compatibility
+                    exportContainer.style.position = 'fixed';
+                    exportContainer.style.left = '0';
+                    exportContainer.style.top = '0';
+                    exportContainer.style.zIndex = '-9999';
+                    exportContainer.classList.add('export-mode');
+                    
+                    const header = document.createElement('div');
+                    header.style.textAlign = 'center';
+                    header.style.marginBottom = '20px';
+                    header.innerHTML = `<h1 class="garden-title" style="font-size:32px; color:#44403c; margin-bottom:5px;">${docMetadata.title}</h1><p style="font-size:14px; color:#78716c;">${docMetadata.category} | Linkc Mandala</p>`;
+                    exportContainer.insertBefore(header, exportContainer.firstChild);
+                    
+                    document.body.appendChild(exportContainer);
+                    
+                    // Critical: Wait for DOM to render images/fonts in the cloned node
+                    await new Promise(resolve => setTimeout(resolve, 800));
+
+                    const canvas = await html2canvas(exportContainer, { 
+                        scale: 2, 
+                        useCORS: true, 
+                        backgroundColor: '#fcfaf9',
+                        logging: false
+                    });
+
                     const link = document.createElement('a');
                     link.download = `${docMetadata.title}.jpg`;
                     link.href = canvas.toDataURL('image/jpeg', 0.9);
                     link.click();
-                } catch (e) { alert("圖片匯出失敗"); }
-                document.body.removeChild(exportContainer);
+                    
+                    document.body.removeChild(exportContainer);
+                } catch (e) { 
+                    console.error("Export Error:", e);
+                    alert("圖片匯出失敗: " + e.message); 
+                    // Clean up if error occurs
+                    const existingContainer = document.querySelector('.export-mode');
+                    if (existingContainer) document.body.removeChild(existingContainer);
+                }
                 setLoading(false);
                 setShowExportModal(false);
             };
@@ -663,22 +688,39 @@
 
             const handleExportPDF = async () => {
                 setLoading(true);
-                const element = document.getElementById('mandala-grid-container');
-                if (!element) return;
-                const exportContainer = element.cloneNode(true);
-                exportContainer.style.width = '1000px'; 
-                exportContainer.style.height = 'auto';
-                exportContainer.style.position = 'fixed';
-                exportContainer.style.top = '-9999px';
-                exportContainer.classList.add('export-mode');
-                const header = document.createElement('div');
-                header.style.textAlign = 'center';
-                header.style.marginBottom = '20px';
-                header.innerHTML = `<h1 class="garden-title" style="font-size:32px; color:#44403c; margin-bottom:5px;">${docMetadata.title}</h1>`;
-                exportContainer.insertBefore(header, exportContainer.firstChild);
-                document.body.appendChild(exportContainer);
                 try {
-                    const canvas = await html2canvas(exportContainer, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                    const element = document.getElementById('mandala-grid-container');
+                    if (!element) throw new Error("找不到表格元件");
+
+                    const exportContainer = element.cloneNode(true);
+                    exportContainer.style.width = '1000px'; 
+                    exportContainer.style.height = 'auto';
+                    exportContainer.style.maxHeight = 'none';
+                    exportContainer.style.overflow = 'visible';
+
+                    exportContainer.style.position = 'fixed';
+                    exportContainer.style.left = '0';
+                    exportContainer.style.top = '0';
+                    exportContainer.style.zIndex = '-9999';
+                    exportContainer.classList.add('export-mode');
+                    
+                    const header = document.createElement('div');
+                    header.style.textAlign = 'center';
+                    header.style.marginBottom = '20px';
+                    header.innerHTML = `<h1 class="garden-title" style="font-size:32px; color:#44403c; margin-bottom:5px;">${docMetadata.title}</h1>`;
+                    exportContainer.insertBefore(header, exportContainer.firstChild);
+                    
+                    document.body.appendChild(exportContainer);
+                    
+                    // Critical: Wait for DOM to render images/fonts in the cloned node
+                    await new Promise(resolve => setTimeout(resolve, 800));
+
+                    const canvas = await html2canvas(exportContainer, { 
+                        scale: 2, 
+                        useCORS: true, 
+                        backgroundColor: '#ffffff' 
+                    });
+                    
                     const imgData = canvas.toDataURL('image/jpeg', 0.95);
                     const { jsPDF } = window.jspdf;
                     const pdf = new jsPDF('p', 'mm', 'a4');
@@ -688,8 +730,14 @@
                     const imgHeight = (canvas.height * maxImgWidth) / canvas.width;
                     pdf.addImage(imgData, 'JPEG', margin, margin, maxImgWidth, imgHeight);
                     pdf.save(`${docMetadata.title}.pdf`);
-                } catch (e) { alert("PDF 匯出失敗"); }
-                document.body.removeChild(exportContainer);
+                    
+                    document.body.removeChild(exportContainer);
+                } catch (e) { 
+                    console.error("PDF Export Error:", e);
+                    alert("PDF 匯出失敗: " + e.message); 
+                    const existingContainer = document.querySelector('.export-mode');
+                    if (existingContainer) document.body.removeChild(existingContainer);
+                }
                 setLoading(false);
                 setShowExportModal(false);
             };
