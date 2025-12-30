@@ -94,7 +94,7 @@
 
     <script type="text/babel">
         const USER_CONFIG = {
-            seo: { title: "Mandala Garden", logoImage: "https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f", logoLink: "https://gavintux.github.io/yi/" },
+            seo: { title: "Mandala Garden", logoImage: "https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f", logoLink: "https://www.naes.ilc.edu.tw" },
             firebase: {
                         apiKey: "AIzaSyA1NtGdAgY4L9g5TV6dlNh1_Avmx_EOdLI",
                         authDomain: "naes-62a20.firebaseapp.com",
@@ -991,7 +991,7 @@
                     <div className="border-t my-2 pt-2 mt-auto shrink-0">
                         <button onClick={()=>{ setModalMode('new'); setShowSaveAsModal(true); setIsSidebarOpen(false); }} className="w-full text-left p-2"><Icons.Plus/> 新增檔案</button>
                         <button onClick={()=>{ setShowImportModal(true); setIsSidebarOpen(false); }} className="w-full text-left p-2"><Icons.Share/> 匯入檔案</button>
-                        <button onClick={()=>window.open(USER_CONFIG.seo.logoLink, '_blank')} className="w-full text-left p-2"><Icons.Home/> 個人首頁</button>
+                        <button onClick={()=>window.open(USER_CONFIG.seo.logoLink, '_blank')} className="w-full text-left p-2"><Icons.Home/> 南澳國小</button>
                         <button onClick={()=>auth.signOut()} className="w-full text-left p-2"><Icons.SignOut/> 登出</button>
                     </div>
                 </>
