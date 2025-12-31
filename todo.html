@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen's Command Center | 無敵鐵金剛風格入口</title>
+    <meta name="description" content="林光章 (Zen) 的個人數位工具指揮挺">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --mazinger-blue: #101c42;
+            --mazinger-light-blue: #2a4b8d;
+            --mazinger-black: #0a0a0a;
+            --mazinger-red: #d90404;
+            --mazinger-gold: #fbbf24;
+            --mazinger-silver: #c0c0c0;
+            --alloy-z-border: 4px solid var(--mazinger-silver);
+            --neon-glow: 0 0 10px var(--mazinger-gold), 0 0 20px var(--mazinger-red);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--mazinger-black);
+            background-image: 
+                radial-gradient(circle at 50% 50%, #1a237e 0%, #000 80%),
+                linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            color: #fff;
+            font-family: 'Noto Sans TC', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* 背景網格 - 模擬格納庫地板 */
+        .grid-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(var(--mazinger-light-blue) 1px, transparent 1px),
+                linear-gradient(90deg, var(--mazinger-light-blue) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.1;
+            z-index: -1;
+            perspective: 500px;
+        }
+
+        /* 標題區域 - 胸部火焰 (Breast Fire) 風格 */
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo-container {
+            display: inline-block;
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Black Ops One', 'Noto Sans TC', cursive;
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            background: linear-gradient(180deg, #ff0000 30%, #8b0000 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 
+                3px 3px 0px #fff, 
+                5px 5px 0px #000;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transform: skew(-5deg);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--mazinger-gold);
+            margin-top: 10px;
+            font-weight: 700;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+
+        /* 儀表板時間 */
+        .system-status {
+            margin-bottom: 30px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--mazinger-silver);
+            border-radius: 4px;
+            display: flex;
+            gap: 20px;
+            color: #00ff00; /* 雷達綠 */
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+        }
+
+        /* 卡片容器 */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            width: 90%;
+            max-width: 1200px;
+            padding-bottom: 50px;
+        }
+
+        /* 卡片設計 - 超合金Z裝甲風格 */
+        .card {
+            text-decoration: none;
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 2px solid var(--mazinger-silver);
+            border-left: 6px solid var(--mazinger-red); /* 標誌性紅色邊條 */
+            border-radius: 8px; /* 稍微圓角，像金屬板 */
+            padding: 25px;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+        }
+
+        /* 金屬鉚釘裝飾 */
+        .card::before, .card::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #555;
+            border-radius: 50%;
+            box-shadow: inset 1px 1px 1px #000, 1px 1px 0px #777;
+        }
+        .card::before { top: 8px; right: 8px; }
+        .card::after { bottom: 8px; right: 8px; }
+
+        /* 卡片懸停特效 - 像啟動武器 */
+        .card:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: #fff;
+            border-left-color: var(--mazinger-gold);
+            background: linear-gradient(145deg, #2a3855, #162036);
+            box-shadow: 0 0 20px rgba(217, 4, 4, 0.6), inset 0 0 15px rgba(251, 191, 36, 0.2);
+        }
+
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--mazinger-silver), #555);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            flex-shrink: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .card:hover .icon-box {
+            background: var(--mazinger-gold);
+            border-color: var(--mazinger-red);
+            animation: pulse 1s infinite;
+        }
+
+        .icon-box i {
+            font-size: 28px;
+            color: var(--mazinger-black);
+        }
+
+        .card-content {
+            flex-grow: 1;
+            z-index: 2;
+        }
+
+        .card-title {
+            color: #fff;
+            font-size: 1.4rem;
+            font-weight: 900;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card:hover .card-title {
+            color: var(--mazinger-gold);
+            text-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+        }
+
+        .card-desc {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .card:hover .card-desc {
+            color: #e2e8f0;
+        }
+
+        /* 裝飾線條 - 速度感 */
+        .speed-line {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: skewX(-20deg);
+            transition: 0.5s;
+            z-index: 1;
+        }
+
+        .card:hover .speed-line {
+            left: 100%;
+            transition: 0.5s;
+        }
+
+        /* 特定卡片顏色微調 (可選，讓不同區域有不同能源感) */
+        .card:nth-child(1) { border-left-color: var(--mazinger-red); } /* 易想世界 */
+        .card:nth-child(2) { border-left-color: var(--mazinger-gold); } /* 心智圖 */
+        .card:nth-child(3) { border-left-color: #3b82f6; } /* 曼陀羅 (藍) */
+        .card:nth-child(4) { border-left-color: #22c55e; } /* 圖表 (綠) */
+        .card:nth-child(5) { border-left-color: #ec4899; } /* 相片 (粉/紫) */
+        .card:nth-child(6) { border-left-color: #06b6d4; } /* 數位花園 (青) */
+
+        /* 底部 */
+        footer {
+            margin-top: auto;
+            padding: 20px;
+            color: #555;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        /* 動畫 */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(251, 191, 36, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+        }
+
+        /* RWD 調整 */
+        @media (max-width: 600px) {
+            h1 { font-size: 2.2rem; }
+            .subtitle { font-size: 1rem; letter-spacing: 2px; }
+            .dashboard { grid-template-columns: 1fr; }
+            .card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-bg"></div>
+
+    <header>
+        <div class="logo-container">
+            <h1>Zen's Portal</h1>
+            <div class="subtitle">指揮挺組合 • PILDER ON!</div>
+        </div>
+    </header>
+
+    <div class="system-status">
+        <div id="date-display">SYSTEM CHECK...</div>
+        <div id="clock-display">00:00:00</div>
+    </div>
+
+    <main class="dashboard">
+        <a href="https://gavintux.github.io/yi/yi.html" class="card" target="_blank">
+            <div class="speed-line"></div>
+            <div class="icon-box">
+                <i class="fa-solid fa-yin-yang"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">易想世界</div>
+                <div class="card-desc">Yi World - 易經卜卦</div>
+            </div>
+        </a>
+
+        <a href="https://gavintux.github.io/yi/linkcmindomo.html" class="card" target="_blank">
+            <div class="speed-line"></div>
+            <div class="icon-box">
+                <i class="fa-solid fa-brain"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">心智圖花園</div>
+                <div class="card-desc">Mind Map - 結構化思維</div>
+            </div>
+        </a>
+
+        <a href="https://gavintux.github.io/yi/linkcmandala.html" class="card" target="_blank">
+            <div class="speed-line"></div>
+            <div class="icon-box">
+                <i class="fa-solid fa-table-cells"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">曼陀羅花園</div>
+                <div class="card-desc">Mandala - 靈感擴散</div>
+            </div>
+        </a>
+
+        <a href="https://gavintux.github.io/yi/linkcchart.html" class="card" target="_blank">
+            <div class="speed-line"></div>
+            <div class="icon-box">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">圖與表花園</div>
+                <div class="card-desc">Charts - 數據系統</div>
+            </div>
+        </a>
+
+        <a href="https://gavintux.github.io/yi/linkcphoto.html" class="card" target="_blank">
+            <div class="speed-line"></div>
+            <div class="icon-box">
+                <i class="fa-solid fa-camera-retro"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">相片日誌</div>
+                <div class="card-desc">Photo Log - 生活紀錄</div>
+            </div>
+        </a>
+
+        <a href="https://zendg.netlify.app/" class="card" target="_blank">
+            <div class="speed-line"></div>
+            <div class="icon-box">
+                <i class="fa-solid fa-tree"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">數位花園</div>
+                <div class="card-desc">Digital Garden - 知識庫</div>
+            </div>
+        </a>
+
+        <a href="https://github.com/gavintux/" class="card" target="_blank">
+            <div class="speed-line"></div>
+            <div class="icon-box">
+                <i class="fa-brands fa-github"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">數位工具庫</div>
+                <div class="card-desc">GitHub - 程式碼與工具</div>
+            </div>
+        </a>
+
+        <a href="https://2blog.ilc.edu.tw/linkc/" class="card" target="_blank">
+            <div class="speed-line"></div>
+            <div class="icon-box">
+                <i class="fa-solid fa-pen-nib"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">個人部落格</div>
+                <div class="card-desc">Blog - 教育與心情</div>
+            </div>
+        </a>
+
+        <a href="https://gavintux.github.io/yi/" class="card" target="_blank">
+            <div class="speed-line"></div>
+            <div class="icon-box">
+                <i class="fa-solid fa-user-astronaut"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">我是誰</div>
+                <div class="card-desc">Who Am I - Zen Profile</div>
+            </div>
+        </a>
+    </main>
+
+    <footer>
+        <p>© 2025 Zen Lin | Powered by Photonic Energy</p>
+    </footer>
+
+    <script>
+        // 簡單的時鐘腳本，增加儀表板的感覺
+        function updateTime() {
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toTimeString().split(' ')[0];
+            
+            document.getElementById('date-display').innerText = `DATE: ${dateStr}`;
+            document.getElementById('clock-display').innerText = `TIME: ${timeStr}`;
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+    </script>
+</body>
+</html>
+
