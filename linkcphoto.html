@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linkc Photo Space</title>
     
     <script>
         const SITE_CONFIG = {
@@ -13,7 +14,7 @@
                 description: "Linkc 的個人攝影空間，紀錄生活與旅行的瞬間。",
                 keywords: "攝影, 旅行, 生活, Linkc, 相簿, 作品集, Olympus, TG-6,Nikon",
                 author: "Linkc",
-                // Logo 圖片網址 (也會被自動用作瀏覽器 Favicon)
+                // Logo 圖片網址
                 logoImage: "https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f", 
                 logoLink: "https://2blog.ilc.edu.tw/linkc/",
                 portalLink: "https://gavintux.github.io/yi/"
@@ -87,6 +88,7 @@
         })();
     </script>
 
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -124,20 +126,25 @@
         }
     </script>
     
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
+    <!-- Exif-js -->
     <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
 
+    <!-- Leaflet & MarkerCluster -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
 
+    <!-- CSS -->
     <style>
         body { margin: 0; font-family: var(--font-family); background-color: var(--bg-color); color: var(--text-color); -webkit-font-smoothing: antialiased; }
         .loading-screen { display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--primary-color); font-weight: 500; letter-spacing: 0.05em; }
@@ -169,6 +176,7 @@
         </div>
     </div>
 
+    <!-- React App -->
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect, useRef, useMemo } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
@@ -348,12 +356,11 @@
             </div>
         );
 
-        // 修改後的 Header 元件
+        // Header Component
         const Header = ({ setView, isAdmin, onLoginClick, onLogout, currentView }) => (
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0 shrink-0">
-                    {/* 登入/登出按鈕移至最左側 (Logo左邊) */}
                     {isAdmin ? (
                         <button onClick={onLogout} className="p-2 text-gray-500 hover:text-red-600 transition-colors mr-1 sm:mr-2" title="登出"><LogOut size={20} /></button>
                     ) : (
@@ -366,10 +373,8 @@
                     <div className="flex items-center cursor-pointer gap-2 shrink-0" onClick={() => setView('gallery')}>
                         <h1 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight whitespace-nowrap">{SITE_CONFIG.seo.siteName}</h1>
                     </div>
-                    {/* ADMIN 標籤：手機版隱藏，避免擠壓空間 */}
                     {isAdmin && <span className="hidden sm:inline-flex text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold ml-2 shrink-0">ADMIN</span>}
                 </div>
-                {/* 右側按鈕區：不再包含登入登出按鈕 */}
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
                     <a href={SITE_CONFIG.seo.portalLink} target="_blank" rel="noopener noreferrer" className="p-2 sm:p-2.5 rounded-xl transition-all text-gray-400 hover:text-gray-700 hover:bg-gray-100 hidden sm:block" title="Portal">
                         <Globe size={20} />
@@ -381,7 +386,6 @@
                         <CalendarIcon size={20} />
                     </button>
 
-                    {/* 新增按鈕 (僅管理員顯示)：手機版只顯示 ICON，調整 padding 以節省寬度 */}
                     {isAdmin && (
                         <button onClick={() => setView('upload')} className="flex items-center gap-0 sm:gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 sm:px-5 sm:py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium text-sm ml-2">
                             <Upload size={18} /><span className="hidden sm:inline">新增</span>
@@ -392,6 +396,7 @@
             </header>
         );
 
+        // Map View
         const MapView = ({ photos }) => {
             const mapRef = useRef(null);
             const clusterGroupRef = useRef(null);
@@ -602,6 +607,8 @@
                                         <div className="flex justify-center sm:justify-between items-start">
                                             <span className={`text-xs sm:text-sm font-bold ${isToday ? 'bg-indigo-600 text-white w-6 h-6 flex items-center justify-center rounded-full shadow-md' : ''}`}>{day}</span>
                                         </div>
+                                        
+                                        {/* Mobile: Dot Indicator */}
                                         {count > 0 && (
                                             <div className="sm:hidden flex justify-center"><div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-500' : 'bg-indigo-300'}`}></div></div>
                                         )}
@@ -871,8 +878,16 @@
 
             const handleSubmit = async (e) => { 
                 e.preventDefault();
+                
+                // 驗證檢查
                 if (!uploadFile && !formData.url) {
                     alert("請選擇照片檔案或輸入連結！");
+                    return;
+                }
+                
+                // 檢查是否已連線
+                if (!auth.currentUser) {
+                    alert("連線建立中，請稍後再試...");
                     return;
                 }
 
@@ -887,7 +902,15 @@
                     }
                     const processedData = { ...formData, url: finalUrl, tags: formData.tags.split(',').map(t => t.trim()).filter(t => t), date: formData.exif.date }; 
                     onSave(processedData); 
-                } catch (err) { console.error("上傳失敗", err); alert("上傳失敗: " + err.message); setStatus(''); }
+                } catch (err) {
+                    console.error("上傳失敗", err);
+                    let msg = err.message;
+                    if (err.code === 'storage/unauthorized') {
+                        msg = "權限不足：Firebase Storage 拒絕寫入。請確認規則是否允許已登入使用者寫入。";
+                    }
+                    alert("上傳失敗: " + msg);
+                    setStatus('');
+                }
             };
 
             return (
@@ -911,9 +934,7 @@
                                     <input type="number" step="any" placeholder="Latitude (緯度)" className="block w-full border-slate-200 rounded-lg p-2 text-xs focus:border-indigo-500 outline-none" value={formData.location.lat} onChange={(e) => handleChange('location', 'lat', e.target.value)} />
                                     <input type="number" step="any" placeholder="Longitude (經度)" className="block w-full border-slate-200 rounded-lg p-2 text-xs focus:border-indigo-500 outline-none" value={formData.location.lng} onChange={(e) => handleChange('location', 'lng', e.target.value)} />
                                 </div>
-                                </div><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Aperture size={14} className="text-indigo-500"/> 拍攝參數</h4><input type="datetime-local" className="block w-full border-slate-200 rounded-lg p-2 text-xs text-slate-600 mb-2" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /><div className="grid grid-cols-2 gap-2"><input type="text" placeholder="相機" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} />
-                                <div className="relative"><input type="text" placeholder="鏡頭 (若自動抓不到請手動輸入)" className="w-full border-slate-200 rounded p-1 text-xs" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /></div>
-                                <input type="text" placeholder="快門" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /><input type="text" placeholder="光圈" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /><input type="text" placeholder="ISO" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /><input type="text" placeholder="EV" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.ev} onChange={(e) => handleChange('exif', 'ev', e.target.value)} /></div></div></div>
+                                </div><div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-4"><Aperture size={14} className="text-indigo-500"/> 拍攝參數</h4><input type="datetime-local" className="block w-full border-slate-200 rounded-lg p-2 text-xs text-slate-600 mb-2" value={formData.exif.date} onChange={(e) => handleChange('exif', 'date', e.target.value)} /><div className="grid grid-cols-2 gap-2"><input type="text" placeholder="相機" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.camera} onChange={(e) => handleChange('exif', 'camera', e.target.value)} /><input type="text" placeholder="鏡頭" className="border-slate-200 rounded p-1 text-xs" value={formData.exif.lens} onChange={(e) => handleChange('exif', 'lens', e.target.value)} /><input type="text" placeholder="快門" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.shutter} onChange={(e) => handleChange('exif', 'shutter', e.target.value)} /><input type="text" placeholder="光圈" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.aperture} onChange={(e) => handleChange('exif', 'aperture', e.target.value)} /><input type="text" placeholder="ISO" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.iso} onChange={(e) => handleChange('exif', 'iso', e.target.value)} /><input type="text" placeholder="EV" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.ev} onChange={(e) => handleChange('exif', 'ev', e.target.value)} /><input type="text" placeholder="海拔" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.altitude} onChange={(e) => handleChange('exif', 'altitude', e.target.value)} /><input type="text" placeholder="溫度" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.temp} onChange={(e) => handleChange('exif', 'temp', e.target.value)} /><input type="text" placeholder="氣壓" className="border-slate-200 rounded p-1 text-xs text-center" value={formData.exif.pressure} onChange={(e) => handleChange('exif', 'pressure', e.target.value)} /></div></div></div>
                             </div>
                         </div>
                         <div className="flex justify-end gap-4 pt-8 border-t border-slate-100"><button type="button" onClick={onCancel} disabled={isSaving || status === 'uploading'} className="px-6 py-3 border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 font-medium transition-colors">取消</button><button type="submit" disabled={isSaving || status === 'uploading'} className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 font-medium flex items-center gap-2 disabled:opacity-50 transition-all hover:-translate-y-0.5">{(isSaving || status === 'uploading') ? <RefreshCw className="animate-spin" size={20} /> : (isEditMode ? <Edit size={20}/> : <Upload size={20}/>)}{isEditMode ? '更新照片' : '發佈照片'}</button></div>
@@ -1104,7 +1125,7 @@
             const hasMorePhotos = visibleCount < sortedPhotos.length;
 
             return (
-                <div className="min-h-screen font-sans pb-20 bg-slate-50 text-slate-800">
+                <div className="min-h-screen font-sans text-slate-800 pb-20 bg-slate-50">
                 <Header setView={(v) => { setView(v); setEditingPhoto(null); setDateFilter(null); }} isAdmin={isAdmin} onLoginClick={() => setShowLogin(true)} onLogout={handleAdminLogout} currentView={view} />
                 
                 {showLogin && (<AdminLogin onLogin={handleAdminLogin} onCancel={() => setShowLogin(false)} />)}
@@ -1204,6 +1225,7 @@
                             <div className="bg-slate-50 p-6 rounded-full"><Cloud className="h-12 w-12 text-slate-300" /></div>
                             <h3 className="text-xl font-bold text-slate-700">沒有符合條件的照片</h3>
                             <p className="text-slate-500">試著調整搜尋條件{isAdmin ? '，或上傳一張新照片吧！' : '。'}</p>
+                            {/* Hide upload button for strangers in empty state too */}
                             {isAdmin && (
                                 <button onClick={() => setView('upload')} className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl shadow-lg shadow-indigo-200 transition-all font-medium flex items-center gap-2">
                                     <Upload size={18}/> 上傳照片
