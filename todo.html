@@ -126,7 +126,7 @@
             text-decoration: none;
             background: linear-gradient(145deg, #1e293b, #0f172a);
             border: 2px solid var(--mazinger-silver);
-            border-left: 6px solid var(--mazinger-red); /* 標誌性紅色邊條 */
+            border-left: 6px solid var(--mazinger-red); /* 預設紅色邊條 */
             border-radius: 8px; /* 稍微圓角，像金屬板 */
             padding: 25px;
             position: relative;
@@ -233,13 +233,19 @@
             transition: 0.5s;
         }
 
-        /* 特定卡片顏色微調 (可選，讓不同區域有不同能源感) */
-        .card:nth-child(1) { border-left-color: var(--mazinger-red); } /* 易想世界 */
-        .card:nth-child(2) { border-left-color: var(--mazinger-gold); } /* 心智圖 */
+        /* 特定卡片顏色系統 - 賦予每個按鈕不同的「能源屬性」 
+           現在擴充到10個項目，包含新的健康日誌
+        */
+        .card:nth-child(1) { border-left-color: var(--mazinger-red); } /* 易想世界 (紅) */
+        .card:nth-child(2) { border-left-color: var(--mazinger-gold); } /* 心智圖 (金) */
         .card:nth-child(3) { border-left-color: #3b82f6; } /* 曼陀羅 (藍) */
         .card:nth-child(4) { border-left-color: #22c55e; } /* 圖表 (綠) */
-        .card:nth-child(5) { border-left-color: #ec4899; } /* 相片 (粉/紫) */
-        .card:nth-child(6) { border-left-color: #06b6d4; } /* 數位花園 (青) */
+        .card:nth-child(5) { border-left-color: #ec4899; } /* 相片 (粉) */
+        .card:nth-child(6) { border-left-color: #f43f5e; } /* 健康日誌 (玫瑰紅 - 生命力) */
+        .card:nth-child(7) { border-left-color: #06b6d4; } /* 數位花園 (青) */
+        .card:nth-child(8) { border-left-color: #94a3b8; } /* GitHub (銀灰) */
+        .card:nth-child(9) { border-left-color: #f97316; } /* 部落格 (橘) */
+        .card:nth-child(10) { border-left-color: #8b5cf6; } /* 我是誰 (紫) */
 
         /* 底部 */
         footer {
@@ -338,6 +344,17 @@
             </div>
         </a>
 
+        <a href="https://gavintux.github.io/yi/linkchealth.html" class="card" target="_blank">
+            <div class="speed-line"></div>
+            <div class="icon-box">
+                <i class="fa-solid fa-heart-pulse"></i>
+            </div>
+            <div class="card-content">
+                <div class="card-title">健康日誌</div>
+                <div class="card-desc">Health Log - 身心平衡</div>
+            </div>
+        </a>
+
         <a href="https://zendg.netlify.app/" class="card" target="_blank">
             <div class="speed-line"></div>
             <div class="icon-box">
@@ -388,7 +405,6 @@
     </footer>
 
     <script>
-        // 簡單的時鐘腳本，增加儀表板的感覺
         function updateTime() {
             const now = new Date();
             const dateStr = now.toISOString().split('T')[0];
@@ -402,4 +418,3 @@
     </script>
 </body>
 </html>
-
