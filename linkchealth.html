@@ -7,14 +7,14 @@
     
     <script>
         // =============================================================================
-        // ⚙️ 系統設定 (請在此填入您的 Firebase 資訊)
+        // ⚙️ 系統設定
         // =============================================================================
         const SITE_CONFIG = {
             // 1. 網站基本資訊
             app: {
                 title: "每日健康日誌",
                 subtitle: "HealthGuard Personal",
-                user: "林光章", // 預設使用者名稱
+                user: "林光章",
                 targetValues: {
                     bmi: 24,           // 目標 BMI
                     weight: 65,        // 目標體重 (根據身高 170.9cm 推算 BMI 22 約為 64kg)
@@ -25,7 +25,7 @@
                 }
             },
 
-            // 2. Firebase 設定 (已寫入您的設定)
+            // 2. Firebase 設定
             firebase: {
                 apiKey: "AIzaSyDwXsplXePeD1wU1GG4BwQBR6iSMd3_5nY",
                 authDomain: "linkcphoto.firebaseapp.com",
@@ -37,12 +37,11 @@
             
             // 3. 系統參數
             system: {
-                collectionName: 'health_logs_v1', // 資料庫集合名稱 (與相簿分開)
-                adminPasscode: '590123',          // 簡單的管理員密碼
+                collectionName: 'health_logs_v1', 
+                adminPasscode: '590123',
             }
         };
 
-        // 自動設定頁面標題
         document.title = SITE_CONFIG.app.title;
     </script>
 
@@ -55,7 +54,9 @@
                     colors: {
                         teal: { 50: '#f0fdfa', 100: '#ccfbf1', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e' },
                         sky: { 50: '#f0f9ff', 500: '#0ea5e9', 600: '#0284c7' },
-                        rose: { 50: '#fff1f2', 500: '#f43f5e' }
+                        rose: { 50: '#fff1f2', 500: '#f43f5e' },
+                        indigo: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' },
+                        orange: { 50: '#fff7ed', 100: '#ffedd5', 400: '#fb923c', 500: '#f97316' }
                     },
                     fontFamily: {
                         sans: ['Inter', 'Noto Sans TC', 'system-ui', 'sans-serif'],
@@ -75,10 +76,15 @@
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
         .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        /* Hide scrollbar for clean UI */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .recharts-wrapper { margin: 0 auto; }
+        
+        /* 動畫 */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        .animate-slide-up { animation: slideUp 0.3s ease-out; }
     </style>
 </head>
 <body>
@@ -91,7 +97,10 @@
         import { 
             Activity, Heart, Scale, Calendar, Plus, ChevronRight, TrendingUp, 
             AlertCircle, FileText, Settings, User, Droplets, Bone, Info,
-            LogOut, Trash2, Edit2, Check, X, ArrowUp, ArrowDown, Minus
+            LogOut, Trash2, Edit2, Check, X, ArrowUp, ArrowDown, Minus,
+            Wifi, WifiOff, AlertTriangle, 
+            Dumbbell, PenTool, Flower, Timer,
+            Utensils, Sunrise, Sun, Sunset, Coffee, ListPlus, RotateCcw
         } from 'https://esm.sh/lucide-react@0.294.0';
         import { 
             LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceLine 
@@ -121,109 +130,127 @@
         // 🧩 元件
         // =============================================================================
 
-        // 1. 登入/設定錯誤畫面
-        const ConfigWarning = () => (
-            <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-                <div className="bg-white p-8 rounded-2xl card-shadow max-w-md w-full text-center">
-                    <div className="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Settings size={32} />
-                    </div>
-                    <h2 className="text-xl font-bold text-slate-800 mb-2">尚未設定 Firebase</h2>
-                    <p className="text-slate-500 mb-6">請使用文字編輯器打開此檔案，並在頂部的 <code>SITE_CONFIG</code> 區域填入您的 Firebase 設定。</p>
-                    <div className="text-xs text-slate-400 bg-slate-100 p-4 rounded-lg text-left font-mono overflow-auto">
-                        const SITE_CONFIG = &#123;<br/>
-                        &nbsp;&nbsp;firebase: &#123;<br/>
-                        &nbsp;&nbsp;&nbsp;&nbsp;apiKey: "...",<br/>
-                        &nbsp;&nbsp;&nbsp;&nbsp;...<br/>
-                        &nbsp;&nbsp;&#125;<br/>
-                        &#125;
-                    </div>
-                </div>
-            </div>
-        );
-
-        // 2. 指標卡片
-        const MetricCard = ({ title, value, unit, status, trend, icon: Icon, colorClass }) => {
-            const statusColors = {
-                'good': 'bg-teal-50 text-teal-700 border-teal-100',
-                'warning': 'bg-yellow-50 text-yellow-700 border-yellow-100',
-                'alert': 'bg-rose-50 text-rose-700 border-rose-100',
-                'neutral': 'bg-slate-50 text-slate-700 border-slate-100'
-            };
-            
+        // 診斷資訊元件
+        const Diagnostics = ({ user, error }) => {
+            const [expanded, setExpanded] = useState(false);
             return (
-                <div className={`p-4 rounded-2xl border ${statusColors[status] || statusColors.neutral} flex flex-col justify-between h-full`}>
-                    <div className="flex justify-between items-start mb-2">
-                        <div className={`p-2 rounded-xl bg-white/60 backdrop-blur-sm ${colorClass}`}>
-                            <Icon size={20} />
-                        </div>
-                        {trend && (
-                            <div className="flex items-center text-xs font-medium opacity-75">
-                                {trend === 'up' && <ArrowUp size={14} />}
-                                {trend === 'down' && <ArrowDown size={14} />}
-                                {trend === 'stable' && <Minus size={14} />}
+                <div className={`fixed bottom-20 right-4 z-50 transition-all duration-300 ${expanded ? 'max-w-xs w-full' : 'w-auto'}`}>
+                    {expanded ? (
+                        <div className="bg-slate-800 text-white p-4 rounded-xl shadow-2xl text-xs font-mono">
+                            <div className="flex justify-between items-center mb-2 border-b border-slate-600 pb-2">
+                                <span className="font-bold text-teal-400">系統診斷</span>
+                                <button onClick={() => setExpanded(false)}><X size={14}/></button>
                             </div>
-                        )}
-                    </div>
-                    <div>
-                        <span className="text-xs font-medium opacity-70 uppercase tracking-wider">{title}</span>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-bold">{value || '--'}</span>
-                            <span className="text-sm opacity-70">{unit}</span>
+                            <div className="space-y-2">
+                                <div className="flex justify-between"><span className="text-slate-400">Auth:</span><span className={user ? "text-green-400" : "text-red-400"}>{user ? "OK" : "No"}</span></div>
+                                <div className="flex justify-between"><span className="text-slate-400">Col:</span><span className="text-blue-300">{SITE_CONFIG.system.collectionName}</span></div>
+                                {error && <div className="bg-red-900/50 p-2 rounded mt-2 text-red-200">{error}</div>}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <button onClick={() => setExpanded(true)} className={`p-2 rounded-full shadow-lg flex items-center gap-2 transition-colors ${error ? 'bg-red-500 text-white animate-pulse' : (user ? 'bg-teal-500 text-white' : 'bg-slate-400 text-white')}`}>
+                            {error ? <AlertTriangle size={16}/> : (user ? <Wifi size={16}/> : <WifiOff size={16}/>)}
+                        </button>
+                    )}
                 </div>
             );
         };
 
-        // 3. 健檢摘要卡 (基於 PDF)
-        const MedicalSummary = () => (
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <FileText className="text-teal-600" size={20} />
-                    <h3 className="font-bold text-slate-800">健檢重點摘要 (2025.12)</h3>
-                </div>
-                <div className="space-y-4">
-                    <div className="p-3 bg-rose-50 rounded-xl border border-rose-100">
-                        <h4 className="text-sm font-bold text-rose-700 flex items-center gap-2 mb-2">
-                            <AlertCircle size={16} /> 需追蹤項目
-                        </h4>
-                        <ul className="text-sm text-rose-800 space-y-1 list-disc list-inside opacity-90">
-                            <li><strong>血壓偏高</strong> (141/79) - 需控制收縮壓</li>
-                            <li><strong>膽固醇</strong> - LDL 偏高 (131), HDL 偏低 (38)</li>
-                            <li><strong>體重管理</strong> - BMI 24.4 (過重), 腹圍 86cm</li>
-                            <li><strong>脊椎</strong> - 側彎, L4-L5 滑脫, 骨刺</li>
-                            <li><strong>膽囊</strong> - 5mm 結石</li>
-                        </ul>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
-                            <span className="block text-slate-400 mb-1">飯前血糖</span>
-                            <span className="text-lg font-bold text-slate-700">89</span> <span className="text-slate-500">mg/dl</span>
-                            <span className="block text-teal-600 mt-1 flex items-center gap-1"><Check size={12}/> 正常</span>
-                        </div>
-                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
-                            <span className="block text-slate-400 mb-1">腎功能 (Cr)</span>
-                            <span className="text-lg font-bold text-slate-700">0.80</span> <span className="text-slate-500">mg/dl</span>
-                            <span className="block text-teal-600 mt-1 flex items-center gap-1"><Check size={12}/> 正常</span>
-                        </div>
-                    </div>
+        // 錯誤提示 Modal
+        const ErrorModal = ({ message, onClose }) => (
+            <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-in">
+                    <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4 mx-auto"><AlertTriangle size={24} /></div>
+                    <h3 className="text-lg font-bold text-center text-slate-800 mb-2">無法儲存資料</h3>
+                    <p className="text-sm text-slate-600 text-center mb-6">{message}</p>
+                    <button onClick={onClose} className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold">我了解了</button>
                 </div>
             </div>
         );
 
-        // 4. 新增記錄 Modal
-        const EntryModal = ({ onClose, onSave, initialData }) => {
+        const ConfigWarning = () => (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+                <div className="bg-white p-8 rounded-2xl card-shadow max-w-md w-full text-center">
+                    <div className="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4"><Settings size={32} /></div>
+                    <h2 className="text-xl font-bold text-slate-800 mb-2">尚未設定 Firebase</h2>
+                    <p className="text-slate-500 mb-6">請確認 API Key 設定正確。</p>
+                </div>
+            </div>
+        );
+
+        const MetricCard = ({ title, value, unit, status, trend, icon: Icon, colorClass }) => {
+            const statusColors = { 'good': 'bg-teal-50 text-teal-700 border-teal-100', 'warning': 'bg-yellow-50 text-yellow-700 border-yellow-100', 'alert': 'bg-rose-50 text-rose-700 border-rose-100', 'neutral': 'bg-slate-50 text-slate-700 border-slate-100' };
+            return (
+                <div className={`p-4 rounded-2xl border ${statusColors[status] || statusColors.neutral} flex flex-col justify-between h-full`}>
+                    <div className="flex justify-between items-start mb-2"><div className={`p-2 rounded-xl bg-white/60 backdrop-blur-sm ${colorClass}`}><Icon size={20} /></div>{trend && (<div className="flex items-center text-xs font-medium opacity-75">{trend === 'up' && <ArrowUp size={14} />}{trend === 'down' && <ArrowDown size={14} />}{trend === 'stable' && <Minus size={14} />}</div>)}</div>
+                    <div><span className="text-xs font-medium opacity-70 uppercase tracking-wider">{title}</span><div className="flex items-baseline gap-1"><span className="text-2xl font-bold">{value || '--'}</span><span className="text-sm opacity-70">{unit}</span></div></div>
+                </div>
+            );
+        };
+
+        const MedicalSummary = () => (
+            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm mb-6">
+                <div className="flex items-center gap-2 mb-4"><FileText className="text-teal-600" size={20} /><h3 className="font-bold text-slate-800">健檢重點摘要 (2025.12)</h3></div>
+                <div className="space-y-4">
+                    <div className="p-3 bg-rose-50 rounded-xl border border-rose-100"><h4 className="text-sm font-bold text-rose-700 flex items-center gap-2 mb-2"><AlertCircle size={16} /> 需追蹤項目</h4><ul className="text-sm text-rose-800 space-y-1 list-disc list-inside opacity-90"><li><strong>血壓偏高</strong> (141/79) - 需控制收縮壓</li><li><strong>膽固醇</strong> - LDL 偏高 (131), HDL 偏低 (38)</li><li><strong>體重管理</strong> - BMI 24.4 (過重), 腹圍 86cm</li><li><strong>脊椎</strong> - 側彎, L4-L5 滑脫, 骨刺</li><li><strong>膽囊</strong> - 5mm 結石</li></ul></div>
+                    <div className="grid grid-cols-2 gap-3"><div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs"><span className="block text-slate-400 mb-1">飯前血糖</span><span className="text-lg font-bold text-slate-700">89</span> <span className="text-slate-500">mg/dl</span><span className="block text-teal-600 mt-1 flex items-center gap-1"><Check size={12}/> 正常</span></div><div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs"><span className="block text-slate-400 mb-1">腎功能 (Cr)</span><span className="text-lg font-bold text-slate-700">0.80</span> <span className="text-slate-500">mg/dl</span><span className="block text-teal-600 mt-1 flex items-center gap-1"><Check size={12}/> 正常</span></div></div>
+                </div>
+            </div>
+        );
+
+        // EntryModal
+        const EntryModal = ({ onClose, onSave, initialData, isSaving }) => {
+            // 初始化運動資料：如果舊資料有單筆運動，轉為陣列；否則為空陣列
+            const initialExercises = initialData?.exercises || 
+                                     (initialData?.exerciseType ? [{type: initialData.exerciseType, amount: initialData.exerciseTime, unit: '分'}] : []);
+
             const [formData, setFormData] = useState({
                 date: new Date().toISOString().split('T')[0],
                 time: new Date().toTimeString().split(' ')[0].slice(0,5),
-                weight: '',
-                bp_sys: '',
-                bp_dia: '',
-                hr: '',
-                notes: '',
+                weight: '', bp_sys: '', bp_dia: '', hr: '', notes: '',
+                // 活動 (多筆)
+                exercises: initialExercises,
+                // 靜坐/書寫 (時間與次數)
+                meditationTime: '', meditationCount: '',
+                writingTime: '', writingCount: '',
+                // 飲食
+                diet_breakfast: '', diet_lunch: '', diet_dinner: '', diet_others: '',
                 ...initialData
             });
+
+            // 新增運動狀態
+            const [newExercise, setNewExercise] = useState({ type: '禪跑', customType: '', amount: '', unit: '分' });
+            
+            const exerciseOptions = ['禪跑', '律動儀', '步行', '伏地挺身', '其他'];
+            const unitOptions = ['分', '下', '次', '組'];
+
+            const addExercise = () => {
+                if (newExercise.amount) {
+                    // 如果選擇其他但沒輸入名稱，則提示
+                    if (newExercise.type === '其他' && !newExercise.customType.trim()) {
+                        alert("請輸入運動項目名稱");
+                        return;
+                    }
+
+                    setFormData(prev => ({
+                        ...prev,
+                        exercises: [...prev.exercises, { 
+                            ...newExercise, 
+                            amount: Number(newExercise.amount),
+                            // 確保 customType 只有在類型為其他時才寫入，或者都寫入也無妨
+                            customType: newExercise.type === '其他' ? newExercise.customType : ''
+                        }]
+                    }));
+                    setNewExercise({ type: '禪跑', customType: '', amount: '', unit: '分' }); // 重置
+                }
+            };
+
+            const removeExercise = (index) => {
+                setFormData(prev => ({
+                    ...prev,
+                    exercises: prev.exercises.filter((_, i) => i !== index)
+                }));
+            };
 
             const handleSubmit = (e) => {
                 e.preventDefault();
@@ -233,82 +260,162 @@
                     bp_sys: Number(formData.bp_sys) || null,
                     bp_dia: Number(formData.bp_dia) || null,
                     hr: Number(formData.hr) || null,
+                    // 運動陣列直接儲存
+                    exercises: formData.exercises, 
+                    // 兼容舊欄位 (選第一筆運動當作主要顯示，若無則空)
+                    exerciseType: formData.exercises[0]?.type || null,
+                    exerciseTime: formData.exercises[0]?.unit === '分' ? formData.exercises[0]?.amount : null,
+                    
+                    meditationTime: Number(formData.meditationTime) || null,
+                    meditationCount: Number(formData.meditationCount) || null,
+                    writingTime: Number(formData.writingTime) || null,
+                    writingCount: Number(formData.writingCount) || null,
                     timestamp: new Date(`${formData.date}T${formData.time}`).getTime()
                 });
             };
 
             return (
-                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-                    <div className="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl animate-slide-up sm:animate-fade-in">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-slate-800">
-                                {initialData ? '編輯記錄' : '新增今日記錄'}
-                            </h3>
-                            <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-500">
-                                <X size={20} />
-                            </button>
-                        </div>
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+                    <div className="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-slate-800">{initialData ? '修改紀錄' : '新增今日記錄'}</h3><button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-500"><X size={20} /></button></div>
                         <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* 基本資訊 */}
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">日期</label>
-                                    <input type="date" required className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" 
-                                        value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+                                <div><label className="block text-xs font-bold text-slate-500 mb-1">日期</label><input type="date" required className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
+                                <div><label className="block text-xs font-bold text-slate-500 mb-1">時間</label><input type="time" required className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} /></div>
+                            </div>
+
+                            {/* 生理數據區 */}
+                            <div className="space-y-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">生理數據</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Scale size={16} className="text-teal-500"/> 體重 (kg)</label><input type="number" step="0.1" placeholder="71.4" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} /></div>
+                                    <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Activity size={16} className="text-sky-500"/> 心率</label><input type="number" placeholder="73" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.hr} onChange={e => setFormData({...formData, hr: e.target.value})} /></div>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">時間</label>
-                                    <input type="time" required className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" 
-                                        value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} />
+                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Heart size={16} className="text-rose-500"/> 血壓 (mmHg)</label>
+                                    <div className="flex gap-4">
+                                        <input type="number" placeholder="收縮壓" className="flex-1 w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.bp_sys} onChange={e => setFormData({...formData, bp_sys: e.target.value})} />
+                                        <span className="text-slate-300 self-center">/</span>
+                                        <input type="number" placeholder="舒張壓" className="flex-1 w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.bp_dia} onChange={e => setFormData({...formData, bp_dia: e.target.value})} />
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                                        <Scale size={16} className="text-teal-500"/> 體重 (kg)
-                                    </label>
-                                    <input type="number" step="0.1" placeholder="例如: 71.4" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none text-lg font-medium"
-                                        value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} />
-                                </div>
+                            {/* 活動與靜心區 */}
+                            <div className="space-y-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                                <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">活動與靜心</h4>
                                 
+                                {/* 運動 (多筆) */}
                                 <div>
-                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                                        <Heart size={16} className="text-rose-500"/> 血壓 (mmHg)
-                                    </label>
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <input type="number" placeholder="收縮壓 (141)" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none text-lg font-medium"
-                                                value={formData.bp_sys} onChange={e => setFormData({...formData, bp_sys: e.target.value})} />
-                                            <span className="text-xs text-slate-400 mt-1 block text-center">收縮壓 (高)</span>
+                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Dumbbell size={16} className="text-indigo-500"/> 運動記錄</label>
+                                    
+                                    {/* 已加入的運動列表 */}
+                                    {formData.exercises.length > 0 && (
+                                        <div className="mb-3 space-y-2">
+                                            {formData.exercises.map((ex, idx) => (
+                                                <div key={idx} className="flex items-center justify-between bg-white p-2 px-3 rounded-lg border border-indigo-100 text-sm">
+                                                    <span className="font-medium text-slate-700">
+                                                        {ex.type === '其他' ? (ex.customType || '其他') : ex.type}
+                                                    </span>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-indigo-600 font-bold">{ex.amount} {ex.unit}</span>
+                                                        <button type="button" onClick={() => removeExercise(idx)} className="text-slate-400 hover:text-rose-500"><X size={14}/></button>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
-                                        <div className="flex items-center text-slate-300">/</div>
-                                        <div className="flex-1">
-                                            <input type="number" placeholder="舒張壓 (79)" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none text-lg font-medium"
-                                                value={formData.bp_dia} onChange={e => setFormData({...formData, bp_dia: e.target.value})} />
-                                            <span className="text-xs text-slate-400 mt-1 block text-center">舒張壓 (低)</span>
+                                    )}
+
+                                    {/* 新增運動輸入區 - 優化版面 */}
+                                    <div className="flex flex-col gap-2 bg-white p-3 rounded-xl border border-slate-200">
+                                        <div className="flex gap-2">
+                                            <select className="flex-1 p-2 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" value={newExercise.type} onChange={e => setNewExercise({...newExercise, type: e.target.value})}>
+                                                {exerciseOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                            </select>
+                                            
+                                            {/* 如果選其他，顯示輸入框 */}
+                                            {newExercise.type === '其他' && (
+                                                <input type="text" placeholder="項目名稱" className="flex-1 p-2 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" value={newExercise.customType} onChange={e => setNewExercise({...newExercise, customType: e.target.value})} />
+                                            )}
+                                        </div>
+                                        
+                                        <div className="flex gap-2">
+                                            <input type="number" placeholder="量" className="flex-1 p-2 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" value={newExercise.amount} onChange={e => setNewExercise({...newExercise, amount: e.target.value})} />
+                                            <select className="w-20 p-2 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" value={newExercise.unit} onChange={e => setNewExercise({...newExercise, unit: e.target.value})}>
+                                                {unitOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                            </select>
+                                            <button type="button" onClick={addExercise} className="p-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 shadow-sm"><Plus size={20}/></button>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                                        <Activity size={16} className="text-sky-500"/> 心率 (bpm)
-                                    </label>
-                                    <input type="number" placeholder="例如: 73" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none"
-                                        value={formData.hr} onChange={e => setFormData({...formData, hr: e.target.value})} />
-                                </div>
-
-                                <div>
-                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                                        <FileText size={16} className="text-slate-500"/> 備註 / 症狀
-                                    </label>
-                                    <textarea rows="2" placeholder="背痛？有運動？" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none resize-none"
-                                        value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}></textarea>
+                                {/* 靜坐與書寫 (時間+次數) */}
+                                <div className="grid grid-cols-1 gap-4 pt-2 border-t border-indigo-100">
+                                    {/* 靜坐 */}
+                                    <div>
+                                        <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Flower size={16} className="text-purple-500"/> 靜坐</label>
+                                        <div className="flex gap-2">
+                                            <div className="flex-1 relative">
+                                                <input type="number" placeholder="0" className="w-full p-3 pr-8 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none" value={formData.meditationTime} onChange={e => setFormData({...formData, meditationTime: e.target.value})} />
+                                                <span className="absolute right-3 top-3.5 text-xs text-slate-400">分</span>
+                                            </div>
+                                            <div className="w-24 relative">
+                                                <input type="number" placeholder="0" className="w-full p-3 pr-8 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none" value={formData.meditationCount} onChange={e => setFormData({...formData, meditationCount: e.target.value})} />
+                                                <span className="absolute right-3 top-3.5 text-xs text-slate-400">次</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* 直心書寫 */}
+                                    <div>
+                                        <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><PenTool size={16} className="text-amber-500"/> 直心書寫</label>
+                                        <div className="flex gap-2">
+                                            <div className="flex-1 relative">
+                                                <input type="number" placeholder="0" className="w-full p-3 pr-8 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 outline-none" value={formData.writingTime} onChange={e => setFormData({...formData, writingTime: e.target.value})} />
+                                                <span className="absolute right-3 top-3.5 text-xs text-slate-400">分</span>
+                                            </div>
+                                            <div className="w-24 relative">
+                                                <input type="number" placeholder="0" className="w-full p-3 pr-8 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 outline-none" value={formData.writingCount} onChange={e => setFormData({...formData, writingCount: e.target.value})} />
+                                                <span className="absolute right-3 top-3.5 text-xs text-slate-400">次</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <button type="submit" className="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold shadow-lg shadow-teal-200 transition-all flex items-center justify-center gap-2">
-                                <Check size={20} /> 儲存記錄
+                            {/* 飲食記錄區 */}
+                            <div className="space-y-4 p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
+                                <h4 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">飲食記錄</h4>
+                                <div className="grid grid-cols-1 gap-3">
+                                    <div>
+                                        <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Sunrise size={14} className="text-orange-400"/> 早餐</label>
+                                        <input type="text" placeholder="例如: 燕麥片、水煮蛋" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-400 outline-none" value={formData.diet_breakfast} onChange={e => setFormData({...formData, diet_breakfast: e.target.value})} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Sun size={14} className="text-orange-500"/> 午餐</label>
+                                            <input type="text" placeholder="內容" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-400 outline-none" value={formData.diet_lunch} onChange={e => setFormData({...formData, diet_lunch: e.target.value})} />
+                                        </div>
+                                        <div>
+                                            <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Sunset size={14} className="text-indigo-400"/> 晚餐</label>
+                                            <input type="text" placeholder="內容" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-400 outline-none" value={formData.diet_dinner} onChange={e => setFormData({...formData, diet_dinner: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Coffee size={14} className="text-slate-400"/> 其他/點心</label>
+                                        <input type="text" placeholder="水果、飲料..." className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-400 outline-none" value={formData.diet_others} onChange={e => setFormData({...formData, diet_others: e.target.value})} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><FileText size={16} className="text-slate-500"/> 備註</label>
+                                <textarea rows="2" placeholder="背痛？心情？" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none resize-none" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}></textarea>
+                            </div>
+
+                            <button type="submit" disabled={isSaving} className="w-full py-4 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-lg shadow-teal-200 transition-all flex items-center justify-center gap-2">
+                                {isSaving ? "儲存中..." : <><Check size={20} /> 儲存記錄</>}
                             </button>
                         </form>
                     </div>
@@ -316,62 +423,13 @@
             );
         };
 
-        // 5. 趨勢圖表
         const ChartsSection = ({ data }) => {
-            // 處理圖表資料，倒序排列以顯示時間軸
-            const chartData = [...data].reverse().map(d => ({
-                date: d.date.slice(5), // 取月-日
-                weight: d.weight,
-                bp_sys: d.bp_sys,
-                bp_dia: d.bp_dia,
-                bmi: d.weight ? (d.weight / ((170.9/100) * (170.9/100))).toFixed(1) : null
-            }));
-
-            if (chartData.length < 2) return (
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 text-center text-slate-400 py-12">
-                    記錄兩筆以上資料後，此處將顯示趨勢圖。
-                </div>
-            );
-
+            const chartData = [...data].reverse().map(d => ({ date: d.date.slice(5), weight: d.weight, bp_sys: d.bp_sys, bp_dia: d.bp_dia }));
+            if (chartData.length < 2) return (<div className="bg-white p-6 rounded-2xl border border-slate-100 text-center text-slate-400 py-12">記錄兩筆以上資料後，此處將顯示趨勢圖。</div>);
             return (
                 <div className="space-y-6 mb-8">
-                    <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
-                        <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Heart size={18} className="text-rose-500"/> 血壓趨勢</h4>
-                        <div className="h-64 w-full text-xs">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="date" stroke="#94a3b8" tickLine={false} axisLine={false} />
-                                    <YAxis domain={['auto', 'auto']} stroke="#94a3b8" tickLine={false} axisLine={false} />
-                                    <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} />
-                                    <ReferenceLine y={120} stroke="#f43f5e" strokeDasharray="3 3" label={{ value: '上限', fill: '#f43f5e', fontSize: 10, position: 'right' }} />
-                                    <Line type="monotone" dataKey="bp_sys" name="收縮壓" stroke="#f43f5e" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
-                                    <Line type="monotone" dataKey="bp_dia" name="舒張壓" stroke="#fca5a5" strokeWidth={2} dot={{r: 3}} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
-                        <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Scale size={18} className="text-teal-500"/> 體重趨勢</h4>
-                        <div className="h-64 w-full text-xs">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData}>
-                                    <defs>
-                                        <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.2}/>
-                                            <stop offset="95%" stopColor="#14b8a6" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="date" stroke="#94a3b8" tickLine={false} axisLine={false} />
-                                    <YAxis domain={['auto', 'auto']} stroke="#94a3b8" tickLine={false} axisLine={false} />
-                                    <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} />
-                                    <Area type="monotone" dataKey="weight" name="體重" stroke="#14b8a6" strokeWidth={3} fillOpacity={1} fill="url(#colorWeight)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
+                    <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm"><h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Heart size={18} className="text-rose-500"/> 血壓趨勢</h4><div className="h-64 w-full text-xs"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="date" stroke="#94a3b8" tickLine={false} axisLine={false} /><YAxis domain={['auto', 'auto']} stroke="#94a3b8" tickLine={false} axisLine={false} /><Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} /><ReferenceLine y={120} stroke="#f43f5e" strokeDasharray="3 3" label={{ value: '上限', fill: '#f43f5e', fontSize: 10, position: 'right' }} /><Line type="monotone" dataKey="bp_sys" name="收縮壓" stroke="#f43f5e" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} /><Line type="monotone" dataKey="bp_dia" name="舒張壓" stroke="#fca5a5" strokeWidth={2} dot={{r: 3}} /></LineChart></ResponsiveContainer></div></div>
+                    <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm"><h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Scale size={18} className="text-teal-500"/> 體重趨勢</h4><div className="h-64 w-full text-xs"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData}><defs><linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#14b8a6" stopOpacity={0.2}/><stop offset="95%" stopColor="#14b8a6" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="date" stroke="#94a3b8" tickLine={false} axisLine={false} /><YAxis domain={['auto', 'auto']} stroke="#94a3b8" tickLine={false} axisLine={false} /><Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} /><Area type="monotone" dataKey="weight" name="體重" stroke="#14b8a6" strokeWidth={3} fillOpacity={1} fill="url(#colorWeight)" /></AreaChart></ResponsiveContainer></div></div>
                 </div>
             );
         };
@@ -382,174 +440,122 @@
         const App = () => {
             const [user, setUser] = useState(null);
             const [logs, setLogs] = useState([]);
-            const [loading, setLoading] = useState(true);
             const [showModal, setShowModal] = useState(false);
             const [editItem, setEditItem] = useState(null);
-            const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, history, medical
+            const [activeTab, setActiveTab] = useState('dashboard');
+            
+            const [authError, setAuthError] = useState(null);
+            const [saveError, setSaveError] = useState(null);
+            const [isSaving, setIsSaving] = useState(false);
 
-            // 初始化與資料監聽
             useEffect(() => {
                 if (!isConfigured) return;
-                
-                const init = async () => {
-                    try {
-                        await signInAnonymously(auth);
-                    } catch(e) {
-                        console.error("Auth failed", e);
-                    }
-                };
+                const init = async () => { try { await signInAnonymously(auth); } catch(e) { console.error("Auth failed", e); setAuthError(`登入失敗: ${e.code} - ${e.message}`); } };
                 init();
-
                 const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
                     setUser(u);
                     if (u) {
-                        const q = query(
-                            collection(db, SITE_CONFIG.system.collectionName), 
-                            orderBy('timestamp', 'desc'),
-                            limit(100)
-                        );
-                        
-                        const unsubscribeData = onSnapshot(q, (snapshot) => {
-                            setLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                            setLoading(false);
-                        });
+                        setAuthError(null);
+                        const q = query(collection(db, SITE_CONFIG.system.collectionName), orderBy('timestamp', 'desc'), limit(100));
+                        const unsubscribeData = onSnapshot(q, (snapshot) => { setLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); }, (err) => { console.error("Firestore Error", err); setAuthError(`讀取資料失敗: ${err.code}。請檢查 Firestore Rules。`); });
                         return () => unsubscribeData();
                     }
                 });
-
                 return () => unsubscribeAuth();
             }, []);
 
-            // 資料庫操作
             const handleSave = async (data) => {
+                setIsSaving(true);
+                setSaveError(null);
+                if (!user) { setSaveError("尚未連線至資料庫，請檢查網路或 Firebase 設定。"); setIsSaving(false); return; }
                 try {
-                    if (editItem) {
-                        await updateDoc(doc(db, SITE_CONFIG.system.collectionName, editItem.id), data);
-                    } else {
-                        await addDoc(collection(db, SITE_CONFIG.system.collectionName), data);
-                    }
-                    setShowModal(false);
-                    setEditItem(null);
-                } catch (e) {
-                    alert("儲存失敗: " + e.message);
-                }
+                    if (editItem) { await updateDoc(doc(db, SITE_CONFIG.system.collectionName, editItem.id), data); } else { await addDoc(collection(db, SITE_CONFIG.system.collectionName), data); }
+                    setShowModal(false); setEditItem(null);
+                } catch (e) { console.error("Save Error", e); setSaveError(e.code === 'permission-denied' ? "權限不足。請檢查 Rules。" : e.message); } finally { setIsSaving(false); }
             };
 
-            const handleDelete = async (id) => {
-                if(confirm("確定要刪除這筆記錄嗎？")) {
-                    try {
-                        await deleteDoc(doc(db, SITE_CONFIG.system.collectionName, id));
-                    } catch (e) {
-                        console.error("Delete failed", e);
-                    }
-                }
-            };
+            const handleDelete = async (id) => { if(!confirm("確定要刪除這筆記錄嗎？")) return; try { await deleteDoc(doc(db, SITE_CONFIG.system.collectionName, id)); } catch (e) { alert("刪除失敗: " + e.message); } };
 
             if (!isConfigured) return <ConfigWarning />;
 
-            // 計算最新狀態
             const latest = logs[0] || {};
             const bmi = latest.weight ? (latest.weight / ((170.9/100) * (170.9/100))).toFixed(1) : '--';
+            const getBpStatus = (sys, dia) => (!sys || !dia) ? 'neutral' : (sys > 130 || dia > 85 ? 'alert' : (sys > 120 || dia > 80 ? 'warning' : 'good'));
+            const getBmiStatus = (val) => val === '--' ? 'neutral' : (val > 24 ? 'warning' : 'good');
+
+            // 計算今日活動總計
+            const today = new Date().toISOString().split('T')[0];
+            const todayLog = logs.find(l => l.date === today); // 找今日第一筆
             
-            // 狀態判斷邏輯
-            const getBpStatus = (sys, dia) => {
-                if (!sys || !dia) return 'neutral';
-                if (sys > 130 || dia > 85) return 'alert';
-                if (sys > 120 || dia > 80) return 'warning';
-                return 'good';
-            };
-            
-            const getBmiStatus = (val) => {
-                if (val === '--') return 'neutral';
-                if (val > 24) return 'warning';
-                return 'good';
-            };
+            // 處理多筆記錄的統計邏輯
+            const todayStats = logs.filter(l => l.date === today).reduce((acc, curr) => {
+                // 運動總時間 (只統計單位是'分'的)
+                const exerciseMins = (curr.exercises || []).reduce((sum, ex) => sum + (ex.unit === '分' ? Number(ex.amount) : 0), 0) 
+                                     + (curr.exerciseTime || 0); // 相容舊資料
+                
+                return {
+                    exercise: acc.exercise + exerciseMins,
+                    meditationTime: acc.meditationTime + (curr.meditationTime || 0),
+                    meditationCount: acc.meditationCount + (curr.meditationCount || 0),
+                    writingTime: acc.writingTime + (curr.writingTime || 0),
+                    writingCount: acc.writingCount + (curr.writingCount || 0)
+                };
+            }, { exercise: 0, meditationTime: 0, meditationCount: 0, writingTime: 0, writingCount: 0 });
 
             return (
                 <div className="max-w-md sm:max-w-xl md:max-w-3xl mx-auto min-h-screen bg-slate-50 shadow-2xl overflow-hidden flex flex-col relative">
-                    
                     {/* Header */}
                     <header className="bg-teal-600 text-white p-6 pb-12 rounded-b-[2.5rem] shadow-lg z-10 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-8 opacity-10 transform translate-x-10 -translate-y-10">
-                            <Activity size={150} />
-                        </div>
+                        <div className="absolute top-0 right-0 p-8 opacity-10 transform translate-x-10 -translate-y-10"><Activity size={150} /></div>
                         <div className="relative z-10 flex justify-between items-center mb-6">
-                            <div>
-                                <h1 className="text-2xl font-bold flex items-center gap-2">
-                                    <Activity className="text-teal-200" /> {SITE_CONFIG.app.title}
-                                </h1>
-                                <p className="text-teal-100 text-sm opacity-90">Hello, {SITE_CONFIG.app.user}</p>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center border-2 border-teal-400">
-                                <User size={20} />
-                            </div>
+                            <div><h1 className="text-2xl font-bold flex items-center gap-2"><Activity className="text-teal-200" /> {SITE_CONFIG.app.title}</h1><p className="text-teal-100 text-sm opacity-90">Hello, {SITE_CONFIG.app.user}</p></div>
+                            <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center border-2 border-teal-400"><User size={20} /></div>
                         </div>
-
-                        {/* Quick Stats Row */}
-                        <div className="flex justify-between items-end px-2">
-                            <div>
-                                <span className="text-teal-200 text-xs uppercase tracking-wider font-bold">上次測量</span>
-                                <p className="text-white font-medium text-lg mt-1">{latest.date || '尚無資料'}</p>
-                            </div>
-                            <button onClick={() => { setEditItem(null); setShowModal(true); }} className="bg-white text-teal-600 px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-teal-700/20 active:scale-95 transition-transform flex items-center gap-2">
-                                <Plus size={18} strokeWidth={3} /> 記錄
+                        <div className="flex justify-between items-end px-2 relative z-30">
+                            <div><span className="text-teal-200 text-xs uppercase tracking-wider font-bold">上次測量</span><p className="text-white font-medium text-lg mt-1">{latest.date || '尚無資料'}</p></div>
+                            <button 
+                                onClick={() => { setEditItem(todayLog || null); setShowModal(true); }} 
+                                className={`px-5 py-2.5 rounded-xl font-bold shadow-lg transition-transform flex items-center gap-2 active:scale-95 ${todayLog ? 'bg-indigo-100 text-indigo-600 shadow-indigo-700/20' : 'bg-white text-teal-600 shadow-teal-700/20'}`}
+                            >
+                                {todayLog ? <Edit2 size={18} strokeWidth={3} /> : <Plus size={18} strokeWidth={3} />}
+                                {todayLog ? '修改今日' : '記錄'}
                             </button>
                         </div>
                     </header>
 
-                    {/* Main Content Area */}
+                    {/* Main Content */}
                     <main className="flex-1 -mt-8 px-4 pb-24 z-20 overflow-y-auto no-scrollbar">
-                        
-                        {/* Tab Content */}
                         {activeTab === 'dashboard' && (
                             <div className="space-y-6 animate-fade-in">
-                                {/* Metrics Grid */}
                                 <div className="grid grid-cols-2 gap-4">
-                                    <MetricCard 
-                                        title="BMI 指數" 
-                                        value={bmi} 
-                                        unit="" 
-                                        icon={User}
-                                        status={getBmiStatus(bmi)}
-                                        colorClass="text-indigo-500"
-                                        trend={logs.length > 1 ? (logs[0].weight < logs[1].weight ? 'down' : 'up') : null}
-                                    />
-                                    <MetricCard 
-                                        title="體重" 
-                                        value={latest.weight} 
-                                        unit="kg" 
-                                        icon={Scale}
-                                        status={latest.weight > SITE_CONFIG.app.targetValues.weight ? 'warning' : 'good'}
-                                        colorClass="text-teal-500"
-                                        trend={logs.length > 1 ? (logs[0].weight < logs[1].weight ? 'down' : 'up') : null}
-                                    />
-                                    <div className="col-span-2">
-                                        <MetricCard 
-                                            title="血壓 (收縮/舒張)" 
-                                            value={latest.bp_sys ? `${latest.bp_sys}/${latest.bp_dia}` : '--/--'} 
-                                            unit="mmHg" 
-                                            icon={Heart}
-                                            status={getBpStatus(latest.bp_sys, latest.bp_dia)}
-                                            colorClass="text-rose-500"
-                                            trend={logs.length > 1 ? (logs[0].bp_sys < logs[1].bp_sys ? 'down' : 'up') : null}
-                                        />
+                                    <MetricCard title="BMI 指數" value={bmi} unit="" icon={User} status={getBmiStatus(bmi)} colorClass="text-indigo-500" trend={logs.length > 1 ? (logs[0].weight < logs[1].weight ? 'down' : 'up') : null} />
+                                    <MetricCard title="體重" value={latest.weight} unit="kg" icon={Scale} status={latest.weight > SITE_CONFIG.app.targetValues.weight ? 'warning' : 'good'} colorClass="text-teal-500" trend={logs.length > 1 ? (logs[0].weight < logs[1].weight ? 'down' : 'up') : null} />
+                                    <div className="col-span-2"><MetricCard title="血壓 (收縮/舒張)" value={latest.bp_sys ? `${latest.bp_sys}/${latest.bp_dia}` : '--/--'} unit="mmHg" icon={Heart} status={getBpStatus(latest.bp_sys, latest.bp_dia)} colorClass="text-rose-500" trend={logs.length > 1 ? (logs[0].bp_sys < logs[1].bp_sys ? 'down' : 'up') : null} /></div>
+                                </div>
+                                
+                                {/* 今日活動摘要 */}
+                                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+                                    <div className="w-full sm:w-auto"><h4 className="text-sm font-bold text-slate-700 mb-1">今日活動</h4><p className="text-xs text-slate-400">總計統計</p></div>
+                                    <div className="flex gap-4 w-full sm:w-auto justify-around">
+                                        <div className="text-center"><Dumbbell size={20} className="mx-auto text-indigo-500 mb-1"/><span className="text-sm font-bold text-slate-700">{todayStats.exercise}</span><span className="text-[10px] text-slate-400 block">分</span></div>
+                                        <div className="text-center">
+                                            <Flower size={20} className="mx-auto text-purple-500 mb-1"/>
+                                            <div className="flex items-baseline justify-center gap-1">
+                                                <span className="text-sm font-bold text-slate-700">{todayStats.meditationTime}</span><span className="text-[10px] text-slate-400">分</span>
+                                            </div>
+                                            <span className="text-[10px] text-slate-400 block">{todayStats.meditationCount} 次</span>
+                                        </div>
+                                        <div className="text-center">
+                                            <PenTool size={20} className="mx-auto text-amber-500 mb-1"/>
+                                            <div className="flex items-baseline justify-center gap-1">
+                                                <span className="text-sm font-bold text-slate-700">{todayStats.writingTime}</span><span className="text-[10px] text-slate-400">分</span>
+                                            </div>
+                                            <span className="text-[10px] text-slate-400 block">{todayStats.writingCount} 次</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Health Tips (Personalized) */}
-                                <div className="bg-sky-50 rounded-2xl p-5 border border-sky-100 flex items-start gap-4">
-                                    <div className="p-2 bg-sky-100 rounded-full text-sky-600 shrink-0">
-                                        <Droplets size={20} />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-sky-800 text-sm mb-1">健康小叮嚀</h4>
-                                        <p className="text-sky-700 text-xs leading-relaxed">
-                                            您的膽囊有小結石，記得<strong>多喝水</strong>並<strong>定時用餐</strong>（尤其是早餐），避免高油脂食物。同時注意坐姿，保護脊椎。
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Charts */}
+                                <div className="bg-sky-50 rounded-2xl p-5 border border-sky-100 flex items-start gap-4"><div className="p-2 bg-sky-100 rounded-full text-sky-600 shrink-0"><Droplets size={20} /></div><div><h4 className="font-bold text-sky-800 text-sm mb-1">健康小叮嚀</h4><p className="text-sky-700 text-xs leading-relaxed">記得<strong>多喝水</strong>並<strong>定時用餐</strong>（尤其是早餐），避免高油脂食物。同時注意坐姿，保護脊椎。</p></div></div>
                                 <ChartsSection data={logs} />
                             </div>
                         )}
@@ -557,83 +563,86 @@
                         {activeTab === 'history' && (
                             <div className="space-y-4 animate-fade-in pt-4">
                                 <h3 className="font-bold text-slate-700 px-2">歷史記錄 ({logs.length})</h3>
-                                {logs.map(log => (
-                                    <div key={log.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center group">
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="font-bold text-slate-800">{log.date}</span>
-                                                <span className="text-xs text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">{log.time}</span>
+                                {logs.map(log => {
+                                    // 整合顯示運動資料 (包含舊格式與新陣列)
+                                    const displayExercises = log.exercises || (log.exerciseType ? [{type: log.exerciseType, amount: log.exerciseTime, unit: '分'}] : []);
+                                    
+                                    return (
+                                    <div key={log.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-start group">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2"><span className="font-bold text-slate-800">{log.date}</span><span className="text-xs text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">{log.time}</span></div>
+                                            {/* 生理數據 */}
+                                            <div className="flex items-center gap-4 text-sm text-slate-600 mb-2">
+                                                {(log.weight) && <span className="flex items-center gap-1"><Scale size={14} className="text-teal-500"/> {log.weight}</span>}
+                                                {(log.bp_sys) && <span className="flex items-center gap-1"><Heart size={14} className="text-rose-500"/> {log.bp_sys}/{log.bp_dia}</span>}
                                             </div>
-                                            <div className="flex items-center gap-4 text-sm text-slate-600">
-                                                <span className="flex items-center gap-1"><Scale size={14} className="text-teal-500"/> {log.weight || '--'}</span>
-                                                <span className="flex items-center gap-1"><Heart size={14} className="text-rose-500"/> {log.bp_sys || '--'}/{log.bp_dia || '--'}</span>
+                                            {/* 活動標籤 */}
+                                            <div className="flex flex-wrap gap-2 mb-2">
+                                                {/* 運動 (多筆) */}
+                                                {displayExercises.map((ex, i) => (
+                                                    <span key={i} className="inline-flex items-center gap-1 text-[10px] px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg font-medium border border-indigo-100">
+                                                        <Dumbbell size={10}/> 
+                                                        {ex.type === '其他' ? (ex.customType || '其他') : ex.type} 
+                                                        {' '}{ex.amount}{ex.unit}
+                                                    </span>
+                                                ))}
+                                                
+                                                {/* 靜坐 */}
+                                                {(log.meditationTime > 0 || log.meditationCount > 0) && (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 bg-purple-50 text-purple-600 rounded-lg font-medium border border-purple-100">
+                                                        <Flower size={10}/> 靜坐 
+                                                        {log.meditationTime ? ` ${log.meditationTime}m` : ''} 
+                                                        {log.meditationCount ? ` ${log.meditationCount}次` : ''}
+                                                    </span>
+                                                )}
+
+                                                {/* 書寫 */}
+                                                {(log.writingTime > 0 || log.writingCount > 0) && (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 bg-amber-50 text-amber-600 rounded-lg font-medium border border-amber-100">
+                                                        <PenTool size={10}/> 書寫
+                                                        {log.writingTime ? ` ${log.writingTime}m` : ''}
+                                                        {log.writingCount ? ` ${log.writingCount}次` : ''}
+                                                    </span>
+                                                )}
                                             </div>
-                                            {log.notes && <p className="text-xs text-slate-400 mt-2 line-clamp-1">{log.notes}</p>}
+                                            {/* 飲食記錄 */}
+                                            {(log.diet_breakfast || log.diet_lunch || log.diet_dinner || log.diet_others) && (
+                                                <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500 space-y-1">
+                                                    {log.diet_breakfast && <div className="flex gap-2"><span className="text-orange-400 font-bold w-8 flex items-center gap-1"><Sunrise size={10}/>早餐</span> {log.diet_breakfast}</div>}
+                                                    {log.diet_lunch && <div className="flex gap-2"><span className="text-orange-500 font-bold w-8 flex items-center gap-1"><Sun size={10}/>午餐</span> {log.diet_lunch}</div>}
+                                                    {log.diet_dinner && <div className="flex gap-2"><span className="text-indigo-400 font-bold w-8 flex items-center gap-1"><Sunset size={10}/>晚餐</span> {log.diet_dinner}</div>}
+                                                    {log.diet_others && <div className="flex gap-2"><span className="text-slate-400 font-bold w-8 flex items-center gap-1"><Coffee size={10}/>其他</span> {log.diet_others}</div>}
+                                                </div>
+                                            )}
+                                            {log.notes && <p className="text-xs text-slate-400 line-clamp-2 mt-2 pt-2 border-t border-slate-50">{log.notes}</p>}
                                         </div>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => { setEditItem(log); setShowModal(true); }} className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors"><Edit2 size={18}/></button>
-                                            <button onClick={() => handleDelete(log.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors"><Trash2 size={18}/></button>
-                                        </div>
+                                        <div className="flex gap-2 pt-1"><button onClick={() => { setEditItem(log); setShowModal(true); }} className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors"><Edit2 size={16}/></button><button onClick={() => handleDelete(log.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors"><Trash2 size={16}/></button></div>
                                     </div>
-                                ))}
-                                {logs.length === 0 && (
-                                    <div className="text-center py-12 text-slate-400">尚無記錄，點擊下方按鈕開始！</div>
-                                )}
+                                    );
+                                })}
+                                {logs.length === 0 && <div className="text-center py-12 text-slate-400">尚無記錄，點擊下方按鈕開始！</div>}
                             </div>
                         )}
 
                         {activeTab === 'medical' && (
                             <div className="animate-fade-in pt-4">
                                 <MedicalSummary />
-                                
-                                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                                    <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Bone size={20} className="text-slate-500"/> 骨骼與影像檢查</h3>
-                                    <div className="space-y-4 text-sm">
-                                        <div className="flex items-start gap-3">
-                                            <div className="w-2 h-2 rounded-full bg-orange-400 mt-2 shrink-0"></div>
-                                            <div>
-                                                <p className="font-bold text-slate-700">腰椎 (L-Spine)</p>
-                                                <p className="text-slate-500">輕微滑脫 (L4 on L5)、骨刺生成。建議加強核心肌群，避免搬重物。</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-start gap-3">
-                                            <div className="w-2 h-2 rounded-full bg-teal-400 mt-2 shrink-0"></div>
-                                            <div>
-                                                <p className="font-bold text-slate-700">骨質密度</p>
-                                                <p className="text-slate-500">T值 1.4，屬於正常骨量。請繼續保持鈣質攝取。</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm"><h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Bone size={20} className="text-slate-500"/> 骨骼與影像檢查</h3><div className="space-y-4 text-sm"><div className="flex items-start gap-3"><div className="w-2 h-2 rounded-full bg-orange-400 mt-2 shrink-0"></div><div><p className="font-bold text-slate-700">腰椎 (L-Spine)</p><p className="text-slate-500">輕微滑脫 (L4 on L5)、骨刺生成。建議加強核心肌群，避免搬重物。</p></div></div><div className="flex items-start gap-3"><div className="w-2 h-2 rounded-full bg-teal-400 mt-2 shrink-0"></div><div><p className="font-bold text-slate-700">骨質密度</p><p className="text-slate-500">T值 1.4，屬於正常骨量。請繼續保持鈣質攝取。</p></div></div></div></div>
                             </div>
                         )}
-
                     </main>
 
-                    {/* Bottom Navigation */}
+                    {/* Navbar */}
                     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 pb-6 sm:pb-3 flex justify-between items-center z-40 max-w-md sm:max-w-xl md:max-w-3xl mx-auto shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                        <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'dashboard' ? 'text-teal-600' : 'text-slate-400'}`}>
-                            <Activity size={24} strokeWidth={activeTab === 'dashboard' ? 2.5 : 2} />
-                            <span className="text-[10px] font-bold">總覽</span>
-                        </button>
-                        <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'history' ? 'text-teal-600' : 'text-slate-400'}`}>
-                            <Calendar size={24} strokeWidth={activeTab === 'history' ? 2.5 : 2} />
-                            <span className="text-[10px] font-bold">歷史</span>
-                        </button>
-                        <button onClick={() => setActiveTab('medical')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'medical' ? 'text-teal-600' : 'text-slate-400'}`}>
-                            <FileText size={24} strokeWidth={activeTab === 'medical' ? 2.5 : 2} />
-                            <span className="text-[10px] font-bold">報告</span>
-                        </button>
+                        <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'dashboard' ? 'text-teal-600' : 'text-slate-400'}`}><Activity size={24} strokeWidth={activeTab === 'dashboard' ? 2.5 : 2} /><span className="text-[10px] font-bold">總覽</span></button>
+                        <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'history' ? 'text-teal-600' : 'text-slate-400'}`}><Calendar size={24} strokeWidth={activeTab === 'history' ? 2.5 : 2} /><span className="text-[10px] font-bold">歷史</span></button>
+                        <button onClick={() => setActiveTab('medical')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'medical' ? 'text-teal-600' : 'text-slate-400'}`}><FileText size={24} strokeWidth={activeTab === 'medical' ? 2.5 : 2} /><span className="text-[10px] font-bold">報告</span></button>
                     </nav>
 
-                    {/* Modals */}
-                    {showModal && (
-                        <EntryModal 
-                            onClose={() => setShowModal(false)} 
-                            onSave={handleSave} 
-                            initialData={editItem} 
-                        />
-                    )}
+                    {/* Overlays */}
+                    {showModal && <EntryModal onClose={() => setShowModal(false)} onSave={handleSave} initialData={editItem} isSaving={isSaving} />}
+                    {saveError && <ErrorModal message={saveError} onClose={() => setSaveError(null)} />}
+                    <Diagnostics user={user} error={authError} />
                 </div>
             );
         };
