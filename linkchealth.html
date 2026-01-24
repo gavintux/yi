@@ -35,7 +35,13 @@
                 appId: "1:841541302440:web:a2b3dfef70a32bb345ea9d"
             },
             
-            // 3. 系統參數
+            // 3. AI 設定 (新增)
+            ai: {
+                // 請至 https://aistudio.google.com/app/apikey 申請免費 Key
+                geminiApiKey: "AIzaSyB8jSssFpkpRatRawkFfJNjnFngUMqhaWo", 
+            },
+
+            // 4. 系統參數
             system: {
                 collectionName: 'health_logs_v1', 
                 adminPasscode: '590123', // 管理員密碼
@@ -144,7 +150,16 @@
         // 🤖 Gemini API Service
         // =============================================================================
         const callGeminiAPI = async (prompt) => {
-            const apiKey = ""; // API Key 會由執行環境自動注入
+            // 嘗試取得 API Key：
+            // 1. 環境變數 (Canvas 預覽用)
+            // 2. SITE_CONFIG (下載後單機使用)
+            let apiKey = ""; 
+            
+            // 如果是下載後的檔案，讀取使用者填寫的設定
+            if (!apiKey && SITE_CONFIG.ai && SITE_CONFIG.ai.geminiApiKey && !SITE_CONFIG.ai.geminiApiKey.includes("您的_GEMINI_API_KEY")) {
+                apiKey = SITE_CONFIG.ai.geminiApiKey;
+            }
+
             if (!apiKey) {
                 console.warn("API Key missing");
                 return null;
@@ -161,7 +176,10 @@
                     })
                 });
 
-                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(`API Error: ${errData.error?.message || response.status}`);
+                }
                 
                 const data = await response.json();
                 return data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -182,6 +200,10 @@
             const [error, setError] = useState(null);
 
             const generateInsight = async () => {
+                // 檢查是否已設定 API Key (僅檢查設定檔，環境變數由 callGeminiAPI 內部處理)
+                const hasConfigKey = SITE_CONFIG.ai && SITE_CONFIG.ai.geminiApiKey && !SITE_CONFIG.ai.geminiApiKey.includes("您的_GEMINI_API_KEY");
+                // 注意：在預覽環境 apiKey 會自動注入，所以這裡不做嚴格阻擋，交由 callGeminiAPI 判斷
+
                 setIsLoading(true);
                 setError(null);
                 setInsight(null);
@@ -223,10 +245,11 @@ ${JSON.stringify(recentLogs)}
                     if (result) {
                         setInsight(result);
                     } else {
-                        setError("無法連接 AI 服務，請稍後再試。");
+                        setError("無法連接 AI。請確認您是否已在 SITE_CONFIG 填入 Gemini API Key。");
                     }
                 } catch (err) {
-                    setError("分析過程發生錯誤。");
+                    console.error(err);
+                    setError(`分析錯誤: ${err.message}`);
                 } finally {
                     setIsLoading(false);
                 }
@@ -235,7 +258,6 @@ ${JSON.stringify(recentLogs)}
             // 簡單的 Markdown 渲染 (將 **bold** 轉為 <strong>, - list 轉為 bullet)
             const renderMarkdown = (text) => {
                 if (!text) return null;
-                // 這裡做一個非常簡單的轉換，僅供展示
                 const lines = text.split('\n');
                 return lines.map((line, i) => {
                     let formatted = line;
@@ -279,8 +301,10 @@ ${JSON.stringify(recentLogs)}
                         )}
 
                         {error && (
-                            <div className="bg-rose-50 text-rose-600 p-3 rounded-lg text-xs flex items-center gap-2">
-                                <AlertTriangle size={16} /> {error}
+                            <div className="bg-rose-50 text-rose-600 p-3 rounded-lg text-xs flex flex-col gap-2">
+                                <div className="flex items-center gap-2 font-bold"><AlertTriangle size={16} /> 發生錯誤</div>
+                                <div>{error}</div>
+                                <div className="text-[10px] text-rose-400 mt-1">請用記事本開啟此檔案，搜尋 SITE_CONFIG 並填入您的 Gemini API Key。</div>
                             </div>
                         )}
 
