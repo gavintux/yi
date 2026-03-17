@@ -467,8 +467,8 @@
                 },
             };
 
-            // 使用者自己填寫的 API Key 組成請求網址
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentApiKey}`;
+            // 使用最穩定、對所有金鑰皆有開放的 gemini-1.5-flash 模型
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${currentApiKey}`;
 
             // 準備顯示載入中
             interpretationOutput.classList.add('hidden');
@@ -500,29 +500,42 @@
                             responseText = "模型返回的數據結構無效。";
                         }
                         break; // Success
-                    } else if (response.status === 400 || response.status === 403) {
-                        // 如果是金鑰錯誤，通常會回傳 400 錯誤
-                        throw new Error("API 金鑰無效或格式錯誤，請檢查您的 Gemini API Key。");
-                    } else if (i < maxRetries - 1) {
-                        // Retry with exponential backoff
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2;
                     } else {
-                        // Last attempt failed
-                        throw new Error(`API call failed with status: ${response.status}`);
+                        // 取得 API 回傳的具體錯誤原因
+                        let errorMessage = `HTTP 錯誤碼: ${response.status}`;
+                        try {
+                            const errorData = await response.json();
+                            if (errorData.error && errorData.error.message) {
+                                errorMessage += ` - ${errorData.error.message}`;
+                            }
+                        } catch (e) {}
+
+                        // 針對常見錯誤狀態碼進行處理
+                        if (response.status === 400 || response.status === 403) {
+                            throw new Error(`API 金鑰無效或被拒絕。請檢查您的金鑰是否正確。(${errorMessage})`);
+                        } else if (response.status === 404) {
+                            throw new Error(`找不到指定的模型 (404)。請確認您的 API 金鑰是否有使用此模型的權限。(${errorMessage})`);
+                        } else if (i < maxRetries - 1) {
+                            // Retry with exponential backoff
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            delay *= 2;
+                        } else {
+                            // Last attempt failed
+                            throw new Error(`伺服器連線失敗。(${errorMessage})`);
+                        }
                     }
                 }
 
             } catch (error) {
                 console.error("Error fetching Gemini interpretation:", error);
-                authMessage.textContent = error.message.includes("API 金鑰無效") ? error.message : "網路連線或伺服器錯誤，無法完成解卦。";
+                authMessage.textContent = error.message || "網路連線或伺服器錯誤，無法完成解卦。";
                 authMessage.classList.remove('hidden');
             } finally {
                 interpretationLoading.classList.add('hidden');
                 interpretButton.disabled = false;
                 
                 // 只有在成功取得回應時才顯示 output
-                if (responseText !== "對不起，解卦服務暫時無法回應。請稍後再試。" && !authMessage.textContent.includes("API 金鑰無效")) {
+                if (responseText !== "對不起，解卦服務暫時無法回應。請稍後再試。" && !authMessage.textContent.includes("API 金鑰無效") && !authMessage.textContent.includes("伺服器連線失敗") && !authMessage.textContent.includes("找不到指定的模型")) {
                     interpretationOutput.classList.remove('hidden');
                     interpretationText.textContent = responseText;
                 }
