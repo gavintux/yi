@@ -362,21 +362,7 @@
         // LLM configuration
         const apiKey = "AIzaSyAaslBeHVSSWGnU03Z4EvweFLkthp3bYr0";
         // 保持與前一次生成一致的模型
-        const apiUrl = `curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent" \
-  -H 'Content-Type: application/json' \
-  -H 'X-goog-api-key: AIzaSyAaslBeHVSSWGnU03Z4EvweFLkthp3bYr0' \
-  -X POST \
-  -d '{
-    "contents": [
-      {
-        "parts": [
-          {
-            "text": "Explain how AI works in a few words"
-          }
-        ]
-      }
-    ]
-  }'`; 
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`; 
 
         // --- 函式：渲染卦象圖形 ---
         function renderHexagramImage(lines) {
