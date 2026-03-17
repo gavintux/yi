@@ -97,16 +97,28 @@
                         <!-- Content will be populated by JavaScript -->
                     </div>
 
-                    <!-- Gemini API 解卦區塊 (已新增密碼驗證) -->
+                    <!-- Gemini API 解卦區塊 -->
                     <div class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
                         <h3 class="text-2xl font-bold mb-4 text-amber-700 dark:text-amber-500">
                             🤖 AI 易理解卦 (Gemini 驅動)
                         </h3>
                         
-                        <!-- 密碼輸入欄位 -->
+                        <!-- 為了 GitHub Pages 安全部署，新增 API Key 輸入框 -->
+                        <div class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                            <label for="api-key-input" class="block mb-2 text-sm font-semibold text-yellow-800 dark:text-yellow-400">
+                                🔑 請輸入您的 Gemini API Key (必填)
+                            </label>
+                            <input type="password" id="api-key-input" placeholder="AIzaSy..."
+                                class="w-full p-2 text-sm bg-white dark:bg-gray-800 border border-yellow-300 dark:border-yellow-600 rounded focus:ring-yellow-500 focus:border-yellow-500 transition text-gray-800 dark:text-gray-200">
+                            <p class="mt-2 text-xs text-yellow-700 dark:text-yellow-500">
+                                為了保護資訊安全，本平台採靜態網頁設計。您的金鑰僅會儲存在您目前的瀏覽器中，不會上傳至任何伺服器。
+                            </p>
+                        </div>
+
+                        <!-- 密碼輸入欄位 (保留原有的簡單驗證) -->
                         <div class="mb-4">
                             <label for="password-input" class="block mb-2 text-lg font-semibold text-gray-700 dark:text-gray-300">
-                                請輸入驗證密碼：
+                                平台訪問密碼：
                             </label>
                             <input type="password" id="password-input" placeholder="密碼問linkc"
                                 class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-amber-500 focus:border-amber-500 transition text-gray-800 dark:text-gray-200">
@@ -119,9 +131,9 @@
                         <textarea id="user-question" rows="3" placeholder="例如：我最近的事業發展如何？或：我與某人的關係前景如何？"
                             class="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-amber-500 focus:border-amber-500 transition text-gray-800 dark:text-gray-200 resize-none"></textarea>
                         
-                        <!-- 密碼錯誤或一般訊息區域 -->
+                        <!-- 錯誤或一般訊息區域 -->
                         <div id="auth-message" class="mt-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-l-4 border-red-500 rounded-lg hidden" role="alert">
-                            密碼錯誤，請重新輸入。
+                            錯誤訊息。
                         </div>
 
                         <button id="interpret-button"
@@ -279,7 +291,7 @@
     </div>
 
     <script>
-        // --- 易經64卦資料 (已校對全部卦象線條) ---
+        // --- 易經64卦資料 ---
         const iChingData = {
             "1": { name: "乾為天", lines: ['yang', 'yang', 'yang', 'yang', 'yang', 'yang'], judgement: "元，亨，利，貞。", commentary: "天行健，君子以自強不息。", lines_text: ["初九：潛龍勿用。", "九二：見龍在田，利見大人。", "九三：君子終日乾乾，夕惕若，厲無咎。", "九四：或躍在淵，無咎。", "九五：飛龍在天，利見大人。", "上九：亢龍有悔。"] },
             "2": { name: "坤為地", lines: ['yin', 'yin', 'yin', 'yin', 'yin', 'yin'], judgement: "元，亨，利牝馬之貞。君子有攸往，先迷後得主，利。西南得朋，東北喪朋。安貞，吉。", commentary: "地勢坤，君子以厚德載物。", lines_text: ["初六：履霜，堅冰至。", "六二：直，方，大，不習無不利。", "六三：含章可貞。或從王事，無成有終。", "六四：括囊，無咎無譽。", "六五：黃裳，元吉。", "上六：龍戰于野，其血玄黃。"] },
@@ -351,23 +363,28 @@
 
         const selectElement = document.getElementById('hexagram-select');
         const detailsElement = document.getElementById('hexagram-details');
-        const passwordInput = document.getElementById('password-input'); // 新增密碼輸入框
+        const apiKeyInput = document.getElementById('api-key-input'); // API Key 輸入框
+        const passwordInput = document.getElementById('password-input'); 
         const userQuestionInput = document.getElementById('user-question');
         const interpretButton = document.getElementById('interpret-button');
         const interpretationOutput = document.getElementById('interpretation-output');
         const interpretationText = document.getElementById('interpretation-text');
         const interpretationLoading = document.getElementById('interpretation-loading');
-        const authMessage = document.getElementById('auth-message'); // 新增認證訊息區域
+        const authMessage = document.getElementById('auth-message');
         
-        // LLM configuration
-        const apiKey = "";
-        // 保持與前一次生成一致的模型
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`; 
+        // 頁面載入時，從本地儲存讀取 API Key（如果之前有填過的話）
+        const savedApiKey = localStorage.getItem('gemini_api_key');
+        if (savedApiKey) {
+            apiKeyInput.value = savedApiKey;
+        }
+
+        // 當使用者輸入 API Key 時，自動儲存到瀏覽器的 localStorage
+        apiKeyInput.addEventListener('change', (e) => {
+            localStorage.setItem('gemini_api_key', e.target.value.trim());
+        });
 
         // --- 函式：渲染卦象圖形 ---
         function renderHexagramImage(lines) {
-            // lines 陣列的順序是 '初爻' (bottom) 到 '上爻' (top)
-            // 但渲染時需要從上到下，所以需要反轉
             return `
                 <div class="w-16 mx-auto text-amber-600 dark:text-amber-400">
                     ${lines.slice().reverse().map(line => `
@@ -412,7 +429,7 @@
         }
 
         // --- LLM 解卦函式 ---
-        async function getGeminiInterpretation(hexagramId, userQuestion) {
+        async function getGeminiInterpretation(hexagramId, userQuestion, currentApiKey) {
             const data = iChingData[hexagramId];
             if (!data) {
                 console.error("Hexagram data not found.");
@@ -450,16 +467,18 @@
                 },
             };
 
+            // 使用者自己填寫的 API Key 組成請求網址
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentApiKey}`;
+
             // 準備顯示載入中
             interpretationOutput.classList.add('hidden');
-            authMessage.classList.add('hidden'); // 確保密碼錯誤訊息被隱藏
+            authMessage.classList.add('hidden'); 
             interpretationLoading.classList.remove('hidden');
             interpretButton.disabled = true;
 
             let responseText = "對不起，解卦服務暫時無法回應。請稍後再試。";
 
             try {
-                // Implement basic exponential backoff
                 let maxRetries = 3;
                 let delay = 1000;
                 
@@ -481,6 +500,9 @@
                             responseText = "模型返回的數據結構無效。";
                         }
                         break; // Success
+                    } else if (response.status === 400 || response.status === 403) {
+                        // 如果是金鑰錯誤，通常會回傳 400 錯誤
+                        throw new Error("API 金鑰無效或格式錯誤，請檢查您的 Gemini API Key。");
                     } else if (i < maxRetries - 1) {
                         // Retry with exponential backoff
                         await new Promise(resolve => setTimeout(resolve, delay));
@@ -493,14 +515,14 @@
 
             } catch (error) {
                 console.error("Error fetching Gemini interpretation:", error);
-                authMessage.textContent = "網路連線或伺服器錯誤，無法完成解卦。";
+                authMessage.textContent = error.message.includes("API 金鑰無效") ? error.message : "網路連線或伺服器錯誤，無法完成解卦。";
                 authMessage.classList.remove('hidden');
             } finally {
                 interpretationLoading.classList.add('hidden');
                 interpretButton.disabled = false;
                 
                 // 只有在成功取得回應時才顯示 output
-                if (responseText !== "對不起，解卦服務暫時無法回應。請稍後再試。") {
+                if (responseText !== "對不起，解卦服務暫時無法回應。請稍後再試。" && !authMessage.textContent.includes("API 金鑰無效")) {
                     interpretationOutput.classList.remove('hidden');
                     interpretationText.textContent = responseText;
                 }
@@ -517,10 +539,19 @@
             const selectedHexagramId = selectElement.value;
             const question = userQuestionInput.value;
             const enteredPassword = passwordInput.value;
+            const currentApiKey = apiKeyInput.value.trim();
             
-            // 1. Password Verification
+            // 0. API Key 檢查
+            if (!currentApiKey) {
+                interpretationOutput.classList.add('hidden');
+                interpretationLoading.classList.add('hidden');
+                authMessage.textContent = "請先在上方輸入您的 Gemini API Key。";
+                authMessage.classList.remove('hidden');
+                return;
+            }
+
+            // 1. Password Verification (密碼驗證)
             if (enteredPassword !== REQUIRED_PASSWORD) {
-                // Hide previous results/loading and show error
                 interpretationOutput.classList.add('hidden');
                 interpretationLoading.classList.add('hidden');
                 authMessage.textContent = "密碼錯誤，請重新輸入。";
@@ -528,11 +559,10 @@
                 return;
             }
 
-            // 2. If password is correct, hide the error message and proceed
+            // 2. If all is correct, hide the error message and proceed
             authMessage.classList.add('hidden');
-            getGeminiInterpretation(selectedHexagramId, question);
+            getGeminiInterpretation(selectedHexagramId, question, currentApiKey);
         });
-
 
         // --- 分頁功能 ---
         const tabButtons = document.querySelectorAll('.tab-button');
@@ -543,25 +573,18 @@
 
         tabButtons.forEach(button => {
             button.addEventListener('click', () => {
-                // Remove active styles from all buttons
                 tabButtons.forEach(btn => {
                     btn.classList.remove('tab-active');
                     btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300', 'dark:text-gray-400', 'dark:hover:text-gray-300', 'dark:hover:border-gray-600');
                 });
 
-                // Add active styles to the clicked button
                 button.classList.add('tab-active');
                 button.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300', 'dark:text-gray-400', 'dark:hover:text-gray-300', 'dark:hover:border-gray-600');
 
-
-                // Hide all content panes
                 Object.values(contentPanes).forEach(pane => pane.classList.add('hidden'));
-
-                // Show the correct content pane
                 contentPanes[button.id].classList.remove('hidden');
             });
         });
-
 
         // --- 初始化填充下拉選單 ---
         function populateSelect() {
