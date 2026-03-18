@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
@@ -467,8 +467,8 @@
                 },
             };
 
-            // 使用最穩定、對所有金鑰皆有開放的 gemini-1.5-flash 模型
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${currentApiKey}`;
+            // 改用最新的 gemini-2.5-flash 模型，以解決 404 找不到模型的問題
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentApiKey}`;
 
             // 準備顯示載入中
             interpretationOutput.classList.add('hidden');
