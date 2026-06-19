@@ -7,6 +7,47 @@
     
     <link rel="icon" href="https://2blog.ilc.edu.tw/linkc/wp-content/uploads/sites/141/2024/12/linkc-logo.png" type="image/png">
 
+    <!-- 加入全域錯誤攔截：如果腳本執行失敗，在畫面上顯示錯誤訊息 -->
+    <script>
+        window.addEventListener('error', function(event) {
+            const root = document.getElementById('root');
+            if (root && document.querySelector('.loading-screen')) {
+                root.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; text-align: center; padding: 20px; background-color: #f5f5f4;">
+                        <div style="color: #ef4444; margin-bottom: 1rem;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                        </div>
+                        <h2 style="font-size: 1.5rem; font-weight: bold; color: #1c1917; margin-bottom: 0.5rem;">網頁載入發生錯誤</h2>
+                        <p style="color: #78716c; font-size: 0.875rem; margin-bottom: 1rem;">程式可能被瀏覽器擴充功能 (如擋廣告套件) 阻擋，或是網路 CDN 暫時無法連線。</p>
+                        <div style="background: #ffffff; border: 1px solid #e7e5e4; border-radius: 0.5rem; padding: 1rem; max-width: 600px; width: 100%; text-align: left; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <code style="color: #ef4444; font-size: 0.875rem;">${event.message}</code><br/>
+                            <span style="color: #a8a29e; font-size: 0.75rem; margin-top: 8px; display: block;">位置：${event.filename}:${event.lineno}</span>
+                        </div>
+                        <p style="color: #78716c; font-size: 0.875rem; margin-top: 1.5rem;">建議動作：請嘗試<b>停用擋廣告套件</b>、<b>清除快取後重新整理</b>，或按下 <b>F12</b> 查看主控台資訊。</p>
+                    </div>
+                `;
+            }
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+             const root = document.getElementById('root');
+            if (root && document.querySelector('.loading-screen')) {
+                root.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; text-align: center; padding: 20px; background-color: #f5f5f4;">
+                        <div style="color: #ef4444; margin-bottom: 1rem;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                        </div>
+                        <h2 style="font-size: 1.5rem; font-weight: bold; color: #1c1917; margin-bottom: 0.5rem;">模組下載失敗</h2>
+                        <p style="color: #78716c; font-size: 0.875rem; margin-bottom: 1rem;">無法從外部伺服器下載必要的程式資源 (Promise Rejection)。這通常是因為網路不穩或 CDN 異常。</p>
+                        <div style="background: #ffffff; border: 1px solid #e7e5e4; border-radius: 0.5rem; padding: 1rem; max-width: 600px; width: 100%; text-align: left; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <code style="color: #ef4444; font-size: 0.875rem;">${event.reason}</code>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -26,6 +67,14 @@
     </script>
     
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        // 強制 Babel 使用傳統的 React.createElement，避免產生 react/jsx-runtime 找不到的路徑錯誤
+        Babel.registerPreset('linkc-react-preset', {
+            presets: [
+                [Babel.availablePresets['react'], { runtime: 'classic' }]
+            ]
+        });
+    </script>
 
     <style>
         body { 
@@ -81,8 +130,8 @@
         </div>
     </div>
 
-    <!-- 4. React App -->
-    <script type="text/babel" data-type="module">
+    <!-- 4. React App (引入剛才設定的 linkc-react-preset) -->
+    <script type="text/babel" data-type="module" data-presets="linkc-react-preset">
         import React, { useState, useEffect, useRef, useMemo } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
@@ -477,7 +526,7 @@
                     <div className="p-8">
                         {status === 'uploading' && (
                             <div className="mb-6 bg-emerald-50 text-emerald-800 p-4 rounded-xl flex items-center gap-3 animate-pulse border border-emerald-100">
-                                <RefreshCw className="spinner text-emerald-600" size={20} />
+                                <RefreshCw className="animate-spin text-emerald-600" size={20} />
                                 <span className="font-medium">正在處理資料，請稍候...</span>
                             </div>
                         )}
@@ -560,7 +609,6 @@
                 e.preventDefault(); 
                 if (password === APP_CONFIG.adminPassword) {
                     localStorage.setItem('linkc_admin_auth', 'true');
-                    // 修正：只有在輸入正確密碼時，才向 Firebase 申請匿名身分
                     signInAnonymously(auth).catch(e => console.error("Auth failed", e));
                     onLogin(); 
                 } else {
@@ -603,12 +651,9 @@
             useEffect(() => {
                 if (!isConfigConfigured) return; 
                 
-                // 修正：移除自動登入 (initAuth)，只監聽狀態
                 onAuthStateChanged(auth, (user) => { 
                     setCurrentUser(user); 
                     
-                    // 安全檢查：如果本地端不是管理員，但 Firebase 卻有登入身分（可能是上次登入留下的），強制登出
-                    // 這樣可以確保陌生人無法使用舊的 Session 進行寫入
                     const isLocalAdmin = localStorage.getItem('linkc_admin_auth') === 'true';
                     if (user && !isLocalAdmin) {
                         signOut(auth).catch(e => console.error("Auto signout failed", e));
@@ -617,15 +662,14 @@
             }, []);
 
             useEffect(() => {
-                if (!db) return; // 移除 !currentUser 檢查，允許訪客讀取
+                if (!db) return; 
                 const q = query(collection(db, APP_CONFIG.collectionName), orderBy('createdAt', 'desc'));
                 onSnapshot(q, (snapshot) => { setCharts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); });
-            }, [currentUser]); // 依賴 currentUser 確保登入狀態改變時重整，但訪客也能觸發
+            }, [currentUser]); 
 
             const handleLogout = () => {
                 setIsAdmin(false);
                 localStorage.removeItem('linkc_admin_auth');
-                // 修正：登出時同時登出 Firebase，確保 request.auth 變回 null
                 if(auth) signOut(auth);
                 alert("已登出");
             };
@@ -654,7 +698,7 @@
             };
 
             const handleUpdateUsage = async (id, newCount) => {
-                 if (!currentUser) return; // 注意：這表示只有管理員能更新計數器，訪客無法（因為訪客沒有寫入權限）
+                 if (!currentUser) return; 
                  try {
                      const chartRef = doc(db, APP_CONFIG.collectionName, id);
                      await updateDoc(chartRef, { usageCount: newCount });
