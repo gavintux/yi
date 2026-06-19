@@ -40,11 +40,11 @@
         }
     </script>
 
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- React & ReactDOM (使用極為穩定的 Cloudflare CDNJS) -->
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <!-- Babel Standalone (使用極為穩定的 Cloudflare CDNJS) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     
     <style>
         /* 基礎設定 */
@@ -102,11 +102,17 @@
 
         // --- Rain Effect Component ---
         const RainBackground = () => {
-            const drops = Array.from({ length: 20 }).map((_, i) => ({
-                left: `${Math.random() * 100}%`,
-                animationDuration: `${Math.random() * 1 + 1}s`,
-                animationDelay: `${Math.random() * 2}s`
-            }));
+            const [drops, setDrops] = useState([]);
+
+            // 確保在伺服器/客戶端渲染一致性
+            useEffect(() => {
+                const generatedDrops = Array.from({ length: 20 }).map((_, i) => ({
+                    left: `${Math.random() * 100}%`,
+                    animationDuration: `${Math.random() * 1 + 1}s`,
+                    animationDelay: `${Math.random() * 2}s`
+                }));
+                setDrops(generatedDrops);
+            }, []);
 
             return (
                 <div className="rain-container opacity-40">
@@ -166,6 +172,7 @@
         // --- Main Component ---
         const Portfolio = () => {
             const [scrolled, setScrolled] = useState(false);
+            const [imgError, setImgError] = useState(false); // 安全管理頭像載入狀態
 
             useEffect(() => {
                 const handleScroll = () => {
@@ -241,8 +248,10 @@
                 }
             ];
 
+            // 經歷數據 - 依據使用者需求更新
             const experiences = [
-                { year: "2021-現在", role: "宜蘭縣南澳國小 校長", loc: "現任" },
+                { year: "2026-現在", role: "宜蘭縣憲明國小 校長", loc: "現任" },
+                { year: "2021-2026", role: "宜蘭縣南澳國小 校長", loc: "經歷" },
                 { year: "2016-2020", role: "宜蘭縣湖山國小 校長", loc: "經歷" },
                 { year: "2009-2016", role: "宜蘭縣玉田國小 校長", loc: "經歷" },
                 { year: "2003-2009", role: "宜蘭縣梗枋國小 校長", loc: "經歷" }
@@ -303,17 +312,18 @@
                         
                         {/* Avatar / Persona */}
                         <div className="mb-8 flex justify-center">
-                            <div className="relative inline-block w-52 h-52 octopus-float">
-                                <img 
-                                    src="https://2blog.ilc.edu.tw/linkc/wp-content/uploads/sites/141/2024/12/linkc-logo.png" 
-                                    alt="林光章 Logo" 
-                                    loading="eager"
-                                    className="w-full h-full object-contain filter drop-shadow-2xl"
-                                    onError={(e) => {
-                                        e.target.onerror = null; 
-                                        e.target.parentNode.innerHTML = '<span class="text-8xl">🐙</span>'; 
-                                    }}
-                                />
+                            <div className="relative inline-block w-52 h-52 octopus-float flex items-center justify-center">
+                                {!imgError ? (
+                                    <img 
+                                        src="https://2blog.ilc.edu.tw/linkc/wp-content/uploads/sites/141/2024/12/linkc-logo.png" 
+                                        alt="林光章 Logo" 
+                                        loading="eager"
+                                        className="w-full h-full object-contain filter drop-shadow-2xl"
+                                        onError={() => setImgError(true)}
+                                    />
+                                ) : (
+                                    <span className="text-8xl">🐙</span>
+                                )}
                             </div>
                         </div>
 
@@ -523,9 +533,10 @@
                                 <Mail size={22} />
                                 <span className="text-lg">linkczen@gmail.com</span>
                             </a>
-                            <a href="mailto:zen@naes.ilc.edu.tw" className="flex items-center gap-3 hover:text-white transition-all hover:scale-105 opacity-80 hover:opacity-100">
+                            {/* 更新：將電子郵件更換為新信箱 */}
+                            <a href="mailto:gavin@tmail.ilc.edu.tw" className="flex items-center gap-3 hover:text-white transition-all hover:scale-105 opacity-80 hover:opacity-100">
                                 <Mail size={22} />
-                                <span className="text-lg">zen@naes.ilc.edu.tw</span>
+                                <span className="text-lg">gavin@tmail.ilc.edu.tw</span>
                             </a>
                             <a href="https://www.facebook.com/gavintux" target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-white transition-all hover:scale-105 opacity-80 hover:opacity-100">
                                 <Facebook size={22} />
