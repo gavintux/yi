@@ -10,7 +10,14 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     
-    <!-- Babel -->
+    <!-- 預先設定全域 Babel 選項，禁用對頁面中其他腳本的自動編譯掃描，避免 SandBox 注入腳本干擾 -->
+    <script>
+        window.Babel = {
+            disableScriptTags: true
+        };
+    </script>
+    
+    <!-- Babel Standalone -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <!-- Tailwind CSS -->
@@ -92,16 +99,23 @@
 <body>
     <div id="root" class="h-full w-full"></div>
 
-    <script type="text/babel">
+    <!-- 將 React 腳本設定為純文字區塊，防止 Babel 自動編譯，改由我們手動安全地進行編譯與載入 -->
+    <script type="text/plain" id="react-app-code">
         const USER_CONFIG = {
             seo: { title: "Mandala Garden", logoImage: "https://firebasestorage.googleapis.com/v0/b/linkcphoto.firebasestorage.app/o/photos%2Flinkc-w0.png?alt=media&token=63c9b589-aa78-480a-bed2-1c83634f4b9f", logoLink: "https://gavintux.github.io/yi/" },
             firebase: { apiKey: "AIzaSyAWY5zq9QQyO2LNveVtisgrin-ZoDGXmmo", authDomain: "linkc-mandala.firebaseapp.com", projectId: "linkc-mandala", storageBucket: "linkc-mandala.firebasestorage.app", messagingSenderId: "349060628914", appId: "1:349060628914:web:f093e6b30c5a6c79da24ab" },
             system: { collectionName: 'mandala_charts', defaultGridSize: 3, defaultViewStyle: 'standard' }
         };
 
-        try { firebase.initializeApp(USER_CONFIG.firebase); } catch(e) { console.error(e); }
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        let db = null;
+        let auth = null;
+        try { 
+            firebase.initializeApp(USER_CONFIG.firebase); 
+            auth = firebase.auth();
+            db = firebase.firestore();
+        } catch(e) { 
+            console.warn("Firebase 載入失敗，將自動啟用單機安全儲存模式:", e); 
+        }
 
         // Utils
         const getContrastColor = (hex) => {
@@ -127,11 +141,12 @@
             return name.charAt(0).toUpperCase() + name.slice(1);
         };
 
+        // 整理後的輕量化 Emoji 庫，兼顧安全與多元選擇
         const EMOJI_CATEGORIES = {
-            "表情": ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '👏', '👋', '👍', '👎', '👊', '✊', '🤛', '🤜', '🤞', '✌️', '🤟', '🤘', '👌', '🤏', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐️', '🖖', '🙏', '💪', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️'],
-            "自然": ['🌿', '🌸', '🌼', '🍄', '🌱', '🍃', '🌻', '🌵', '🌺', '🍂', '🌹', '🌷', '💐', '🪴', '🌲', '🌳', '🌴', '🪵', '🪨', '🌾', '🎋', '🍁', '🍇', '🍈', '🍉', '🍊', '🍋', '🍌', '🍍', '🥭', '🍎', '🍏', '🍐', '🍑', '🍒', '🍓', '🫐', '🥝', '🍅', '🫒', '🥥', '🥑', '🍆', '🥔', '🥕', '🌽', '🌶️', '🫑', '🥒', '🥬', '🥦', '🧄', '🧅', '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🪱', '🐛', '🦋', '🐌', '🐞', '🐜', '🪰', '🪲', '🪳', '🦟', '🦗', '🕷️', '🕸️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🦭', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🦣', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🦬', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🐓', '🦃', '🦚', '🦜', '🦢', '🦩', '🕊️', '🐇', '🦝', '🦨', '🦡', '🦫', '🦦', '🦥', '🐁', '🐀', '🐿️', '🦔', '🐾', '🐉', '🐲', '☀️', '🌤️', '⛅', '🌥️', '☁️', '🌦️', '🌧️', '⛈️', '🌩️', '🌨️', '❄️', '☃️', '⛄', '🌬️', '💨', '💧', '💦', '☔', '☂️', '🌊', '🌫️', '🌍', '🌎', '🌏', '🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘', '🌙', '🌚', '🌛', '🌜', '🌞', '⭐', '🌟', '🌠', '🌌', '🪐', '💫', '☄️', '🔥', '🌋'],
-            "物件": ['💡', '🔦', '🏮', '🪔', '📔', '📕', '📖', '📗', '📘', '📙', '📚', '📓', '📒', '📃', '📜', '📄', '📰', '🗞️', '📑', '🔖', '🏷️', '💰', '🪙', '💴', '💵', '💶', '💷', '💸', '💳', '🧾', '💹', '✉️', '📧', '📨', '📩', '📤', '📥', '📦', '📫', '📪', '📬', '📭', '📮', '🗳️', '✏️', '✒️', '🖋️', '🖊️', '🖌️', '🖍️', '📝', '💼', '📁', '📂', '🗂️', '📅', '📆', '🗒️', '🗓️', '📇', '📈', '📉', '📊', '📋', '📌', '📍', '📎', '🖇️', '📏', '📐', '✂️', '🗃️', '🗄️', '🗑️', '🔒', '🔓', '🔏', '🔐', '🔑', '🗝️', '🔨', '🪓', '⛏️', '⚒️', '🛠️', '🗡️', '⚔️', '🔫', '🪃', '🏹', '🛡️', '🪚', '🔧', '🪛', '🔩', '⚙️', '🗜️', '⚖️', '🦯', '🔗', '⛓️', '🪝', '🧰', '🧲', '🪜', '⚗️', '🧪', '🧫', '🧬', '🔬', '🔭', '📡', '💉', '🩸', '💊', '🩹', '🩺', '🚪', '𛛗', '🪞', '🪟', '🛏️', '🛋️', '🪑', '🚽', '🪠', '🚿', '🛁', '🧼', '🪥', '🪒', '🧽', '🪣', '🧴', '🛎️', '🧸', '🪆', '🖼️', '🛍️', '🛒', '🎁', '🎈', '🎏', '🎀', '🪄', '🪅', '🎊', '🎉', '🎎', '🎐', '🧧', '⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '🕹️', '🗜️', '💽', '💾', '💿', '📀', '📼', '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '', '🎛️', '🧭', '⏱️', '⏲️', '⏰', '🕰️', '⌛', '⏳', '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '𛛗', '🚚', '🚛', '🚜', '🏍️', '🛵', '🚲', '🦼', '🦽', '🛺', '🛹', '🛼', '🚨', '🚔', '🚍', '🚘', '🚖', '🚡', '🚠', '🚟', '🚃', '🚋', '🚞', '🚝', '🚄', '🚅', '🚈', '🚂', '🚆', '🚇', '🚊', '🚉', '✈️', '🛫', '🛬', '🛩️', '𒒺', '🛰️', '🚀', '🛸', '🚁', '🛶', '⛵', '🚤', '🛥️', '🛳️', '⛴️', '🚢', '⚓', '🚧', '⛽', '🚏', '🚦', '🚥', '🛑'],
-            "符號": ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹', '🈹', '🈲', '🅰️', '🅱️', '🆎', '🆑', '🅾️', '🆘', '❌', '⭕', '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️', '🚷', '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕', '❓', '❔', '‼️', '⁉️', '🔅', '🔆', '〽️', '⚠️', '🚸', '🔱', '⚜️', '🔰', '♻️', '✅', '🈯', '💹', '❇️', '✳️', '❎', '🌐', '💠', 'Ⓜ️', '🌀', '💤', '🏧', '🚾', '♿', '🅿️', '𛛗', '🈳', '🈂️', '🛂', '🛃', '🛄', '🛅', '🚹', '🚺', '🚼', '⚧', '🚻', '🚮', '🎦', '📶', 'ℹ️', '🔡', '🆖', '🆗', '🆙', '🆒', '🆕', '🆓', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔢', '#️⃣', '*️⃣', '⏏️', '▶️', '⏸️', '⏯️', '⏹️', '⏺️', '⏭️', '⏮️', '⏩', '⏪', '⏫', '⏬', '◀️', '🔼', '🔽', '➡️', '⬅️', '⬆️', '⬇️', '↗️', '↘️', '↙️', '↖️', '↕️', '↔️', '↪️', '↩️', '⤴️', '⤵️', '🔁', '𔀀', '🔂', '🔄', '🔃', '🎵', '🎶', '➕', '➖', '➗', '✖️', '♾️', '💲', '💱', '™️', '©️', '®️', '👁️‍🗨️', '🔚', '🔙', '🔛', '🔝', '🔜', '〰️', '➰', '➿', '✔️', '☑️', '🔘', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪', '🟤', '🔺', '🔻', '🔸', '🔹', '🔶', '🔷', '🔳', '𔣠', '▪️', '▫️', '◾', '◽', '◼️', '◻️', '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '⬛', '⬜', '🟫', '🔈', '🔇', '🔉', '🔊', '🔔', '𔣣', '📣', '📢', '💬', '💭', '🗯️']
+            "表情": ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '👽', '👾', '🤖', '👏', '👋', '👍', '👎', '👊', '✊', '🤞', '✌️', '🤟', '🤘', '👌', '🙏', '💪', '🧠', '👀'],
+            "自然": ['🌿', '🌸', '🌼', '🍄', '🌱', '🍃', '🌻', '🌵', '🌺', '🍂', '🌹', '🌷', '💐', '🪴', '🌲', '🌳', '🌴', '🌾', '🍁', '🍇', '🍉', '🍊', '🍋', '🍌', '🍍', '🍎', '🍏', '🍑', '🍒', '🍓', '🫐', '🥝', '🍅', '🥑', '🍆', '🥔', '🥕', '🌽', '🌶️', '🧅', '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '豬', '🐔', '🐧', '🐦', '🐤', '🦆', '🦅', '🦉', '🦋', '🐌', '🐞', '🐜', '🐢', '🐍', '🐙', '🦑', '🐠', '🐬', '🐳', '☀️', '🌤️', '☁️', '🌦️', '🌧️', '❄️', '☃️', '💧', '🌊', '🔥', '🌋'],
+            "物件": ['💡', '🔦', '🏮', '📔', '📕', '📖', '📗', '📘', '📚', '📃', '📜', '📄', '💰', '🪙', '💵', '💳', '✉️', '📦', '✏️', '✒️', '📝', '💼', '📁', '📂', '📅', '📆', '📌', '📍', '📎', '✂️', '🔒', '🔓', '🔑', '🔨', '🪓', '🔧', '⚙️', '⚖️', '🧪', '🔬', '🔭', '📡', '💉', '💊', '🚪', '🪞', '𛛗', '🛏️', '🛋️', '🪑', '🚿', '🛁', '🛍️', '🛒', '🎁', '🎈', '🎉', '🎊', '🧧', '⌚', '📱', '💻', '🖥️', '🖨️', '📷', '📸', '🎥', '📞', '☎️', '電視', '📻', '🎙️', '🧭', '⏱️', '⏰', '⏳', '🚗', '🚕', '🚙', '🚌', '🏍️', '🛵', '🚲', '✈️', '🚀', '🛸', '🚁', '⛵', '⚓', '🚧', '⛽', '🛑'],
+            "符號": ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '✨', '🌟', '⭐', '⚡', '💥', '🔥', '🌈', '☀️', '🌙', '☁️', '🌧️', '⛈️', '❄️', '🌀', '🌊', '🌿', '🍀', '⚠️', '⛔', '🚫', '❌', '⭕', '✅', '✔️', '➕', '➖', '✖️', '➗', '❓', '❔', '❗️', '❕', '‼️', '⁉️', '💬', '💭', '🔔', '📣', '📢', '🔮', '🧿', '🧬', '🌡️', '🧭', '🏁', '🚩', '🎈', '🎯', '🏆', '🎵', '🎶', '🔱', '⚜️', '🔰', '♻️', '🔔', '💤', '💯', '💢', '🆗', '🆕', '🆓', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '➡️', '⬅️', '⬆️', '⬇️', '🔄', '🔃', '🔀', '🔁', '⏹️', '▶️', '⏸️']
         };
         
         const Icons = {
@@ -216,7 +231,7 @@
 
             // Modals
             const [selectedCell, setSelectedCell] = useState(null);
-            const [viewOnlyCell, setViewOnlyCell] = useState(null); // New state for read-only view
+            const [viewOnlyCell, setViewOnlyCell] = useState(null); 
             const [showSaveAsModal, setShowSaveAsModal] = useState(false);
             const [modalMode, setModalMode] = useState('new');
             const [showImportModal, setShowImportModal] = useState(false);
@@ -224,7 +239,7 @@
             const [showShareModal, setShowShareModal] = useState(false);
             const [showGlobalSearchModal, setShowGlobalSearchModal] = useState(false);
             const [showMetadataModal, setShowMetadataModal] = useState(false);
-            const [previewImages, setPreviewImages] = useState(null); // Changed to array or null
+            const [previewImages, setPreviewImages] = useState(null); 
             const [previewIndex, setPreviewIndex] = useState(0);
             const [editActiveField, setEditActiveField] = useState('title');
             
@@ -287,8 +302,19 @@
 
             // --- Effects ---
             useEffect(() => {
+                if (!auth) {
+                    // 若無雲端 Auth，自動載入單機訪客體驗模式
+                    setUser({ uid: 'guest-user', email: 'guest@mandala.garden', isGuest: true });
+                    setLoading(false);
+                    return;
+                }
                 const unsubscribe = auth.onAuthStateChanged(u => {
-                    setUser(u);
+                    if (u) {
+                        setUser(u);
+                    } else {
+                        // 預設可提供訪客登入
+                        setUser(null);
+                    }
                     setLoading(false);
                 });
                 return () => unsubscribe();
@@ -301,16 +327,32 @@
             }, [user, viewMode]);
 
             useEffect(() => {
-                if(!user || !currentDocId || !db || viewMode !== 'editor' || isSharedView) return;
+                if(!user || !currentDocId || viewMode !== 'editor' || isSharedView) return;
                 const timer = setTimeout(async () => {
                     setSaveStatus('saving');
                     try {
-                        const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
-                        await db.doc(`${path}/${currentDocId}`).update({
-                            cells: data, gridSize, title: docMetadata.title, category: docMetadata.category,
-                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        setSaveStatus('saved');
+                        if (user.isGuest) {
+                            const localFiles = JSON.parse(localStorage.getItem(`mandala_files_${user.uid}`) || '[]');
+                            const idx = localFiles.findIndex(f => f.id === currentDocId);
+                            if (idx !== -1) {
+                                localFiles[idx] = {
+                                    ...localFiles[idx],
+                                    cells: data, gridSize, title: docMetadata.title, category: docMetadata.category,
+                                    updatedAt: { seconds: Math.floor(Date.now() / 1000) }
+                                };
+                                localStorage.setItem(`mandala_files_${user.uid}`, JSON.stringify(localFiles));
+                                setFileList(localFiles);
+                            }
+                            setSaveStatus('saved');
+                        } else {
+                            if (!db) throw new Error("Database offline");
+                            const path = `artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`;
+                            await db.doc(`${path}/${currentDocId}`).update({
+                                cells: data, gridSize, title: docMetadata.title, category: docMetadata.category,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            setSaveStatus('saved');
+                        }
                     } catch(e){ setSaveStatus('error'); }
                 }, 2000);
                 return () => clearTimeout(timer);
@@ -340,6 +382,7 @@
             const handleAuth = async (e) => {
                 e.preventDefault(); setLoading(true); setAuthError('');
                 try {
+                    if (!auth) throw new Error("Firebase 服務未正確初始化，請使用下方的訪客模式。");
                     if (authMode === 'login') await auth.signInWithEmailAndPassword(email, password);
                     else await auth.createUserWithEmailAndPassword(email, password);
                 } catch(err) { setAuthError(err.message); }
@@ -348,12 +391,21 @@
 
             const fetchFileList = async (u = user) => {
                 if(!u) return;
+                if (u.isGuest) {
+                    const localFiles = JSON.parse(localStorage.getItem(`mandala_files_${u.uid}`) || '[]');
+                    setFileList(localFiles);
+                    return;
+                }
                 try {
                     const snap = await db.collection(`artifacts/${appId}/users/${u.uid}/${USER_CONFIG.system.collectionName}`).get();
                     const files = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     files.sort((a,b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
                     setFileList(files);
-                } catch(e) { console.error(e); }
+                } catch(e) { 
+                    console.error("雲端載入失敗，載入單機快取:", e); 
+                    const localFiles = JSON.parse(localStorage.getItem(`mandala_files_${u.uid}`) || '[]');
+                    setFileList(localFiles);
+                }
             };
 
             const loadFileFromDB = (file) => {
@@ -368,22 +420,68 @@
 
             const createNewFile = async (t, c, initialCells = {}, initialGridSize = 3) => {
                 if(!user) return; setLoading(true);
+                const isGuest = user.isGuest;
                 try {
-                    const doc = await db.collection(`artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`).add({
-                        title: t, category: c, cells: initialCells, gridSize: initialGridSize, deleted: false,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    setData(initialCells); 
-                    setGridSize(initialGridSize); 
-                    setCurrentDocId(doc.id); 
+                    if (isGuest) {
+                        const newId = 'local_' + Date.now();
+                        const newFile = {
+                            id: newId, title: t, category: c, cells: initialCells, gridSize: initialGridSize, deleted: false,
+                            createdAt: { seconds: Math.floor(Date.now() / 1000) },
+                            updatedAt: { seconds: Math.floor(Date.now() / 1000) }
+                        };
+                        const localFiles = JSON.parse(localStorage.getItem(`mandala_files_${user.uid}`) || '[]');
+                        localFiles.unshift(newFile);
+                        localStorage.setItem(`mandala_files_${user.uid}`, JSON.stringify(localFiles));
+                        setFileList(localFiles);
+                        
+                        setData(initialCells); 
+                        setGridSize(initialGridSize); 
+                        setCurrentDocId(newId); 
+                        setDocMetadata({ title: t, category: c });
+                        setSaveStatus('saved'); 
+                        setIsSharedView(false); 
+                        setZoomedGridIndex(null);
+                        setShowSaveAsModal(false); 
+                        setViewMode('editor');
+                    } else {
+                        const doc = await db.collection(`artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}`).add({
+                            title: t, category: c, cells: initialCells, gridSize: initialGridSize, deleted: false,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        setData(initialCells); 
+                        setGridSize(initialGridSize); 
+                        setCurrentDocId(doc.id); 
+                        setDocMetadata({ title: t, category: c });
+                        setSaveStatus('saved'); 
+                        setIsSharedView(false); 
+                        setZoomedGridIndex(null);
+                        setShowSaveAsModal(false); 
+                        setViewMode('editor');
+                    }
+                } catch(e) { 
+                    alert("建立檔案失敗，已自動啟用單機備援機制"); 
+                    // 單機本地安全備份
+                    const newId = 'local_' + Date.now();
+                    const newFile = {
+                        id: newId, title: t, category: c, cells: initialCells, gridSize: initialGridSize, deleted: false,
+                        createdAt: { seconds: Math.floor(Date.now() / 1000) },
+                        updatedAt: { seconds: Math.floor(Date.now() / 1000) }
+                    };
+                    const localFiles = JSON.parse(localStorage.getItem(`mandala_files_fallback`) || '[]');
+                    localFiles.unshift(newFile);
+                    localStorage.setItem(`mandala_files_fallback`, JSON.stringify(localFiles));
+                    setFileList(localFiles);
+                    setData(initialCells);
+                    setGridSize(initialGridSize);
+                    setCurrentDocId(newId);
                     setDocMetadata({ title: t, category: c });
-                    setSaveStatus('saved'); 
-                    setIsSharedView(false); 
+                    setSaveStatus('saved');
+                    setIsSharedView(false);
                     setZoomedGridIndex(null);
-                    setShowSaveAsModal(false); 
+                    setShowSaveAsModal(false);
                     setViewMode('editor');
-                } catch(e) { alert("Error"); }
+                }
                 setLoading(false);
             };
 
@@ -402,27 +500,55 @@
             const moveToTrash = async (fileId) => {
                 if (!confirm("確定移至垃圾筒？")) return;
                 try {
-                    await db.doc(`artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}/${fileId}`).update({
-                        deleted: true, deletedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    fetchFileList(user);
+                    if (user.isGuest) {
+                        const localFiles = JSON.parse(localStorage.getItem(`mandala_files_${user.uid}`) || '[]');
+                        const idx = localFiles.findIndex(f => f.id === fileId);
+                        if (idx !== -1) {
+                            localFiles[idx].deleted = true;
+                            localFiles[idx].deletedAt = { seconds: Math.floor(Date.now() / 1000) };
+                            localStorage.setItem(`mandala_files_${user.uid}`, JSON.stringify(localFiles));
+                            setFileList(localFiles);
+                        }
+                    } else {
+                        await db.doc(`artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}/${fileId}`).update({
+                            deleted: true, deletedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        fetchFileList(user);
+                    }
                 } catch(e) { alert("Error"); }
             };
 
             const restoreFromTrash = async (fileId) => {
                 try {
-                    await db.doc(`artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}/${fileId}`).update({
-                        deleted: false
-                    });
-                    fetchFileList(user);
+                    if (user.isGuest) {
+                        const localFiles = JSON.parse(localStorage.getItem(`mandala_files_${user.uid}`) || '[]');
+                        const idx = localFiles.findIndex(f => f.id === fileId);
+                        if (idx !== -1) {
+                            localFiles[idx].deleted = false;
+                            localStorage.setItem(`mandala_files_${user.uid}`, JSON.stringify(localFiles));
+                            setFileList(localFiles);
+                        }
+                    } else {
+                        await db.doc(`artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}/${fileId}`).update({
+                            deleted: false
+                        });
+                        fetchFileList(user);
+                    }
                 } catch(e) { alert("Error"); }
             };
 
             const deleteForever = async (fileId) => {
                 if (!confirm("確定永久刪除？")) return;
                 try {
-                    await db.doc(`artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}/${fileId}`).delete();
-                    fetchFileList(user);
+                    if (user.isGuest) {
+                        const localFiles = JSON.parse(localStorage.getItem(`mandala_files_${user.uid}`) || '[]');
+                        const filtered = localFiles.filter(f => f.id !== fileId);
+                        localStorage.setItem(`mandala_files_${user.uid}`, JSON.stringify(filtered));
+                        setFileList(filtered);
+                    } else {
+                        await db.doc(`artifacts/${appId}/users/${user.uid}/${USER_CONFIG.system.collectionName}/${fileId}`).delete();
+                        fetchFileList(user);
+                    }
                 } catch(e) { alert("Error"); }
             };
 
@@ -596,7 +722,6 @@
                     exportContainer.style.maxHeight = 'none';
                     exportContainer.style.overflow = 'visible';
                     
-                    // Use a safer off-screen method for cross-browser/desktop compatibility
                     exportContainer.style.position = 'fixed';
                     exportContainer.style.left = '0';
                     exportContainer.style.top = '0';
@@ -610,8 +735,6 @@
                     exportContainer.insertBefore(header, exportContainer.firstChild);
                     
                     document.body.appendChild(exportContainer);
-                    
-                    // Critical: Wait for DOM to render images/fonts in the cloned node
                     await new Promise(resolve => setTimeout(resolve, 800));
 
                     const canvas = await html2canvas(exportContainer, { 
@@ -630,7 +753,6 @@
                 } catch (e) { 
                     console.error("Export Error:", e);
                     alert("圖片匯出失敗: " + e.message); 
-                    // Clean up if error occurs
                     const existingContainer = document.querySelector('.export-mode');
                     if (existingContainer) document.body.removeChild(existingContainer);
                 }
@@ -711,8 +833,6 @@
                     exportContainer.insertBefore(header, exportContainer.firstChild);
                     
                     document.body.appendChild(exportContainer);
-                    
-                    // Critical: Wait for DOM to render images/fonts in the cloned node
                     await new Promise(resolve => setTimeout(resolve, 800));
 
                     const canvas = await html2canvas(exportContainer, { 
@@ -751,7 +871,6 @@
                 const rows = size === 9 ? 9 : 3;
                 const cols = size === 9 ? 9 : 3;
 
-                // Loop rows
                 for (let r = 0; r < rows; r++) {
                     let rowTitleHTML = `<tr style="height: 40px;">`;
                     let rowNoteHTML = `<tr style="height: 80px;">`;
@@ -945,6 +1064,7 @@
                     <div className="mb-6 px-2 text-center shrink-0">
                         <div className="text-lg font-medium text-stone-500 font-serif leading-none">{getUserName(user)}'s</div>
                         <div className="text-xl font-bold text-stone-800 garden-title mt-1">Mandala Garden</div>
+                        {user?.isGuest && <div className="text-[10px] text-emerald-600 font-bold bg-emerald-50 rounded-full py-0.5 px-2 inline-block mt-1">離線訪客模式</div>}
                     </div>
                     
                     <div className="flex-1 overflow-y-auto -mx-4 px-4 space-y-1"> 
@@ -984,7 +1104,7 @@
                         <button onClick={()=>{ setModalMode('new'); setShowSaveAsModal(true); setIsSidebarOpen(false); }} className="w-full text-left p-2"><Icons.Plus/> 新增檔案</button>
                         <button onClick={()=>{ setShowImportModal(true); setIsSidebarOpen(false); }} className="w-full text-left p-2"><Icons.Share/> 匯入檔案</button>
                         <button onClick={()=>window.open(USER_CONFIG.seo.logoLink, '_blank')} className="w-full text-left p-2"><Icons.Home/> 個人首頁</button>
-                        <button onClick={()=>auth.signOut()} className="w-full text-left p-2"><Icons.SignOut/> 登出</button>
+                        <button onClick={()=>{ if(user?.isGuest) { setUser(null); } else { auth.signOut(); } }} className="w-full text-left p-2"><Icons.SignOut/> 登出</button>
                     </div>
                 </>
             );
@@ -1010,12 +1130,29 @@
                                 <p className="text-stone-500 text-sm">您的思維花園</p>
                             </div>
                             <form onSubmit={handleAuth} className="space-y-4 text-left">
-                                <input className="w-full p-3 border rounded" type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required />
-                                <input className="w-full p-3 border rounded" type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} required />
+                                <input className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500" type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required={authMode!=='guest'} />
+                                <input className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500" type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} required={authMode!=='guest'} />
                                 {authError && <div className="text-red-500 text-xs">{authError}</div>}
-                                <button className="w-full p-3 bg-emerald-600 text-white rounded font-bold">{authMode==='login'?'登入':'註冊'}</button>
+                                <button className="w-full p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition shadow-md">{authMode==='login'?'登入':'註冊'}</button>
                             </form>
-                            <button onClick={()=>setAuthMode(authMode==='login'?'register':'login')} className="w-full mt-4 text-sm text-stone-500 underline">{authMode==='login'?'沒有帳號？註冊':'已有帳號？登入'}</button>
+                            <button onClick={()=>setAuthMode(authMode==='login'?'register':'login')} className="w-full mt-4 text-sm text-stone-500 underline transition hover:text-stone-700">{authMode==='login'?'沒有帳號？註冊':'已有帳號？登入'}</button>
+                            
+                            <div className="relative my-6 flex py-1 items-center">
+                                <div className="flex-grow border-t border-stone-200"></div>
+                                <span className="flex-shrink mx-4 text-stone-400 text-xs font-bold">或</span>
+                                <div className="flex-grow border-t border-stone-200"></div>
+                            </div>
+                            
+                            <button 
+                                onClick={() => {
+                                    const guestUser = { uid: 'guest-user', email: 'guest@mandala.garden', isGuest: true };
+                                    setUser(guestUser);
+                                    fetchFileList(guestUser);
+                                }} 
+                                className="w-full p-3 bg-stone-50 border border-stone-300 hover:bg-stone-100 text-stone-700 rounded-xl font-bold transition shadow-sm flex items-center justify-center gap-2"
+                            >
+                                🌿 進入單機訪客模式 (安全無虞)
+                            </button>
                         </div>
                     </div>
                 );
@@ -1172,7 +1309,7 @@
                                             onFocus={()=>setEditActiveField('title')}
                                         />
                                     </div>
-                                    <div className="space-y-1"> {/* Removed flex-1 to fix squashing */}
+                                    <div className="space-y-1"> 
                                         <label className="text-xs text-stone-500 font-bold">備註</label>
                                         <textarea 
                                             className={`w-full border p-2 rounded h-32 text-stone-800 focus:ring-2 focus:ring-emerald-500 outline-none resize-none ${editActiveField==='note'?'border-emerald-500':''}`} 
@@ -1185,6 +1322,7 @@
                                     <div className="border rounded-lg bg-stone-50/50 overflow-hidden transition-all duration-300 shrink-0">
                                         <button 
                                             className="w-full flex justify-between items-center p-2 hover:bg-stone-100 transition-colors outline-none"
+                                            type="button"
                                             onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
                                         >
                                             <div className="flex items-center gap-2">
@@ -1440,6 +1578,44 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
+    </script>
+
+    <!-- 核心手動編譯引擎：將上方的 React 程式碼安全進行轉譯，並動態且無干擾地載入 -->
+    <script>
+        (function() {
+            try {
+                const appScript = document.getElementById('react-app-code');
+                if (appScript) {
+                    // 使用 Babel transform 手動將 React JSX 轉譯成瀏覽器原生支援的普通 ES 程式碼
+                    // 關鍵修復：我們強制將 react runtime 設為 'classic'，這樣在轉換 JSX (<div /> 等) 時，
+                    // 會將其轉換為 React.createElement(...) 而絕不注入 ES 模組導入 (import {jsx} from "react/jsx-runtime")。
+                    // 這徹底根除了在 Sandbox 與動態 appendChild 注入時引發的 module import 錯誤！
+                    const compiled = window.Babel.transform(appScript.textContent, {
+                        presets: [
+                            ['react', { runtime: 'classic' }]
+                        ]
+                    }).code;
+                    
+                    const newScript = document.createElement('script');
+                    newScript.textContent = compiled;
+                    document.body.appendChild(newScript);
+                } else {
+                    console.error("無法載入核心 React 腳本！");
+                }
+            } catch (err) {
+                console.error("手動安全轉譯引擎發生錯誤:", err);
+                const rootEl = document.getElementById('root');
+                if (rootEl) {
+                    rootEl.innerHTML = `
+                        <div style="padding: 24px; color: #b91c1c; background-color: #fef2f2; border: 1px solid #fee2e2; border-radius: 12px; margin: 24px; font-family: sans-serif; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                            <h3 style="font-weight: bold; font-size: 18px; margin-bottom: 8px; color: #991b1b;">🌿 系統加載失敗 (React Compilation Error)</h3>
+                            <p style="font-size: 14px; margin-bottom: 12px;">詳細錯誤資訊: ${err.message}</p>
+                            <p style="font-size: 12px; color: #7f1d1d; border-top: 1px solid #fecaca; padding-top: 12px;">建議：請重新整理網頁，或檢查瀏覽器擴充功能是否攔截了腳本載入。</p>
+                        </div>
+                    `;
+                }
+            }
+        })();
     </script>
 </body>
 </html>
