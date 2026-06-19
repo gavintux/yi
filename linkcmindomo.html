@@ -17,9 +17,18 @@
     
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+      // 註冊自訂的 React 預設集，強制將 JSX 轉換設為 classic 模式（使用 React.createElement）
+      // 這樣可以避免 Babel 產生含有 ES module 'import' 的程式碼，徹底解決 "Cannot use import statement outside a module" 的報錯。
+      Babel.registerPreset('classic-react', {
+        presets: [
+          [Babel.availablePresets['react'], { runtime: 'classic' }]
+        ]
+      });
+    </script>
 
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Zen+Maru+Gothic:wght@400;700&display=swap');
@@ -138,7 +147,8 @@
 <body>
     <div id="root"></div>
 
-    <script type="text/babel">
+    <!-- 將 data-presets 設為我們剛剛註冊的 classic-react -->
+    <script type="text/babel" data-presets="classic-react">
         const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
         // 定義主類別架構
@@ -563,21 +573,19 @@
 
                 if (trimmedTerm) {
                     baseList = baseList.filter(item => {
-                        // 嘗試布林搜尋
-                        // 只要有布林符號、關鍵字或 #，都嘗試解析
+                        // 檢查是否含有進階的布林搜尋符號、關鍵字或標籤前綴
                         const hasBooleanChars = /[&|!()]/.test(trimmedTerm) || /\b(and|or|not)\b/i.test(trimmedTerm);
                         const hasTags = /#/.test(trimmedTerm);
                         
-                        // 嘗試解析布林搜尋
-                        const booleanResult = checkBooleanSearch(item, trimmedTerm);
-                        
-                        // 如果布林解析成功 (不是 null)，直接回傳結果
-                        if (booleanResult !== null) return booleanResult;
+                        // 只有當使用者輸入真正包含上述進階格式時，才啟動布林運算分析
+                        if (hasBooleanChars || hasTags) {
+                            const booleanResult = checkBooleanSearch(item, trimmedTerm);
+                            if (booleanResult !== null) return booleanResult;
+                        }
 
-                        // 降級：一般文字搜尋 (容錯處理)
+                        // 降級常規處理：一般模糊文字比對 (完全避免一般關鍵字輸入引發 eval 錯誤或無窮迴圈)
                         const lower = trimmedTerm.toLowerCase();
                         
-                        // 特殊處理：如果搜尋詞是單一 #tag (未被布林解析捕獲的情況)
                         let tagMatch = false;
                         if (lower.startsWith('#')) {
                             const cleanTag = lower.substring(1);
@@ -855,7 +863,7 @@
                                         <SidebarItem id="recent" label="最近翻土 (修改)" icon={<Icons.Clock />} />
                                         <SidebarItem id="all" label="花園全貌 (全部)" icon={<Icons.Grid />} count={permittedDiagrams.length} />
                                         
-                                        {/* 如果目前處於分享連結檢視模式，顯示此選項 */}
+                                        {/* 如果目前處於分享連結檢見模式，顯示此選項 */}
                                         {collectionIds && (
                                             <SidebarItem id="shared_collection" label="精選花束 (分享連結)" icon={<Icons.Share2 />} count={collectionIds.length} activeOverride={activeCategory === 'shared_collection'} />
                                         )}
