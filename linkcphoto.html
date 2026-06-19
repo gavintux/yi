@@ -5,6 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Linkc Photo Space</title>
     
+    <!-- 加入全域錯誤攔截：如果腳本執行失敗，在畫面上顯示錯誤訊息 -->
+    <script>
+        window.addEventListener('error', function(event) {
+            const root = document.getElementById('root');
+            if (root && document.querySelector('.loading-screen')) {
+                root.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; text-align: center; padding: 20px; background-color: #f8fafc;">
+                        <div style="color: #ef4444; margin-bottom: 1rem;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                        </div>
+                        <h2 style="font-size: 1.5rem; font-weight: bold; color: #1e293b; margin-bottom: 0.5rem;">網頁載入發生錯誤</h2>
+                        <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 1rem;">程式可能被瀏覽器擴充功能 (如擋廣告套件) 阻擋，或是網路 CDN 暫時無法連線。</p>
+                        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; max-width: 600px; width: 100%; text-align: left; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <code style="color: #ef4444; font-size: 0.875rem;">${event.message}</code><br/>
+                            <span style="color: #94a3b8; font-size: 0.75rem; margin-top: 8px; display: block;">位置：${event.filename}:${event.lineno}</span>
+                        </div>
+                        <p style="color: #64748b; font-size: 0.875rem; margin-top: 1.5rem;">建議動作：請嘗試<b>停用擋廣告套件</b>、<b>清除快取後重新整理</b>，或按下 <b>F12</b> 查看主控台資訊。</p>
+                    </div>
+                `;
+            }
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+             const root = document.getElementById('root');
+            if (root && document.querySelector('.loading-screen')) {
+                root.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; text-align: center; padding: 20px; background-color: #f8fafc;">
+                        <div style="color: #ef4444; margin-bottom: 1rem;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                        </div>
+                        <h2 style="font-size: 1.5rem; font-weight: bold; color: #1e293b; margin-bottom: 0.5rem;">模組下載失敗</h2>
+                        <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 1rem;">無法從外部伺服器下載必要的程式資源 (Promise Rejection)。這通常是因為網路不穩或 CDN 異常。</p>
+                        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; max-width: 600px; width: 100%; text-align: left; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <code style="color: #ef4444; font-size: 0.875rem;">${event.reason}</code>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    </script>
+
     <script>
         const SITE_CONFIG = {
             // 1. 網站基本資訊與 SEO
@@ -54,9 +95,7 @@
             }
         };
 
-        // =============================================================================
-        // 🚀 自動化初始化腳本
-        // =============================================================================
+        // 自動化初始化腳本
         (function applySiteConfig() {
             document.title = SITE_CONFIG.seo.title;
             const setMeta = (name, content) => {
@@ -126,9 +165,17 @@
         }
     </script>
     
-    <!-- Babel -->
+    <!-- Babel (加入強制使用 classic 模式的設定) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
+    <script>
+        // 強制 Babel 使用傳統的 React.createElement，避免產生 react/jsx-runtime 找不到的路徑錯誤
+        Babel.registerPreset('linkc-react-preset', {
+            presets: [
+                [Babel.availablePresets['react'], { runtime: 'classic' }]
+            ]
+        });
+    </script>
+
     <!-- Exif-js -->
     <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
 
@@ -176,8 +223,9 @@
         </div>
     </div>
 
-    <!-- React App -->
-    <script type="text/babel" data-type="module">
+    <!-- React App (引入剛才設定的 linkc-react-preset) -->
+    <script type="text/babel" data-type="module" data-presets="linkc-react-preset">
+        // 回復使用直接絕對路徑的引入方式，不依賴 importmap
         import React, { useState, useEffect, useRef, useMemo } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { 
@@ -209,7 +257,7 @@
                 db = getFirestore(app);
                 storage = getStorage(app);
             } catch (e) {
-                console.error("Firebase Init Error", e);
+                console.error("Firebase 初始化失敗：", e);
             }
         }
 
@@ -336,22 +384,22 @@
         // --- Components ---
 
         const ConfigError = () => (
-            <div className="error-container bg-slate-50">
-                <div className="error-box border border-slate-200 shadow-md">
+            <div className="error-container bg-slate-50 min-h-screen flex items-center justify-center p-4">
+                <div className="error-box border border-slate-200 shadow-md bg-white p-8 rounded-2xl max-w-md text-center">
                     <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
-                    <h3 className="error-title text-slate-900">尚未設定 Firebase</h3>
-                    <p className="text-slate-600 mb-4">請編輯 HTML 檔案頂部的 SITE_CONFIG 區塊。</p>
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">尚未設定 Firebase</h3>
+                    <p className="text-slate-600 mb-4">請編輯 HTML 檔案頂部的 SITE_CONFIG 區塊以完成設定。</p>
                 </div>
             </div>
         );
 
         const AuthError = ({ message }) => (
-            <div className="error-container bg-slate-50">
-                <div className="error-box border border-red-200 shadow-md">
+            <div className="error-container bg-slate-50 min-h-screen flex items-center justify-center p-4">
+                <div className="error-box border border-red-200 shadow-md bg-white p-8 rounded-2xl max-w-md text-center">
                     <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-                    <h3 className="error-title text-slate-900">連線失敗</h3>
-                    <p className="text-slate-800 font-mono text-xs bg-red-50 p-2 rounded mb-4 break-all">{message}</p>
-                    <button onClick={() => window.location.reload()} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors">重新整理</button>
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">連線或初始化失敗</h3>
+                    <p className="text-slate-800 font-mono text-xs bg-red-50 p-3 rounded mb-4 break-all text-left">錯誤資訊: {message}</p>
+                    <button onClick={() => window.location.reload()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-colors font-medium">重新整理</button>
                 </div>
             </div>
         );
@@ -733,7 +781,6 @@
                     <div><div className="flex items-baseline justify-between mb-1"><h3 className="font-bold text-slate-800 text-lg leading-tight">{photo.location.city}</h3><span className="text-xs text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded-md">{photo.location.country}</span></div>{photo.location.spot && <p className="text-xs text-slate-500 font-medium flex items-center gap-1"><MapPin size={10} className="text-indigo-500"/> {photo.location.spot}</p>}</div>
                     <div className="space-y-2">
                         {photo.thoughts_shooting && (<div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100"><span className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wide">Shooting</span>{photo.thoughts_shooting}</div>)}
-                        {/* Reflection (Viewing) 區塊：背景色改為與 Shooting 相同 (bg-slate-50)，移除原本的藍色調 */}
                         {photo.thoughts_viewing && (<div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100"><span className="block text-[10px] font-bold text-indigo-400 mb-1 uppercase tracking-wide">Reflection</span>{photo.thoughts_viewing}</div>)}
                     </div>
                     {photo.tags && photo.tags.length > 0 && (<div className="flex flex-wrap gap-1.5">{photo.tags.map(tag => (<span key={tag} className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-md uppercase tracking-wide">#{tag}</span>))}</div>)}
@@ -785,7 +832,6 @@
                     try {
                         EXIF.getData(file, async function() {
                             const allTags = EXIF.getAllTags(this);
-                            console.log("Full EXIF Dump:", allTags); 
 
                             const extractedShutter = EXIF.getTag(this, "ExposureTime");
                             const extractedFNumber = EXIF.getTag(this, "FNumber");
@@ -886,8 +932,8 @@
                 }
                 
                 // 檢查是否已連線
-                if (!auth.currentUser) {
-                    alert("連線建立中，請稍後再試...");
+                if (!auth || !auth.currentUser) {
+                    alert("網路連線或授權狀態異常，請稍後再試或重新整理網頁。");
                     return;
                 }
 
@@ -906,7 +952,7 @@
                     console.error("上傳失敗", err);
                     let msg = err.message;
                     if (err.code === 'storage/unauthorized') {
-                        msg = "權限不足：Firebase Storage 拒絕寫入。請確認規則是否允許已登入使用者寫入。";
+                        msg = "權限不足：Firebase Storage 拒絕寫入。請確認規則是否允許寫入。";
                     }
                     alert("上傳失敗: " + msg);
                     setStatus('');
@@ -916,7 +962,7 @@
             return (
                 <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-8 sm:p-12 animate-fade-in-up my-8 border border-slate-100">
                     <div className="flex justify-between items-center mb-10 border-b border-slate-100 pb-6"><h2 className="text-3xl font-bold text-slate-800 flex items-center gap-3">{isEditMode ? <Edit className="text-indigo-500"/> : <Upload className="text-indigo-500"/>} {isEditMode ? '修改照片' : '新增照片'}</h2><button onClick={onCancel} className="text-slate-400 hover:text-slate-700 transition-colors p-2 hover:bg-slate-50 rounded-full"><X size={24}/></button></div>
-                    {status === 'uploading' && (<div className="mb-8 flex justify-center items-center gap-3 text-indigo-600 font-bold bg-indigo-50 p-4 rounded-xl border border-indigo-100 animate-pulse"><RefreshCw className="spinner" size={20}/> 正在上傳至雲端...</div>)}
+                    {status === 'uploading' && (<div className="mb-8 flex justify-center items-center gap-3 text-indigo-600 font-bold bg-indigo-50 p-4 rounded-xl border border-indigo-100 animate-pulse"><RefreshCw className="animate-spin" size={20}/> 正在上傳至雲端...</div>)}
                     <form onSubmit={handleSubmit} className="space-y-12">
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-12">
                             <div className="md:col-span-2 space-y-6">
@@ -987,11 +1033,17 @@
                 setVisibleCount(SITE_CONFIG.system.itemsPerPage || 12);
             }, [debouncedSearchQuery, activeTag, dateFilter, sortOrder]);
 
+            // [修復重點]：加上安全檢查，避免 Firebase 未初始化時導致應用崩潰
             useEffect(() => {
                 if (!isConfigConfigured) return; 
+                if (!auth || !db) {
+                    setAuthError("Firebase 核心套件載入失敗。這通常是因為瀏覽器的「擋廣告擴充功能」攔截了連線。");
+                    return;
+                }
                 const initAuth = async () => { try { await signInAnonymously(auth); } catch (err) { setAuthError(err.message); } };
                 initAuth();
-                onAuthStateChanged(auth, (user) => { setCurrentUser(user); if(user) setAuthError(null); });
+                const unsubscribe = onAuthStateChanged(auth, (user) => { setCurrentUser(user); if(user) setAuthError(null); });
+                return () => unsubscribe();
             }, []);
 
             useEffect(() => {
@@ -1004,7 +1056,7 @@
             const handleAdminLogout = () => { setIsAdmin(false); localStorage.removeItem('linkc_admin_auth'); alert("已登出"); };
 
             const handleSavePhoto = async (photoData) => {
-                if (!currentUser) return;
+                if (!currentUser || !db) return;
                 setIsSaving(true);
                 try {
                     const collectionRef = collection(db, SITE_CONFIG.system.collectionName);
@@ -1020,7 +1072,7 @@
             };
 
             const handleDeletePhoto = async (id) => {
-                if (!currentUser) return;
+                if (!currentUser || !db) return;
                 if(window.confirm('確定要永久刪除？')) {
                     try { await deleteDoc(doc(db, SITE_CONFIG.system.collectionName, id)); } catch(e) { alert("刪除失敗"); }
                 }
@@ -1225,7 +1277,6 @@
                             <div className="bg-slate-50 p-6 rounded-full"><Cloud className="h-12 w-12 text-slate-300" /></div>
                             <h3 className="text-xl font-bold text-slate-700">沒有符合條件的照片</h3>
                             <p className="text-slate-500">試著調整搜尋條件{isAdmin ? '，或上傳一張新照片吧！' : '。'}</p>
-                            {/* Hide upload button for strangers in empty state too */}
                             {isAdmin && (
                                 <button onClick={() => setView('upload')} className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl shadow-lg shadow-indigo-200 transition-all font-medium flex items-center gap-2">
                                     <Upload size={18}/> 上傳照片
