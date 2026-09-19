@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天送埤聚落現況全景分析與教學資源網｜憲明國小學區專區</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap');
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #f4f5f4;
+      color: #1f2937;
+    }
+
+    .serif-title {
+      font-family: 'Noto Serif TC', serif;
+    }
+
+    .hero-pattern {
+      background-color: #14281e;
+      background-image: radial-gradient(#224937 1px, transparent 1px), radial-gradient(#224937 1px, #14281e 1px);
+      background-size: 40px 40px;
+      background-position: 0 0, 20px 20px;
+    }
+
+    .card-hover {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px -6px rgba(30, 61, 48, 0.18), 0 4px 8px -4px rgba(0, 0, 0, 0.06);
+    }
+
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      main {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen p-3 md:p-8 flex flex-col justify-start items-center">
+
+  <!-- Main Portal Container -->
+  <main
+    class="w-full max-w-[1540px] bg-white rounded-2xl shadow-xl border border-stone-200 overflow-hidden flex flex-col gap-8 pb-10">
+
+    <!-- Top Sticky / Utility Header -->
+    <header
+      class="bg-[#1e3d30] text-white px-5 md:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4 border-b border-emerald-950">
+      <div class="flex items-center gap-3">
+        <div
+          class="w-9 h-9 rounded-xl bg-emerald-700/80 border border-emerald-500/40 flex items-center justify-center text-white shadow-sm shrink-0">
+          <i data-lucide="graduation-cap" class="w-5 h-5 text-emerald-200"></i>
+        </div>
+        <div>
+          <div class="text-[11px] tracking-wider text-emerald-300 font-semibold uppercase">
+            宜蘭縣三星鄉・憲明國小學區專用
+          </div>
+          <div class="text-sm md:text-base font-bold text-white leading-tight">
+            天送埤聚落現況全景分析與鄉土教學資源網
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center flex-wrap gap-2.5 text-xs no-print">
+        <div
+          class="hidden sm:flex items-center gap-1.5 bg-emerald-900/80 text-emerald-200 px-3 py-1.5 rounded-lg border border-emerald-700/50">
+          <i data-lucide="calendar-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+          簡報基準：2026 年 09 月 02 日
+        </div>
+        <button onclick="window.print()"
+          class="px-3.5 py-1.5 text-xs font-semibold text-emerald-900 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="printer" class="w-3.5 h-3.5 text-emerald-800"></i> 列印 / 匯出 PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero Section with Project Background & Fast Search -->
+    <section
+      class="hero-pattern text-white px-6 md:px-10 py-8 md:py-12 mx-4 md:mx-8 rounded-2xl border border-emerald-900/60 shadow-lg relative overflow-hidden">
+      <!-- Background Ambient Glow -->
+      <div class="absolute -right-20 -bottom-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none">
+      </div>
+      <div class="absolute -left-20 -top-20 w-80 h-80 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none">
+      </div>
+
+      <div class="relative z-10 max-w-4xl">
+        <div
+          class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-800/80 border border-emerald-600/60 text-emerald-200 text-xs font-semibold mb-3">
+          <i data-lucide="map-pinned" class="w-3.5 h-3.5 text-emerald-400"></i>
+          宜蘭縣員山鄉、三星鄉鄉村地區計畫（聚落規劃及法定程序）
+        </div>
+        <h1
+          class="text-2xl sm:text-3xl md:text-5xl font-bold serif-title tracking-tight text-white leading-snug md:leading-tight">
+          天送埤聚落現況與發展課題<br class="hidden sm:inline">
+          <span class="text-emerald-300 text-xl sm:text-2xl md:text-3xl font-medium block sm:inline mt-1 sm:mt-0">
+            教師專題研討 ✕ 校本鄉土課程資源導覽
+          </span>
+        </h1>
+        <p class="text-stone-300 text-xs sm:text-sm md:text-base mt-4 leading-relaxed font-light">
+          本數位專區完整轉譯 <strong>2026年09月02日「天送埤聚落工作坊」簡報成果</strong>，深度涵蓋聚落區位、人口超高齡化、交通與公共設施、自然防災、產業觀光、環境敏感區位及居住土地使用等 7
+          大核心專題。專為 <strong>憲明國小教師、校本課程研發團隊及在地文史教育工作者</strong> 提供第一線具備 GIS 地圖與統計實證的教學與研究資料庫。
+        </p>
+
+        <!-- Quick Interactive Search Bar -->
+        <div class="mt-6 flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center no-print">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 text-emerald-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="moduleSearchInput" onkeyup="filterModules()"
+              placeholder="搜尋關鍵字：如 人口、高齡、防救災、三星蔥、森鐵、交通、土地、憲明國小..."
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-emerald-950/70 border border-emerald-700/60 text-white placeholder-emerald-400/60 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent backdrop-blur-sm transition">
+          </div>
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs">
+            <button onclick="setCategoryFilter('all')" id="tab-all"
+              class="category-pill px-3 py-2 rounded-xl bg-emerald-600 text-white font-medium whitespace-nowrap transition shadow-sm">
+              全部模組 (7)
+            </button>
+            <button onclick="setCategoryFilter('spatial')" id="tab-spatial"
+              class="category-pill px-3 py-2 rounded-xl bg-emerald-900/70 text-emerald-300 hover:text-white border border-emerald-700/50 whitespace-nowrap transition">
+              空間與環境
+            </button>
+            <button onclick="setCategoryFilter('society')" id="tab-society"
+              class="category-pill px-3 py-2 rounded-xl bg-emerald-900/70 text-emerald-300 hover:text-white border border-emerald-700/50 whitespace-nowrap transition">
+              人口與設施
+            </button>
+            <button onclick="setCategoryFilter('industry')" id="tab-industry"
+              class="category-pill px-3 py-2 rounded-xl bg-emerald-900/70 text-emerald-300 hover:text-white border border-emerald-700/50 whitespace-nowrap transition">
+              產業與土地
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Community Snapshot: Key Metrics Dashboard -->
+    <section class="px-4 md:px-8">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-6 bg-[#1e3d30] rounded-sm"></span>
+          <h2 class="text-lg md:text-xl font-bold serif-title text-[#1e3d30]">
+            天送埤聚落四大核心指標速覽（天山村・天福村）
+          </h2>
+        </div>
+        <span class="text-xs text-stone-500 font-mono">STATISTICAL BRIEFING</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Metric 1: Location & School Heart -->
+        <div class="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-4.5 flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <span class="text-xs font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded">區位與學區</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
+              <i data-lucide="map-pin" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl font-black text-[#1e3d30] serif-title">天山村 ✕ 天福村</div>
+            <p class="text-xs text-stone-600 mt-1 leading-relaxed">
+              位處雪山山麓與蘭陽平原接壤帶，台7丙與宜63線交會樞紐。<strong>憲明國小</strong>座落聚落文教生活中心。
+            </p>
+          </div>
+          <div
+            class="mt-3 pt-2.5 border-t border-emerald-200/60 text-[11px] text-emerald-900 font-medium flex items-center gap-1">
+            <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-700"></i>
+            對應模組：01 聚落區位與概況
+          </div>
+        </div>
+
+        <!-- Metric 2: Demographics & Super-Aged Society -->
+        <div class="bg-amber-50/70 border border-amber-200/80 rounded-xl p-4.5 flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <span class="text-xs font-semibold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded">人口高齡化</span>
+            <div class="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center">
+              <i data-lucide="users" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl font-black text-amber-950 font-mono">29.3% <span
+                class="text-sm font-sans font-bold text-amber-800">超高齡聚落</span></div>
+            <p class="text-xs text-stone-600 mt-1 leading-relaxed">
+              每 100 位青壯年需扶養逾 44 位高齡長者；人口十年呈現負成長低谷，幼年學齡人口少子化挑戰顯著。
+            </p>
+          </div>
+          <div
+            class="mt-3 pt-2.5 border-t border-amber-200/60 text-[11px] text-amber-900 font-medium flex items-center gap-1">
+            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i>
+            對應模組：02 人口結構課題
+          </div>
+        </div>
+
+        <!-- Metric 3: Tourism & Traffic Congestion -->
+        <div class="bg-blue-50/70 border border-blue-200/80 rounded-xl p-4.5 flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <span class="text-xs font-semibold text-blue-800 bg-blue-100/80 px-2 py-0.5 rounded">產業與觀光承載</span>
+            <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
+              <i data-lucide="train" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl font-black text-blue-950 font-mono">-150+ <span
+                class="text-sm font-sans font-bold text-blue-800">假日車位赤字</span></div>
+            <p class="text-xs text-stone-600 mt-1 leading-relaxed">
+              三星蔥/銀柳農業品牌✕森鐵老街觀光熱絡；假日車流衝擊生活巷道，亟需微循環動線與外環分流。
+            </p>
+          </div>
+          <div
+            class="mt-3 pt-2.5 border-t border-blue-200/60 text-[11px] text-blue-900 font-medium flex items-center gap-1">
+            <i data-lucide="gauge" class="w-3.5 h-3.5 text-blue-700"></i>
+            對應模組：03 交通設施 / 05 產業觀光
+          </div>
+        </div>
+
+        <!-- Metric 4: Land Use Balance Deficit -->
+        <div class="bg-rose-50/70 border border-rose-200/80 rounded-xl p-4.5 flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <span class="text-xs font-semibold text-rose-800 bg-rose-100/80 px-2 py-0.5 rounded">土地供需失衡</span>
+            <div class="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center">
+              <i data-lucide="scale" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl font-black text-rose-950 font-mono">14.73 vs 16.17 <span
+                class="text-xs font-sans font-bold text-rose-800">ha</span></div>
+            <p class="text-xs text-stone-600 mt-1 leading-relaxed">
+              計畫建地供給 14.73公頃 &lt; 現況居住使用 16.17公頃，既有建地飽和導致住宅向外圍農田蔓延。
+            </p>
+          </div>
+          <div
+            class="mt-3 pt-2.5 border-t border-rose-200/60 text-[11px] text-rose-900 font-medium flex items-center gap-1">
+            <i data-lucide="land-plot" class="w-3.5 h-3.5 text-rose-700"></i>
+            對應模組：06 環境敏感 / 07 土地現況
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- The 7 Thematic Analysis Modules Grid -->
+    <section class="px-4 md:px-8" id="modulesSection">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-6 pb-2 border-b border-stone-200 gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-6 bg-[#1e3d30] rounded-sm"></span>
+            <h2 class="text-xl md:text-2xl font-bold serif-title text-[#1e3d30]">
+              天送埤聚落現況與議題｜七大分析主題專題
+            </h2>
+          </div>
+          <p class="text-xs md:text-sm text-stone-600 mt-1">
+            點擊卡片即可進入各主題專題頁面，各頁面均含完整向量 GIS 地圖、數據圖表、課題洞察與列印支援。
+          </p>
+        </div>
+        <span id="modulesCount"
+          class="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 self-start sm:self-auto">
+          顯示 7 / 7 個專題模組
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="modulesGrid">
+
+        <!-- Module 01 -->
+        <div
+          class="module-card card-hover bg-white rounded-xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between"
+          data-category="spatial" data-keywords="01 聚落 區位 概況 憲明國小 天山村 天福村 節點 地理 歷史 台7丙 宜63 九芎湖">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span
+                class="text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-900 px-2.5 py-1 rounded border border-emerald-300">
+                單元 01 ｜ 空間區位
+              </span>
+              <span class="text-xs font-mono text-stone-500">GIS 空間節點分布</span>
+            </div>
+            <h3 class="text-lg font-bold serif-title text-[#1e3d30] leading-snug">
+              天送埤聚落區位與基本概況
+            </h3>
+            <p class="text-xs text-stone-600 mt-2 line-clamp-3 leading-relaxed">
+              聚焦天送埤位處雪山山麓與蘭陽平原過渡帶之戰略地理位置。精確標記憲明國小、天送埤火車站、長老教會、安農溪分洪堰等文教與歷史節點。
+            </p>
+
+            <div
+              class="mt-4 p-3 bg-stone-50 rounded-lg border border-stone-200/80 text-[11.5px] text-stone-700 space-y-1.5">
+              <div class="font-bold text-emerald-900 flex items-center gap-1">
+                <i data-lucide="book-open" class="w-3.5 h-3.5 text-emerald-700"></i> 教學應用焦點（社會／在地文史）
+              </div>
+              <p class="text-stone-600">
+                可作為學童認識「家鄉空間認知」第一課，引導學生比對校園周邊重要地標與生活網絡。
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-5 pt-3 border-t border-stone-100 flex items-center justify-between">
+            <span class="text-[11px] text-stone-500 flex items-center gap-1">
+              <i data-lucide="map" class="w-3.5 h-3.5 text-stone-400"></i> 互動 GIS 向量地圖
+            </span>
+            <a href="01聚落區位與基本概況.html"
+              class="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition">
+              <span>探索單元</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Module 02 -->
+        <div
+          class="module-card card-hover bg-white rounded-xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between"
+          data-category="society" data-keywords="02 人口 結構 高齡化 扶養比 少子化 老年 人口金字塔 天山村 天福村 戶籍 常住">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span
+                class="text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-1 rounded border border-amber-300">
+                單元 02 ｜ 人口與社會
+              </span>
+              <span class="text-xs font-mono text-stone-500">人口金字塔與十年趨勢</span>
+            </div>
+            <h3 class="text-lg font-bold serif-title text-[#1e3d30] leading-snug">
+              人口結構與高齡化課題
+            </h3>
+            <p class="text-xs text-stone-600 mt-2 line-clamp-3 leading-relaxed">
+              深度解析天送埤高達 29.3% 的超高齡人口結構與 44.2% 的高齡扶養比。剖析十年歷程負成長波谷與學齡兒童生源消長課題。
+            </p>
+
+            <div
+              class="mt-4 p-3 bg-stone-50 rounded-lg border border-stone-200/80 text-[11.5px] text-stone-700 space-y-1.5">
+              <div class="font-bold text-amber-900 flex items-center gap-1">
+                <i data-lucide="heart-handshake" class="w-3.5 h-3.5 text-amber-700"></i> 教學應用焦點（綜合活動／公民實踐）
+              </div>
+              <p class="text-stone-600">
+                引導學生探討超高齡社區與世代共融議題，設計小小記者訪談長輩與社區關懷服務學習。
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-5 pt-3 border-t border-stone-100 flex items-center justify-between">
+            <span class="text-[11px] text-stone-500 flex items-center gap-1">
+              <i data-lucide="bar-chart-3" class="w-3.5 h-3.5 text-stone-400"></i> Chart.js 統計圖表
+            </span>
+            <a href="02人口結構與高齡化課題.html"
+              class="inline-flex items-center gap-1 text-xs font-bold text-amber-900 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg border border-amber-200 transition">
+              <span>探索單元</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Module 03 -->
+        <div
+          class="module-card card-hover bg-white rounded-xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between"
+          data-category="society" data-keywords="03 交通 公共設施 道路 客運 國光客運 停車場 停車 赤字 活動中心 長照 通學 巷道">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span
+                class="text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-900 px-2.5 py-1 rounded border border-blue-300">
+                單元 03 ｜ 交通與設施
+              </span>
+              <span class="text-xs font-mono text-stone-500">公共空間與停車檢視</span>
+            </div>
+            <h3 class="text-lg font-bold serif-title text-[#1e3d30] leading-snug">
+              交通與公共設施現況
+            </h3>
+            <p class="text-xs text-stone-600 mt-2 line-clamp-3 leading-relaxed">
+              檢討台7丙幹道與內部狹窄巷弄（路幅&lt;4m）之車流衝突，盤點 4 處公有停車空間與假日 150+ 輛車位缺口，及長照醫療據點分布。
+            </p>
+
+            <div
+              class="mt-4 p-3 bg-stone-50 rounded-lg border border-stone-200/80 text-[11.5px] text-stone-700 space-y-1.5">
+              <div class="font-bold text-blue-900 flex items-center gap-1">
+                <i data-lucide="navigation" class="w-3.5 h-3.5 text-blue-700"></i> 教學應用焦點（健體安全／生活領域）
+              </div>
+              <p class="text-stone-600">
+                引導學童實地踏查「通學步道安全」，觀察生活巷弄與觀光車流之人車分流與步行盲點。
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-5 pt-3 border-t border-stone-100 flex items-center justify-between">
+            <span class="text-[11px] text-stone-500 flex items-center gap-1">
+              <i data-lucide="car" class="w-3.5 h-3.5 text-stone-400"></i> 互動節點切換檢視
+            </span>
+            <a href="03交通與公共設施現況.html"
+              class="inline-flex items-center gap-1 text-xs font-bold text-blue-900 hover:text-blue-950 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition">
+              <span>探索單元</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Module 04 -->
+        <div
+          class="module-card card-hover bg-white rounded-xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between"
+          data-category="spatial" data-keywords="04 自然生態 防救災 土石流 潛勢溪流 避難收容 憲明國小 坡地 災害 消防 救災">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span
+                class="text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-900 px-2.5 py-1 rounded border border-emerald-300">
+                單元 04 ｜ 生態與防災
+              </span>
+              <span class="text-xs font-mono text-stone-500">坡地潛勢與避難網絡</span>
+            </div>
+            <h3 class="text-lg font-bold serif-title text-[#1e3d30] leading-snug">
+              自然生態與防救災資源
+            </h3>
+            <p class="text-xs text-stone-600 mt-2 line-clamp-3 leading-relaxed">
+              盤點南側山坡地保育區、土石流潛勢溪流影響範圍，明確指出憲明國小作為聚落法定避難收容所之關鍵角色與內部窄巷救災阻礙。
+            </p>
+
+            <div
+              class="mt-4 p-3 bg-stone-50 rounded-lg border border-stone-200/80 text-[11.5px] text-stone-700 space-y-1.5">
+              <div class="font-bold text-emerald-900 flex items-center gap-1">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-700"></i> 教學應用焦點（防災教育／自然科學）
+              </div>
+              <p class="text-stone-600">
+                以校園為防災核心，帶領學生製作家庭防災地圖、認識土石流警戒雨量與防救災演練。
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-5 pt-3 border-t border-stone-100 flex items-center justify-between">
+            <span class="text-[11px] text-stone-500 flex items-center gap-1">
+              <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-stone-400"></i> 防災圖層切換
+            </span>
+            <a href="04生態及防災.html"
+              class="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition">
+              <span>探索單元</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Module 05 -->
+        <div
+          class="module-card card-hover bg-white rounded-xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between"
+          data-category="industry" data-keywords="05 產業 觀光 三星蔥 銀柳 上將梨 森鐵 火車站 卜肉 民宿 商業 土地適法性 農業">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span
+                class="text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-1 rounded border border-amber-300">
+                單元 05 ｜ 產業與觀光
+              </span>
+              <span class="text-xs font-mono text-stone-500">以農為本・觀光延伸</span>
+            </div>
+            <h3 class="text-lg font-bold serif-title text-[#1e3d30] leading-snug">
+              產業與觀光發展現況
+            </h3>
+            <p class="text-xs text-stone-600 mt-2 line-clamp-3 leading-relaxed">
+              分析傳統農業三大主力（蔥、銀柳、梨）與天送埤森鐵文旅帶動的觀光動能。檢視沿線民宿與商業設施之產業用地適法性輔導需求。
+            </p>
+
+            <div
+              class="mt-4 p-3 bg-stone-50 rounded-lg border border-stone-200/80 text-[11.5px] text-stone-700 space-y-1.5">
+              <div class="font-bold text-amber-900 flex items-center gap-1">
+                <i data-lucide="sprout" class="w-3.5 h-3.5 text-amber-700"></i> 教學應用焦點（食農教育／文創走讀）
+              </div>
+              <p class="text-stone-600">
+                連結三星在地青蔥洗蔥池體驗、林鐵森鐵文化遺產踏查，引導學生思考傳統農業轉型。
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-5 pt-3 border-t border-stone-100 flex items-center justify-between">
+            <span class="text-[11px] text-stone-500 flex items-center gap-1">
+              <i data-lucide="tractor" class="w-3.5 h-3.5 text-stone-400"></i> 產業空間熱點盤點
+            </span>
+            <a href="05產業與觀光.html"
+              class="inline-flex items-center gap-1 text-xs font-bold text-amber-900 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg border border-amber-200 transition">
+              <span>探索單元</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Module 06 -->
+        <div
+          class="module-card card-hover bg-white rounded-xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between"
+          data-category="spatial" data-keywords="06 環境敏感區 國土生態綠網 水源 保護區 自來水 保安林 蘭陽溪 里山 倡議 藍綠網絡">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span
+                class="text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-900 px-2.5 py-1 rounded border border-emerald-300">
+                單元 06 ｜ 生態與綠網
+              </span>
+              <span class="text-xs font-mono text-stone-500">國土生態綠網與水源保護</span>
+            </div>
+            <h3 class="text-lg font-bold serif-title text-[#1e3d30] leading-snug">
+              環境敏感區位與國土生態綠網
+            </h3>
+            <p class="text-xs text-stone-600 mt-2 line-clamp-3 leading-relaxed">
+              嚴格檢視自來水水質水量保護區、水庫集水區與國土生態綠網（東北二分區里山地景），探討水圳不水泥化與蘭陽溪生態廊道之縫合。
+            </p>
+
+            <div
+              class="mt-4 p-3 bg-stone-50 rounded-lg border border-stone-200/80 text-[11.5px] text-stone-700 space-y-1.5">
+              <div class="font-bold text-emerald-900 flex items-center gap-1">
+                <i data-lucide="trees" class="w-3.5 h-3.5 text-emerald-700"></i> 教學應用焦點（環境教育／生態科學）
+              </div>
+              <p class="text-stone-600">
+                結合水圳水棲生物採集、安農溪水源巡護與里山倡議理念，培育學童環境保育公民素養。
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-5 pt-3 border-t border-stone-100 flex items-center justify-between">
+            <span class="text-[11px] text-stone-500 flex items-center gap-1">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-stone-400"></i> 藍綠廊道套疊圖
+            </span>
+            <a href="06環境敏感區.html"
+              class="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition">
+              <span>探索單元</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Module 07 -->
+        <div
+          class="module-card card-hover bg-white rounded-xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between md:col-span-2 lg:col-span-3"
+          data-category="industry" data-keywords="07 土地 居住 土地使用 編定 鄉村區 乙種建築用地 農舍 蔓延 農業發展地區第四類 國土計畫">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+            <div class="lg:col-span-8">
+              <div class="flex items-center justify-between mb-2">
+                <span
+                  class="text-xs font-bold uppercase tracking-wider bg-rose-100 text-rose-900 px-2.5 py-1 rounded border border-rose-300">
+                  單元 07 ｜ 居住與土地使用
+                </span>
+                <span class="text-xs font-mono text-stone-500">非都市土地編定 ✕ 現況住宅疊合</span>
+              </div>
+              <h3 class="text-lg md:text-xl font-bold serif-title text-[#1e3d30] leading-snug">
+                居住與土地使用現況（建地飽和與農地蔓延課題）
+              </h3>
+              <p class="text-xs md:text-sm text-stone-600 mt-2 leading-relaxed">
+                揭露天送埤核心建地供給（14.73公頃）與現況居住需求（16.17公頃）之供需赤字。非都市土地鄉村區乙種建築用地利用率高達 90%
+                以上，迫使居住人口向外圍農業區零星蔓延擴散，亟需國土功能分區（農發四類等）引導有序發展。
+              </p>
+
+              <div
+                class="mt-3 p-3 bg-stone-50 rounded-lg border border-stone-200/80 text-[11.5px] text-stone-700 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                <div class="font-bold text-rose-900 flex items-center gap-1 shrink-0">
+                  <i data-lucide="scale" class="w-3.5 h-3.5 text-rose-700"></i> 教學應用焦點（社會探究與土地倫理）
+                </div>
+                <p class="text-stone-600 text-xs">
+                  引導高年級學生探討「農地農用」與「家鄉青年居住需求」之平衡，建立國土規劃思辨力。
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="lg:col-span-4 flex flex-col justify-center items-end bg-rose-50/50 p-4 rounded-xl border border-rose-200/60">
+              <div class="text-right w-full">
+                <div class="text-xs text-stone-500">土地供需對比</div>
+                <div class="text-xl font-black text-rose-950 font-mono">14.73 ha <span
+                    class="text-xs font-normal text-stone-600">(供給)</span> vs 16.17 ha <span
+                    class="text-xs font-normal text-stone-600">(現況)</span></div>
+                <div class="text-[11px] text-rose-700 font-semibold mt-1">供給赤字：-1.44 公頃</div>
+              </div>
+              <a href="07土地.html"
+                class="mt-4 w-full text-center inline-flex items-center justify-center gap-1 text-xs font-bold text-white bg-[#1e3d30] hover:bg-[#285241] px-4 py-2.5 rounded-lg shadow transition">
+                <span>進入土地分析單元</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- No Match Message -->
+      <div id="noMatchCard" class="hidden text-center py-12 bg-stone-50 rounded-2xl border border-stone-200 my-4">
+        <i data-lucide="search-x" class="w-10 h-10 text-stone-400 mx-auto mb-2"></i>
+        <h4 class="text-base font-bold text-stone-700">找不到符合條件的專題模組</h4>
+        <p class="text-xs text-stone-500 mt-1">請嘗試更換搜尋關鍵字，或切換上方分類標籤。</p>
+      </div>
+    </section>
+
+    <!-- Teacher Pedagogical & Curriculum Guide Section (專為憲明國小教師設計) -->
+    <section class="px-4 md:px-8 bg-emerald-50/40 py-8 border-y border-stone-200">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-6 bg-emerald-800 rounded-sm"></span>
+            <h2 class="text-lg md:text-2xl font-bold serif-title text-[#1e3d30]">
+              憲明國小校本特色課程與在地踏查教學指引
+            </h2>
+          </div>
+          <p class="text-xs md:text-sm text-stone-600 mt-1">
+            如何將「天送埤鄉村地區計畫現況分析」無縫轉化為 108 課綱校本鄉土、跨領域戶外教育與探究學習教案：
+          </p>
+        </div>
+        <span
+          class="hidden md:inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-white px-3 py-1.5 rounded-lg border border-emerald-300 shadow-sm">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> 教案延伸模組
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5">
+
+        <!-- Curriculum 1: Forest Railway & History -->
+        <div class="bg-white rounded-xl p-4.5 border border-stone-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-2">
+              <span class="font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded">文史走讀 ✕ 社會領域</span>
+              <span class="text-stone-500">中高年級適用</span>
+            </div>
+            <h4 class="text-base font-bold serif-title text-[#1e3d30] flex items-center gap-1.5">
+              <i data-lucide="train" class="w-4 h-4 text-amber-700"></i>
+              百年森鐵風華與老街空間變遷
+            </h4>
+            <p class="text-xs text-stone-600 mt-2 leading-relaxed">
+              以<strong>天送埤火車站</strong>為起點，串連舊太平山林業鐵道軌跡、九芎湖與聚落傳統老屋，引導學童探討林鐵停駛後的聚落興衰與文旅活化。
+            </p>
+            <div class="mt-3 bg-stone-50 p-2.5 rounded text-[11px] text-stone-600 space-y-1">
+              <div><strong>建議踏查路線：</strong>憲明國小 ➔ 舊鐵道廊帶 ➔ 天送埤車站 ➔ 老街商圈</div>
+              <div><strong>對應分析單元：</strong>單元 01 聚落區位、單元 05 產業與觀光</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Curriculum 2: Agri-Food & Local Industry -->
+        <div class="bg-white rounded-xl p-4.5 border border-stone-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-2">
+              <span class="font-bold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded">食農教育 ✕ 自然科學</span>
+              <span class="text-stone-500">全學年適用</span>
+            </div>
+            <h4 class="text-base font-bold serif-title text-[#1e3d30] flex items-center gap-1.5">
+              <i data-lucide="sprout" class="w-4 h-4 text-emerald-700"></i>
+              青蔥、銀柳與上將梨之鄉
+            </h4>
+            <p class="text-xs text-stone-600 mt-2 leading-relaxed">
+              走進天福村與天山村農田，認識安農溪湧泉灌溉下的三星蔥洗蔥流程、銀柳栽培與果園輪作，探討極端氣候與農村勞動力老化之因應。
+            </p>
+            <div class="mt-3 bg-stone-50 p-2.5 rounded text-[11px] text-stone-600 space-y-1">
+              <div><strong>建議實作體驗：</strong>洗蔥池洗蔥實作 ➔ 銀柳枝條創作 ➔ 農夫訪談</div>
+              <div><strong>對應分析單元：</strong>單元 05 產業觀光、單元 07 土地利用</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Curriculum 3: Satoyama & Water Ecology -->
+        <div class="bg-white rounded-xl p-4.5 border border-stone-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-2">
+              <span class="font-bold text-teal-900 bg-teal-100 px-2 py-0.5 rounded">里山倡議 ✕ 環境教育</span>
+              <span class="text-stone-500">中高年級適用</span>
+            </div>
+            <h4 class="text-base font-bold serif-title text-[#1e3d30] flex items-center gap-1.5">
+              <i data-lucide="droplets" class="w-4 h-4 text-teal-700"></i>
+              安農溪源頭水環境與里山生態
+            </h4>
+            <p class="text-xs text-stone-600 mt-2 leading-relaxed">
+              踏查聚落北側蘭陽溪藍綠廊道與自來水水源保護區，進行水圳水質檢測與水棲昆蟲觀察，理解水圳不水泥化對生態廊道的重要性。
+            </p>
+            <div class="mt-3 bg-stone-50 p-2.5 rounded text-[11px] text-stone-600 space-y-1">
+              <div><strong>建議探究活動：</strong>水質酸鹼溶氧檢測 ➔ 溪流生物多樣性記錄 ➔ 保育倡議</div>
+              <div><strong>對應分析單元：</strong>單元 04 自然生態、單元 06 環境敏感區</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Curriculum 4: Disaster Prevention & School Safe -->
+        <div class="bg-white rounded-xl p-4.5 border border-stone-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-2">
+              <span class="font-bold text-rose-900 bg-rose-100 px-2 py-0.5 rounded">防災教育 ✕ 健體安全</span>
+              <span class="text-stone-500">全學年適用</span>
+            </div>
+            <h4 class="text-base font-bold serif-title text-[#1e3d30] flex items-center gap-1.5">
+              <i data-lucide="shield-alert" class="w-4 h-4 text-rose-700"></i>
+              校園避難所與社區防災地圖
+            </h4>
+            <p class="text-xs text-stone-600 mt-2 leading-relaxed">
+              實證憲明國小作為天送埤法定避難收容處所之責任。帶領學童體檢聚落土石流潛勢溪流、狹小巷弄通行障礙，繪製學區防災避難逃生圖。
+            </p>
+            <div class="mt-3 bg-stone-50 p-2.5 rounded text-[11px] text-stone-600 space-y-1">
+              <div><strong>建議實作項目：</strong>校園避難物資盤點 ➔ 巷道窄隘體檢 ➔ 社區防災演練</div>
+              <div><strong>對應分析單元：</strong>單元 03 交通設施、單元 04 生態防災</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Curriculum 5: Intergenerational Empathy -->
+        <div class="bg-white rounded-xl p-4.5 border border-stone-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-2">
+              <span class="font-bold text-purple-900 bg-purple-100 px-2 py-0.5 rounded">世代共好 ✕ 綜合活動</span>
+              <span class="text-stone-500">全學年適用</span>
+            </div>
+            <h4 class="text-base font-bold serif-title text-[#1e3d30] flex items-center gap-1.5">
+              <i data-lucide="heart" class="w-4 h-4 text-purple-700"></i>
+              銀髮微笑：青銀共學與關懷行動
+            </h4>
+            <p class="text-xs text-stone-600 mt-2 leading-relaxed">
+              天送埤高達 29.3% 高齡人口，結合社區長照關懷據點、長老教會，安排學生至據點進行老幼共讀、口述歷史訪談，培養同理心與在地認同。
+            </p>
+            <div class="mt-3 bg-stone-50 p-2.5 rounded text-[11px] text-stone-600 space-y-1">
+              <div><strong>建議實踐活動：</strong>長者口述生命史訪談 ➔ 社區長照據點陪伴 ➔ 藝文展演</div>
+              <div><strong>對應分析單元：</strong>單元 02 人口結構、單元 03 公共設施</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Curriculum 6: Land Ethics & Spatial Justice -->
+        <div class="bg-white rounded-xl p-4.5 border border-stone-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-2">
+              <span class="font-bold text-indigo-900 bg-indigo-100 px-2 py-0.5 rounded">土地倫理 ✕ 公民素養</span>
+              <span class="text-stone-500">高年級適用</span>
+            </div>
+            <h4 class="text-base font-bold serif-title text-[#1e3d30] flex items-center gap-1.5">
+              <i data-lucide="land-plot" class="w-4 h-4 text-indigo-700"></i>
+              家鄉未來：國土規劃與土地使用
+            </h4>
+            <p class="text-xs text-stone-600 mt-2 leading-relaxed">
+              透過天送埤「建地不足」與「農舍蔓延」真實案例，引導高年級學生討論農地保護與聚落居住發展的平衡，參與鄉村規劃願景模擬討論。
+            </p>
+            <div class="mt-3 bg-stone-50 p-2.5 rounded text-[11px] text-stone-600 space-y-1">
+              <div><strong>建議探究主題：</strong>「如果我是鄉村規劃師」模擬工作坊 ➔ 願景地圖繪製</div>
+              <div><strong>對應分析單元：</strong>單元 06 環境敏感、單元 07 土地現況</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Spatial Planning Strategies & Workshop Insights -->
+    <section class="px-4 md:px-8">
+      <div
+        class="bg-[#1c2921] text-white rounded-2xl p-6 md:p-8 border border-stone-800 shadow-lg relative overflow-hidden">
+        <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-stone-700 gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span
+                class="text-xs font-bold tracking-widest text-emerald-400 uppercase bg-emerald-950 px-2.5 py-0.5 rounded border border-emerald-800">
+                規劃願景 ✕ 發展策略
+              </span>
+              <span class="text-xs text-stone-300">鄉村地區計畫工作坊成果核心</span>
+            </div>
+            <h3 class="text-xl md:text-2xl font-bold serif-title text-white mt-1.5">
+              天送埤聚落四大永續發展方針
+            </h3>
+          </div>
+          <span class="text-xs text-stone-400 font-mono self-start md:self-auto">PLANNING STRATEGY MATRIX</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mt-6">
+          <div class="bg-stone-900/80 p-4 rounded-xl border border-stone-700">
+            <div
+              class="w-8 h-8 rounded-lg bg-emerald-800 text-emerald-200 flex items-center justify-center font-bold text-sm mb-3">
+              01</div>
+            <h4 class="text-sm font-bold text-emerald-300">居住擴展與聚落合理規劃</h4>
+            <p class="text-xs text-stone-300 mt-1.5 leading-relaxed">
+              適度劃設農業發展地區第4類，引導既有聚落周邊建地有序擴展，解決居住赤字並避免農田持續破碎蔓延。
+            </p>
+          </div>
+
+          <div class="bg-stone-900/80 p-4 rounded-xl border border-stone-700">
+            <div
+              class="w-8 h-8 rounded-lg bg-blue-800 text-blue-200 flex items-center justify-center font-bold text-sm mb-3">
+              02</div>
+            <h4 class="text-sm font-bold text-blue-300">觀光與生活動線分流</h4>
+            <p class="text-xs text-stone-300 mt-1.5 leading-relaxed">
+              強化天送埤車站外環停車接駁與大眾運輸班次，建置通學步道，將觀光車流攔截於外圍，還給聚落寧靜生活。
+            </p>
+          </div>
+
+          <div class="bg-stone-900/80 p-4 rounded-xl border border-stone-700">
+            <div
+              class="w-8 h-8 rounded-lg bg-teal-800 text-teal-200 flex items-center justify-center font-bold text-sm mb-3">
+              03</div>
+            <h4 class="text-sm font-bold text-teal-300">藍綠網絡與水源保育守護</h4>
+            <p class="text-xs text-stone-300 mt-1.5 leading-relaxed">
+              落實國土生態綠網藍綠軸帶連結，嚴守自來水水質水量保護區，保持灌溉水圳生態多樣性，實踐里山倡議。
+            </p>
+          </div>
+
+          <div class="bg-stone-900/80 p-4 rounded-xl border border-stone-700">
+            <div
+              class="w-8 h-8 rounded-lg bg-amber-800 text-amber-200 flex items-center justify-center font-bold text-sm mb-3">
+              04</div>
+            <h4 class="text-sm font-bold text-amber-300">全齡共融與文教生活圈</h4>
+            <p class="text-xs text-stone-300 mt-1.5 leading-relaxed">
+              以<strong>憲明國小</strong>為文教與防救災核心，串聯社區活動中心、長照據點與宗教場所，建構全齡友善支持網。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Document Source & Project Details Box -->
+    <section class="px-4 md:px-8">
+      <div
+        class="bg-stone-100 rounded-xl p-5 border border-stone-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs text-stone-600">
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded bg-stone-300 text-stone-700 flex items-center justify-center shrink-0 mt-0.5">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="font-bold text-stone-800 text-sm">資料來源與授權說明</div>
+            <p class="mt-0.5 leading-relaxed">
+              本資料彙整自 <strong>2026年09月02日「宜蘭縣員山鄉、三星鄉鄉村地區計畫（聚落規劃及法定程序）委託專業服務案」天送埤聚落工作坊簡報</strong>。
+              數據統計基準為民國 114 年 6 月。本網站供學校教育研習、校本課程研發與在地鄉土教學參考使用。
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <a href="#top" onclick="window.scrollTo({top:0, behavior:'smooth'})"
+            class="px-3 py-1.5 rounded-lg bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 font-semibold transition flex items-center gap-1 shadow-sm">
+            <i data-lucide="arrow-up" class="w-3.5 h-3.5"></i> 回到頂部
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Portal Footer -->
+    <footer
+      class="mt-4 pt-6 border-t border-stone-200 px-6 md:px-8 text-center text-xs text-stone-500 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div>
+        <span>© 宜蘭縣三星鄉憲明國小學區 ✕ 天送埤聚落鄉村地區計畫教學資源專區</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span>憲明國小教師備課專用</span>
+        <span>•</span>
+        <span>7 大專題模組全紀錄</span>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- Interactive JavaScript Logic -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    let currentCategory = 'all';
+
+    function setCategoryFilter(category) {
+      currentCategory = category;
+
+      // Update Tab Styles
+      const pills = document.querySelectorAll('.category-pill');
+      pills.forEach(pill => {
+        pill.className = 'category-pill px-3 py-2 rounded-xl bg-emerald-900/70 text-emerald-300 hover:text-white border border-emerald-700/50 whitespace-nowrap transition';
+      });
+
+      const activeTab = document.getElementById(`tab-${category}`);
+      if (activeTab) {
+        activeTab.className = 'category-pill px-3 py-2 rounded-xl bg-emerald-600 text-white font-medium whitespace-nowrap transition shadow-sm';
+      }
+
+      filterModules();
+    }
+
+    function filterModules() {
+      const searchInput = document.getElementById('moduleSearchInput').value.toLowerCase().trim();
+      const cards = document.querySelectorAll('.module-card');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const keywords = card.getAttribute('data-keywords').toLowerCase();
+        const category = card.getAttribute('data-category');
+
+        const matchesCategory = (currentCategory === 'all') || (category === currentCategory);
+        const matchesSearch = !searchInput || keywords.includes(searchInput) || card.textContent.toLowerCase().includes(searchInput);
+
+        if (matchesCategory && matchesSearch) {
+          card.style.display = '';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      const countBadge = document.getElementById('modulesCount');
+      if (countBadge) {
+        countBadge.textContent = `顯示 ${visibleCount} / 7 個專題模組`;
+      }
+
+      const noMatchCard = document.getElementById('noMatchCard');
+      if (noMatchCard) {
+        noMatchCard.style.display = visibleCount === 0 ? 'block' : 'none';
+      }
+    }
+  </script>
+</body>
+
+</html>

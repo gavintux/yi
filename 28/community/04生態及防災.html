@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天送埤聚落現況與議題｜自然生態與防救災資源</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap');
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #f4f5f4;
+      color: #1f2937;
+    }
+
+    .serif-title {
+      font-family: 'Noto Serif TC', serif;
+    }
+
+    .gis-dark-bg {
+      background: radial-gradient(circle at 50% 30%, #203529 0%, #132219 65%, #0a140f 100%);
+    }
+
+    .pulse-alert {
+      animation: pulseAlert 2.2s infinite;
+    }
+
+    @keyframes pulseAlert {
+
+      0%,
+      100% {
+        opacity: 0.9;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.45;
+        transform: scale(1.08);
+      }
+    }
+
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      main {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen p-3 md:p-8 flex flex-col justify-center items-center">
+
+  <!-- Main Dashboard Container -->
+  <main
+    class="w-full max-w-[1520px] bg-white rounded-2xl shadow-xl border border-stone-200 overflow-hidden p-5 md:p-8 flex flex-col gap-6">
+
+    <!-- Header Section -->
+    <header class="flex flex-col md:flex-row md:items-end justify-between border-b border-stone-200 pb-4 gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span
+            class="text-xs font-bold tracking-widest text-[#1e3d30] uppercase bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded border border-emerald-200">
+            天送埤聚落現況與議題 ｜ 04
+          </span>
+          <span class="text-xs text-stone-500 font-medium">宜蘭縣三星鄉（天山村・天福村）</span>
+        </div>
+        <h1
+          class="text-2xl md:text-4xl font-bold serif-title text-[#1e3d30] tracking-tight mt-1.5 flex items-center gap-3">
+          自然生態與防救災資源
+        </h1>
+      </div>
+      <div class="flex items-center gap-3 no-print">
+        <a href="index.html"
+          class="px-3 py-1.5 text-xs font-bold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] border border-emerald-300 hover:border-emerald-500 rounded-lg transition-all flex items-center gap-1.5 shadow-sm group">
+          <i data-lucide="home" class="w-3.5 h-3.5 text-emerald-800 group-hover:scale-110 transition-transform"></i>
+          <span>回首頁</span>
+        </a>
+        <div
+          class="flex items-center gap-1.5 bg-emerald-50 text-emerald-900 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold">
+          <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-emerald-700"></i>
+          里山地景保育 ✕ 超高齡防救災韌性
+        </div>
+        <button onclick="window.print()"
+          class="px-3.5 py-1.5 text-xs font-semibold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> 列印 / 匯出 PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Layout (Left Info Cards & Right Vector GIS Map) -->
+    <section class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+
+      <!-- ==================== LEFT COLUMN: Ecological Resources & Disaster Analysis (5.5 Cols) ==================== -->
+      <div class="xl:col-span-5 flex flex-col justify-between gap-4">
+
+        <!-- Card 1: 自然生態資源 (Natural Ecological Resources) -->
+        <div class="bg-[#1b4332] text-white rounded-xl p-4 md:p-5 shadow-md border-l-4 border-emerald-400">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-bold text-base md:text-lg flex items-center gap-2">
+              <i data-lucide="leaf" class="w-5 h-5 text-emerald-300"></i>
+              自然生態資源
+            </h3>
+            <span
+              class="text-[10px] px-2 py-0.5 rounded bg-emerald-900/80 text-emerald-200 border border-emerald-700 font-mono">
+              里山地景倡議
+            </span>
+          </div>
+          <p class="text-xs md:text-[13.5px] text-stone-200 leading-relaxed">
+            天送埤聚落包含重要關注之<strong>里山地景</strong>，並具備豐富之<strong>藍綠帶資源</strong>（山林生態、湧泉池塘與水圳網絡）。
+          </p>
+          <div class="mt-3 pt-3 border-t border-emerald-800/80 flex flex-col gap-2">
+            <div class="flex items-start gap-2 bg-emerald-950/40 p-2.5 rounded-lg border border-emerald-800/60">
+              <i data-lucide="alert-circle" class="w-4 h-4 text-amber-300 shrink-0 mt-0.5"></i>
+              <div class="text-[12px] text-emerald-100 leading-normal">
+                <strong>生態廊道隱憂</strong>：現況多處水圳<strong>遭加蓋使用</strong>，削弱水系自淨功能與水棲生物棲地；同時建築持續往周邊農地蔓延，導致原本完整的生態廊道面臨破壞與切割。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: 防救災現況與潛在風險 (Disaster Vulnerabilities & Gaps) -->
+        <div
+          class="bg-stone-50 border border-stone-200 rounded-xl p-4 md:p-5 shadow-sm flex-1 flex flex-col justify-between gap-3">
+
+          <div class="flex items-center justify-between border-b border-stone-200 pb-2.5">
+            <h3 class="font-bold text-sm md:text-base text-[#1e3d30] flex items-center gap-2">
+              <i data-lucide="umbrella" class="w-5 h-5 text-[#8c3c2a]"></i>
+              防救災現況與潛在風險
+            </h3>
+            <span class="text-[10.5px] px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-semibold">
+              3大關鍵課題
+            </span>
+          </div>
+
+          <div class="flex flex-col gap-3">
+
+            <!-- Issue 1: 水災風險 -->
+            <div class="flex items-start gap-3 bg-white p-3 rounded-lg border border-stone-200 shadow-2xs">
+              <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="waves" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1">
+                <h4 class="text-xs md:text-[13px] font-bold text-stone-900 flex items-center justify-between">
+                  <span>1. 密布水圳之積淹水風險</span>
+                  <span
+                    class="text-[10px] text-sky-700 bg-sky-50 px-1.5 py-0.2 rounded font-mono font-medium">微地形排洪</span>
+                </h4>
+                <p class="text-xs text-stone-600 leading-relaxed mt-1">
+                  聚落內部水圳網絡密集，面對極端氣候強降雨時，逕流量匯集若受阻，可能產生區域性積淹水情形。
+                </p>
+              </div>
+            </div>
+
+            <!-- Issue 2: 土石流與邊坡災害 -->
+            <div class="flex items-start gap-3 bg-white p-3 rounded-lg border border-stone-200 shadow-2xs">
+              <div
+                class="w-8 h-8 rounded-lg bg-amber-100 text-amber-900 flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="mountain-snow" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1">
+                <h4 class="text-xs md:text-[13px] font-bold text-stone-900 flex items-center justify-between">
+                  <span>2. 坡地與土石流潛勢溪流</span>
+                  <span
+                    class="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded font-mono font-bold">宜縣DF135</span>
+                </h4>
+                <p class="text-xs text-stone-600 leading-relaxed mt-1">
+                  村內劃設有 1 條土石流潛勢溪流（<strong>宜縣DF135</strong>，警戒雨量 <strong>600
+                    mm</strong>），現況尚未直接觸及核心聚落街區，惟周邊坡地未來崩塌或地滑風險恐波及聚落周邊。
+                </p>
+              </div>
+            </div>
+
+            <!-- Issue 3: 防救災設施與醫療量能瓶頸 -->
+            <div class="flex items-start gap-3 bg-white p-3 rounded-lg border border-stone-200 shadow-2xs">
+              <div
+                class="w-8 h-8 rounded-lg bg-rose-100 text-rose-800 flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="shield" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1">
+                <h4 class="text-xs md:text-[13px] font-bold text-stone-900 flex items-center justify-between">
+                  <span>3. 避難起降節點與醫療外溢依賴</span>
+                  <span
+                    class="text-[10px] text-rose-800 bg-rose-50 px-1.5 py-0.2 rounded font-mono font-semibold">外溢依賴</span>
+                </h4>
+                <ul class="text-xs text-stone-600 leading-relaxed mt-1 space-y-1">
+                  <li class="flex items-start gap-1.5">
+                    <span class="text-emerald-700 font-bold">▪</span>
+                    <span><strong>主要避難處所</strong>：憲明國小為主要避難收容所（<strong>收容能量 40
+                        人</strong>）暨<strong>直升機起降點</strong>。</span>
+                  </li>
+                  <li class="flex items-start gap-1.5">
+                    <span class="text-amber-700 font-bold">▪</span>
+                    <span><strong>醫療外溢依賴</strong>：最近之基礎診所醫療資源為 <strong>3 公里外</strong>
+                      之三星市區；大型責任醫院及重症資源須仰賴更遠的<strong>羅東市區</strong>。</span>
+                  </li>
+                  <li class="flex items-start gap-1.5">
+                    <span class="text-red-700 font-bold">▪</span>
+                    <span><strong>超高齡挑戰</strong>：在聚落高達 29.3% 超高齡人口下，長者緊急避難、無障礙動線與醫療轉運體系仍待優化。</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Quick Distance Metrics -->
+          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-stone-200 text-center text-[11px]">
+            <div class="bg-emerald-50/70 p-1.5 rounded border border-emerald-200">
+              <span class="text-stone-500 block text-[10px]">避難收容能量</span>
+              <span class="font-bold text-emerald-900 font-mono text-xs">40 人 (憲明國小)</span>
+            </div>
+            <div class="bg-amber-50/70 p-1.5 rounded border border-amber-200">
+              <span class="text-stone-500 block text-[10px]">最近基礎醫療</span>
+              <span class="font-bold text-amber-900 font-mono text-xs">~3 km (三星市區)</span>
+            </div>
+            <div class="bg-rose-50/70 p-1.5 rounded border border-rose-200">
+              <span class="text-stone-500 block text-[10px]">大型急重症醫療</span>
+              <span class="font-bold text-rose-900 font-mono text-xs">~16 km (羅東博愛/聖母)</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ==================== RIGHT COLUMN: GIS Natural Hazards & Disaster Vector Map (6.5 Cols) ==================== -->
+      <div
+        class="xl:col-span-7 gis-dark-bg border border-stone-800 rounded-xl p-3 md:p-4 shadow-inner flex flex-col justify-between relative overflow-hidden">
+
+        <!-- GIS Map Header Overlay -->
+        <div class="flex justify-between items-start z-10">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+              <h3 class="text-white font-bold text-xs md:text-sm flex items-center gap-2">
+                自然生態環境、坡地災害風險與防救災設施圖
+              </h3>
+            </div>
+            <p class="text-stone-300 text-[11px] mt-0.5">
+              疊合未來坡地災害風險分級、土石流潛勢溪流（宜縣DF135）、核心狹小巷道與防救災點位
+            </p>
+          </div>
+
+          <!-- North Compass -->
+          <div
+            class="w-7 h-7 rounded-full bg-stone-900/85 border border-stone-600 flex flex-col items-center justify-center text-white text-[9px] font-mono shadow shrink-0">
+            <span class="text-emerald-400 leading-none">▲</span>
+            <span class="text-[8px] -mt-0.5 font-bold">N</span>
+          </div>
+        </div>
+
+        <!-- Layer Toggle Bar -->
+        <div class="flex flex-wrap gap-1.5 my-2 z-10 text-[10.5px]">
+          <button onclick="toggleGisLayer('all')" id="btn-layer-all"
+            class="layer-btn px-2.5 py-1 rounded bg-emerald-700 text-white font-medium shadow-sm transition">
+            全部圖層
+          </button>
+          <button onclick="toggleGisLayer('slope')" id="btn-layer-slope"
+            class="layer-btn px-2 py-1 rounded bg-stone-800/80 text-stone-300 hover:text-white border border-stone-700 transition">
+            ⛰️ 坡地災害風險 (1~5級)
+          </button>
+          <button onclick="toggleGisLayer('debris')" id="btn-layer-debris"
+            class="layer-btn px-2 py-1 rounded bg-stone-800/80 text-stone-300 hover:text-white border border-stone-700 transition">
+            ⚠️ 土石流 (DF135)
+          </button>
+          <button onclick="toggleGisLayer('shelter')" id="btn-layer-shelter"
+            class="layer-btn px-2 py-1 rounded bg-stone-800/80 text-stone-300 hover:text-white border border-stone-700 transition">
+            🚁 避難設施與警消
+          </button>
+          <button onclick="toggleGisLayer('alley')" id="btn-layer-alley"
+            class="layer-btn px-2 py-1 rounded bg-stone-800/80 text-stone-300 hover:text-white border border-stone-700 transition">
+            🚧 核心狹小巷道
+          </button>
+        </div>
+
+        <!-- SVG Map Canvas (Authentic replica of slide map) -->
+        <div class="relative w-full h-[410px] md:h-[460px] my-1 flex items-center justify-center">
+          <svg viewBox="0 0 680 520" class="w-full h-full select-none" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <!-- Satellite Terrain Base Gradient -->
+              <linearGradient id="satForestBg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#22362a" />
+                <stop offset="50%" stop-color="#16251c" />
+                <stop offset="100%" stop-color="#0b150f" />
+              </linearGradient>
+
+              <!-- Slope Hazard Risk Color Gradients (Levels 1 to 5) -->
+              <!-- Level 1 (Light translucent green) -->
+              <linearGradient id="slopeLevel1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#bbf7d0" stop-opacity="0.45" />
+                <stop offset="100%" stop-color="#86efac" stop-opacity="0.35" />
+              </linearGradient>
+              <!-- Level 3 (Medium light green) -->
+              <linearGradient id="slopeLevel3" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#4ade80" stop-opacity="0.55" />
+                <stop offset="100%" stop-color="#22c55e" stop-opacity="0.5" />
+              </linearGradient>
+              <!-- Level 4 (Vibrant rich green) -->
+              <linearGradient id="slopeLevel4" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#16a34a" stop-opacity="0.75" />
+                <stop offset="100%" stop-color="#15803d" stop-opacity="0.8" />
+              </linearGradient>
+              <!-- Level 5 (Deep dark mountain green - High Risk zone) -->
+              <linearGradient id="slopeLevel5" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#14532d" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#052e16" stop-opacity="0.95" />
+              </linearGradient>
+
+              <!-- Debris Flow Buffer Glow -->
+              <filter id="debrisGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+
+            <!-- 1. Background Aerial Base -->
+            <rect width="680" height="520" fill="url(#satForestBg)" />
+
+            <!-- Lanyang River at Northwest -->
+            <path d="M 0,220 C 70,190 140,150 200,120 C 260,95 300,55 350,15 L 280,0 L 0,0 Z" fill="#2d4338"
+              opacity="0.65" />
+            <text x="80" y="80" fill="#7fa996" font-size="11" font-weight="bold" letter-spacing="2"
+              transform="rotate(-26 80 80)">蘭陽溪河床向東北出海</text>
+
+            <!-- Orthophoto Farm Field Patterns (North Plain) -->
+            <g stroke="#3a5243" stroke-width="0.7" opacity="0.4" fill="none">
+              <rect x="250" y="80" width="40" height="30" />
+              <rect x="290" y="80" width="45" height="30" />
+              <rect x="335" y="70" width="50" height="40" />
+              <rect x="260" y="110" width="55" height="35" />
+              <rect x="315" y="110" width="60" height="40" />
+              <rect x="375" y="110" width="50" height="45" />
+              <rect x="280" y="145" width="70" height="35" />
+            </g>
+
+            <!-- LAYER: 坡地災害風險分級 (Slope Hazard Risks: Levels 1 - 5) -->
+            <g id="layer-slope-group">
+
+              <!-- Slope Risk Level 1 (Lightest outer foothills / plains transition) -->
+              <path
+                d="M 120,280 C 180,240 280,230 420,230 C 500,240 560,260 590,320 C 610,380 570,440 500,470 C 420,490 280,480 180,430 C 130,390 100,340 120,280 Z"
+                fill="url(#slopeLevel1)" stroke="#86efac" stroke-width="0.8" stroke-dasharray="4,2" />
+
+              <!-- Slope Risk Level 3 (Medium transition) -->
+              <path
+                d="M 160,285 C 220,260 320,250 410,260 C 470,275 510,320 490,380 C 460,430 380,455 300,450 C 220,440 160,390 150,340 C 145,310 150,295 160,285 Z"
+                fill="url(#slopeLevel3)" stroke="#4ade80" stroke-width="1" />
+
+              <!-- Slope Risk Level 4 (Steeper mountain terrain - Vibrant Green) -->
+              <path
+                d="M 180,290 C 230,270 290,265 370,275 C 430,290 480,330 470,400 C 450,440 370,460 290,450 C 220,430 170,380 175,320 Z"
+                fill="url(#slopeLevel4)" stroke="#22c55e" stroke-width="1.2" />
+
+              <!-- Slope Risk Level 5 (Highest Hazard/Slope Core - Deep Forest Dark Green) -->
+              <path
+                d="M 270,300 C 330,290 400,300 430,340 C 440,390 410,430 360,440 C 310,445 260,420 250,380 C 245,340 255,310 270,300 Z"
+                fill="url(#slopeLevel5)" stroke="#166534" stroke-width="1.5" />
+
+              <text x="320" y="375" fill="#a7f3d0" font-size="10" font-weight="bold"
+                opacity="0.9">高陡度山林邊坡（第五級高度風險區）</text>
+            </g>
+
+            <!-- Tiansongpi Cluster Boundary (Dashed White Polygon) -->
+            <path id="clusterBoundary" d="M 230,140 
+                     C 270,110 320,95 330,110
+                     C 340,150 330,190 340,240
+                     C 355,290 420,320 375,410
+                     C 340,450 280,475 235,450
+                     C 185,420 135,370 110,340
+                     C 80,310 135,270 185,230
+                     C 190,200 170,170 230,140 Z" fill="none" stroke="#f1f5f9" stroke-width="1.8"
+              stroke-dasharray="6,4" />
+
+            <!-- Core East-West Arterial: Tai 7-Bing (省道台7丙 - 三星路) -->
+            <path d="M 160,245 C 220,250 280,255 385,242" fill="none" stroke="#facc15" stroke-width="3.5"
+              stroke-linecap="round" />
+            <text x="345" y="235" fill="#fef08a" font-size="8.5" font-weight="bold">台7丙 (三星路)</text>
+
+            <!-- Irrigation Canal Network (Cyan lines) -->
+            <path d="M 215,220 Q 245,240 290,248 T 350,255" fill="none" stroke="#38bdf8" stroke-width="1.8"
+              opacity="0.75" />
+            <path d="M 195,245 Q 235,270 280,278" fill="none" stroke="#38bdf8" stroke-width="1.4" opacity="0.6" />
+
+            <!-- LAYER: 土石流潛勢溪流 (Debris Flow Hazard - 宜縣DF135) -->
+            <g id="layer-debris-group">
+              <!-- Stream Watershed Buffer Polygon -->
+              <path d="M 370,345 C 385,325 405,330 420,350 C 435,380 430,410 405,420 C 380,425 365,400 360,375 Z"
+                fill="#10b981" fill-opacity="0.25" stroke="#34d399" stroke-width="1.2" stroke-dasharray="4,3" />
+
+              <!-- Stream Main Course (Bright Green Vector) -->
+              <path d="M 405,415 Q 395,380 382,350 T 370,325" fill="none" stroke="#22c55e" stroke-width="2.8"
+                stroke-linecap="round" filter="url(#debrisGlow)" />
+              <path d="M 405,415 Q 395,380 382,350 T 370,325" fill="none" stroke="#ffffff" stroke-width="0.8"
+                stroke-dasharray="3,2" />
+
+              <!-- Creek Label & Warning Flag -->
+              <g onclick="showDisasterInfo('土石流潛勢溪流【宜縣DF135】', '警戒雨量值為 600 mm，流向朝北。目前溪流出口尚未直接貫穿核心密集住宅區，但周邊邊坡若遭豪雨掏刷，恐對坡麓住宅與產業道路造成阻斷威脅。', '土石流潛勢')"
+                class="cursor-pointer hover:scale-105 transition-transform">
+                <rect x="360" y="340" width="82" height="20" rx="4" fill="#064e3b" stroke="#34d399" stroke-width="1" />
+                <text x="366" y="354" fill="#6ee7b7" font-size="9.5" font-weight="bold" font-mono>宜縣DF135</text>
+                <circle cx="355" cy="350" r="4.5" fill="#eab308" class="pulse-alert" />
+              </g>
+            </g>
+
+            <!-- LAYER: 狹小巷道 (Narrow Village Alleys - Magenta / Violet paths) -->
+            <g id="layer-alley-group">
+              <!-- Narrow alley lines around core village -->
+              <path d="M 230,230 L 255,245 L 270,240" fill="none" stroke="#ec4899" stroke-width="2.2"
+                stroke-linecap="round" />
+              <path d="M 245,242 L 248,265 L 260,270" fill="none" stroke="#ec4899" stroke-width="2.2"
+                stroke-linecap="round" />
+              <path d="M 255,245 L 275,252 L 290,248" fill="none" stroke="#ec4899" stroke-width="2"
+                stroke-linecap="round" />
+              <path d="M 268,235 L 285,225" fill="none" stroke="#ec4899" stroke-width="1.8" stroke-linecap="round" />
+              <path d="M 240,250 L 225,260" fill="none" stroke="#ec4899" stroke-width="1.8" stroke-linecap="round" />
+
+              <g onclick="showDisasterInfo('天送埤核心狹小巷道 (路寬 < 3~4m)', '聚落內部街廓多屬傳統聚落發展，多處巷道路寬不足4公尺，兩側常有臨停車輛或水圳邊坡，大型消防水庫車與救護車會車進入困難，救災動線瓶頸顯著。', '防救災脆弱點')"
+                class="cursor-pointer hover:scale-105">
+                <rect x="210" y="272" width="76" height="15" rx="3" fill="#831843" stroke="#f472b6"
+                  stroke-width="0.8" />
+                <text x="214" y="283" fill="#fbcfe8" font-size="8.5" font-weight="bold">天送埤狹小巷道</text>
+              </g>
+            </g>
+
+            <!-- LAYER: 防救災設施節點 (Evacuation Shelters, Heliport & Police) -->
+            <g id="layer-shelter-group">
+
+              <!-- 1. 憲明國民小學 (Shelter & Heliport - Blue/Cyan Badge) -->
+              <g onclick="showDisasterInfo('憲明國民小學（主要避難收容所暨直升機起降點）', '為聚落核心公有防救災基地，收容容量約 40 人。操場具備空中直升機緊急降落與重症吊掛運轉條件。需針對超高齡長者改善無障礙設施與蓄水儲糧備援。', '避難與起降點')"
+                class="cursor-pointer hover:scale-110 transition-transform">
+                <!-- Outer halo -->
+                <circle cx="238" cy="245" r="10" fill="#0284c7" fill-opacity="0.3" class="pulse-alert" />
+                <!-- Center circle -->
+                <circle cx="238" cy="245" r="5.5" fill="#38bdf8" stroke="#ffffff" stroke-width="1.8" />
+                <!-- Heliport Icon / Sign -->
+                <rect x="180" y="218" width="60" height="16" rx="3" fill="#0c4a6e" stroke="#38bdf8" stroke-width="1" />
+                <text x="184" y="230" fill="#ffffff" font-size="8.5" font-weight="bold">憲明國民小學</text>
+                <!-- Heliport label -->
+                <rect x="244" y="218" width="56" height="16" rx="3" fill="#1e3a8a" stroke="#60a5fa"
+                  stroke-width="0.8" />
+                <text x="248" y="230" fill="#bae6fd" font-size="8" font-weight="bold">🚁 直升機起降點</text>
+              </g>
+
+              <!-- 2. 警察單位: 福山派出所 -->
+              <g onclick="showDisasterInfo('三星分局福山派出所（警政單位）', '負責天送埤地區基層治安與災情初報回傳，為緊急應變第一線通報樞紐。', '警政單位')"
+                class="cursor-pointer hover:scale-110 transition-transform">
+                <circle cx="250" cy="235" r="4.5" fill="#facc15" stroke="#ffffff" stroke-width="1.5" />
+                <rect x="258" y="228" width="46" height="14" rx="2" fill="#713f12" stroke="#fde047"
+                  stroke-width="0.8" />
+                <text x="262" y="238" fill="#fef08a" font-size="7.5" font-weight="bold">福山派出所</text>
+              </g>
+
+              <!-- 3. 天送埤社區活動中心 -->
+              <g onclick="showDisasterInfo('天送埤社區活動中心', '次要集會避難動員據點，設有社區關懷據點，適宜作為初期高齡者物資配給與照護安置節點。', '社區公用設施')"
+                class="cursor-pointer hover:scale-110">
+                <circle cx="252" cy="262" r="4" fill="#06b6d4" stroke="#ffffff" stroke-width="1.2" />
+                <text x="260" y="266" fill="#a5f3fc" font-size="8" font-weight="500">社區活動中心</text>
+              </g>
+
+            </g>
+
+            <!-- Scale Bar (0 - 1 - 2 km) -->
+            <g transform="translate(480, 480)">
+              <rect x="0" y="0" width="90" height="3" fill="#ffffff" />
+              <rect x="0" y="0" width="45" height="3" fill="#1e293b" />
+              <line x1="0" y1="-2" x2="0" y2="5" stroke="#ffffff" stroke-width="1" />
+              <line x1="45" y1="-2" x2="45" y2="5" stroke="#ffffff" stroke-width="1" />
+              <line x1="90" y1="-2" x2="90" y2="5" stroke="#ffffff" stroke-width="1" />
+              <text x="-2" y="14" fill="#cbd5e1" font-size="7.5" font-mono>0</text>
+              <text x="41" y="14" fill="#cbd5e1" font-size="7.5" font-mono>1</text>
+              <text x="82" y="14" fill="#cbd5e1" font-size="7.5" font-mono>2 km</text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Interactive Node Inspector Modal -->
+        <div id="disasterInspector"
+          class="bg-black/75 backdrop-blur-md border border-stone-700 rounded-lg p-3 text-xs text-stone-200 z-10 flex flex-col gap-1.5 transition-all">
+          <div class="flex items-center justify-between">
+            <span id="inspectNodeTitle" class="font-bold text-emerald-300 text-xs md:text-sm flex items-center gap-1.5">
+              <i data-lucide="info" class="w-4 h-4 text-emerald-400 inline"></i> 點擊地圖標記查看防救災節點詳情
+            </span>
+            <span id="inspectNodeCategory"
+              class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-semibold font-mono">
+              防救災圖層導覽
+            </span>
+          </div>
+          <p id="inspectNodeDesc" class="text-stone-300 text-[11px] leading-relaxed">
+            聚落南側山麓地帶緊鄰中高風險坡地與土石流潛勢溪流集水區；核心聚落部分巷道路幅小於 3～4 公尺，大型救災救護動線面臨瓶頸。
+          </p>
+        </div>
+
+        <!-- GIS Map Legend Bar -->
+        <div
+          class="bg-stone-900/85 border border-stone-800 rounded-lg px-3 py-2 text-[10.5px] text-stone-300 z-10 flex flex-wrap items-center justify-between gap-2 mt-2">
+
+          <!-- Hazard Risk Levels -->
+          <div class="flex items-center gap-2">
+            <span class="text-stone-400 font-medium">坡地風險：</span>
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-2 bg-[#86efac]/50 inline-block border border-[#86efac]"></span> 第一級
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-2 bg-[#4ade80]/60 inline-block border border-[#4ade80]"></span> 第三級
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-2 bg-[#16a34a] inline-block border border-[#22c55e]"></span> 第四級
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-2 bg-[#14532d] inline-block border border-[#166534]"></span> 第五級(極高)
+            </span>
+          </div>
+
+          <!-- Facilities & Hazards -->
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-[#38bdf8]"></span> 直升機起降/避難
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-[#facc15]"></span> 警察單位
+            </span>
+            <span class="flex items-center gap-1 text-pink-300">
+              <span class="w-3 h-0.5 bg-[#ec4899] inline-block"></span> 狹小巷道
+            </span>
+            <span class="flex items-center gap-1 text-emerald-400">
+              <span class="w-3 h-0.5 bg-[#22c55e] inline-block"></span> 宜縣DF135
+            </span>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Bottom Warning Callout Banner: 規劃結論與因應策略 -->
+    <footer class="bg-[#fcf5eb] border-l-4 border-[#8c3c2a] rounded-r-xl p-4 md:p-5 flex items-start gap-4 shadow-sm">
+      <div
+        class="w-10 h-10 rounded-full bg-[#8c3c2a] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-200"></i>
+      </div>
+      <div class="flex-1">
+        <h4 class="font-bold text-sm text-[#8c3c2a] mb-1 flex items-center gap-2">
+          規劃結論與因應策略
+          <span class="text-xs font-normal text-stone-500 font-sans">｜ Strategic Planning & Disaster Mitigation</span>
+        </h4>
+        <ul class="text-stone-800 text-xs md:text-[13.5px] leading-relaxed space-y-1.5 font-medium">
+          <li class="flex items-start gap-2">
+            <span class="text-[#8c3c2a] font-bold">1.</span>
+            <span><strong>劃設重點區位，調整分區與另訂土管</strong>：藉由國土功能分區重塑與土地使用管制規則補強，維護藍綠網絡完整性與整體環境生態資源。</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-[#8c3c2a] font-bold">2.</span>
+            <span><strong>坡地避免過度開發</strong>：周邊坡地與土石流潛勢影響區嚴格限制開發強度，落實水土保持以維持邊坡之長期穩定性。</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-[#8c3c2a] font-bold">3.</span>
+            <span><strong>優化超高齡社會下醫療資源的投入</strong>：針對聚落超高齡特性，積極建立巡迴醫療與緊急後送接駁機制，並全面升級避難場所之無障礙機能與防災物資儲備。</span>
+          </li>
+        </ul>
+      </div>
+    </footer>
+
+
+    <!-- Chapter Pagination Footer Navigation (No Print) -->
+    <nav class="no-print pt-4 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <a href="index.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#1e3d30] font-bold border border-emerald-200 transition shadow-sm">
+          <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-800"></i>
+          <span>回目錄總覽首頁</span>
+        </a>
+        <a href="03交通與公共設施現況.html"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium transition shadow-sm">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          <span>上一單元：03 交通與設施現況</span>
+        </a>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="05產業與觀光.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1e3d30] hover:bg-[#2a5543] text-white font-semibold transition shadow-sm">
+          <span>下一單元：05 產業與觀光發展現況</span>
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </nav>
+
+  </main>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Inspector dynamic updater
+    function showDisasterInfo(title, desc, category) {
+      document.getElementById('inspectNodeTitle').innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 text-emerald-400 inline"></i> ${title}`;
+      document.getElementById('inspectNodeCategory').textContent = category;
+      document.getElementById('inspectNodeDesc').textContent = desc;
+      lucide.createIcons();
+    }
+
+    // Interactive Layer Toggles
+    function toggleGisLayer(type) {
+      // Button states
+      document.querySelectorAll('.layer-btn').forEach(btn => {
+        btn.classList.remove('bg-emerald-700', 'text-white', 'shadow-sm');
+        btn.classList.add('bg-stone-800/80', 'text-stone-300');
+      });
+
+      const activeBtn = document.getElementById(`btn-layer-${type}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-stone-800/80', 'text-stone-300');
+        activeBtn.classList.add('bg-emerald-700', 'text-white', 'shadow-sm');
+      }
+
+      const slopeGroup = document.getElementById('layer-slope-group');
+      const debrisGroup = document.getElementById('layer-debris-group');
+      const shelterGroup = document.getElementById('layer-shelter-group');
+      const alleyGroup = document.getElementById('layer-alley-group');
+
+      if (type === 'all') {
+        slopeGroup.style.display = 'block';
+        debrisGroup.style.display = 'block';
+        shelterGroup.style.display = 'block';
+        alleyGroup.style.display = 'block';
+      } else if (type === 'slope') {
+        slopeGroup.style.display = 'block';
+        debrisGroup.style.display = 'none';
+        shelterGroup.style.display = 'none';
+        alleyGroup.style.display = 'none';
+      } else if (type === 'debris') {
+        slopeGroup.style.display = 'none';
+        debrisGroup.style.display = 'block';
+        shelterGroup.style.display = 'none';
+        alleyGroup.style.display = 'none';
+      } else if (type === 'shelter') {
+        slopeGroup.style.display = 'none';
+        debrisGroup.style.display = 'none';
+        shelterGroup.style.display = 'block';
+        alleyGroup.style.display = 'none';
+      } else if (type === 'alley') {
+        slopeGroup.style.display = 'none';
+        debrisGroup.style.display = 'none';
+        shelterGroup.style.display = 'none';
+        alleyGroup.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+
+</html>

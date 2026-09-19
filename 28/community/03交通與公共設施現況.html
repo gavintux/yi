@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天送埤聚落現況與議題｜交通與公共設施現況</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap');
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #f4f5f4;
+      color: #1f2937;
+    }
+
+    .serif-title {
+      font-family: 'Noto Serif TC', serif;
+    }
+
+    .gis-top-bg {
+      background: radial-gradient(circle at 45% 35%, #25382e 0%, #17251e 70%, #0d1712 100%);
+    }
+
+    .gis-bottom-bg {
+      background: #f8fafc;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      main {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen p-3 md:p-8 flex flex-col justify-center items-center">
+
+  <!-- Main Dashboard Container -->
+  <main
+    class="w-full max-w-[1520px] bg-white rounded-2xl shadow-xl border border-stone-200 overflow-hidden p-5 md:p-8 flex flex-col gap-6">
+
+    <!-- Header Section -->
+    <header class="flex flex-col md:flex-row md:items-end justify-between border-b border-stone-200 pb-4 gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span
+            class="text-xs font-bold tracking-widest text-[#1e3d30] uppercase bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded border border-emerald-200">
+            天送埤聚落現況與議題 ｜ 03
+          </span>
+          <span class="text-xs text-stone-500 font-medium">宜蘭縣三星鄉（天山村・天福村）</span>
+        </div>
+        <h1
+          class="text-2xl md:text-4xl font-bold serif-title text-[#1e3d30] tracking-tight mt-1.5 flex items-center gap-3">
+          交通與公共設施現況
+        </h1>
+      </div>
+      <div class="flex items-center gap-3 no-print">
+        <a href="index.html"
+          class="px-3 py-1.5 text-xs font-bold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] border border-emerald-300 hover:border-emerald-500 rounded-lg transition-all flex items-center gap-1.5 shadow-sm group">
+          <i data-lucide="home" class="w-3.5 h-3.5 text-emerald-800 group-hover:scale-110 transition-transform"></i>
+          <span>回首頁</span>
+        </a>
+        <div
+          class="flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-lg text-xs font-semibold">
+          <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-600"></i>
+          微循環動線與車流治理課題
+        </div>
+        <button onclick="window.print()"
+          class="px-3.5 py-1.5 text-xs font-semibold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> 列印 / 匯出 PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Layout (2 Columns Grid) -->
+    <section class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+
+      <!-- ==================== LEFT COLUMN: Key Issues & Field Photos (6 Cols) ==================== -->
+      <div class="xl:col-span-6 flex flex-col justify-between gap-5">
+
+        <!-- 3 Core Indicator & Issue Cards -->
+        <div class="flex flex-col gap-3.5">
+
+          <!-- Card 1: 道路系統 + 自行車需求 -->
+          <div
+            class="bg-stone-50 hover:bg-stone-100/70 transition border border-stone-200 rounded-xl p-4 md:p-5 shadow-sm flex items-start gap-4">
+            <div
+              class="w-12 h-12 md:w-13 md:h-13 rounded-full bg-[#1b4332] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+              <span class="font-black text-lg md:text-xl font-mono tracking-tighter">A</span>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h3 class="font-bold text-sm md:text-base text-[#1e3d30] flex items-center gap-1.5">
+                  道路系統＋自行車需求
+                </h3>
+                <span
+                  class="text-[10.5px] px-2 py-0.5 rounded bg-emerald-100/70 text-emerald-800 font-mono font-semibold">
+                  台7丙 (14m)
+                </span>
+              </div>
+              <ul class="text-xs md:text-[13px] text-stone-700 leading-relaxed mt-2 space-y-1.5">
+                <li class="flex items-start gap-1.5">
+                  <span class="text-emerald-700 font-bold mt-0.5">▪</span>
+                  <span><strong>主要幹道現況</strong>：以 <strong class="text-stone-900">台7丙線（三星路）</strong> 為主要幹道，路寬約 14
+                    公尺並劃設快慢車道與分向線。</span>
+                </li>
+                <li class="flex items-start gap-1.5">
+                  <span class="text-amber-700 font-bold mt-0.5">▪</span>
+                  <span><strong>交通衝突點</strong>：沿線常有 <strong class="text-red-700">臨時停車＋擺攤</strong> 衍生交通瓶頸；其餘鄉道巷弄路寬多小於 3～4
+                    公尺，普遍存在狹小巷道，影響會車與救災。</span>
+                </li>
+                <li class="flex items-start gap-1.5">
+                  <span class="text-amber-700 font-bold mt-0.5">▪</span>
+                  <span><strong>自行車動線缺陷</strong>：自行車道存在斷點且導引指示不明，人車動線衝突導致安全隱患。</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Card 2: 停車空間 -->
+          <div
+            class="bg-stone-50 hover:bg-stone-100/70 transition border border-stone-200 rounded-xl p-4 md:p-5 shadow-sm flex items-start gap-4">
+            <div
+              class="w-12 h-12 md:w-13 md:h-13 rounded-full bg-[#1b4332] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+              <span class="font-black text-lg md:text-xl font-mono">P</span>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h3 class="font-bold text-sm md:text-base text-[#1e3d30] flex items-center gap-1.5">
+                  停車空間供給與缺口
+                </h3>
+                <span class="text-[10.5px] px-2 py-0.5 rounded bg-blue-100/70 text-blue-800 font-mono font-semibold">
+                  1大客車場 ＋ 3平面場
+                </span>
+              </div>
+              <p class="text-xs md:text-[13px] text-stone-700 leading-relaxed mt-2">
+                現有 <strong>1 處遊覽車暨汽車</strong> 及 <strong>3
+                  處平面停車場</strong>，多為公共停車；惟部分停車空間為<strong>水圳加蓋</strong>及<strong>零散分布</strong>，與主要聚落商業街銜接產生落差與動線死角。
+              </p>
+              <div
+                class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-stone-200 text-[11px] text-stone-600 font-medium">
+                <span class="bg-white px-2 py-0.5 rounded border border-stone-200 text-stone-800">A. 泰雅大橋下</span>
+                <span class="bg-white px-2 py-0.5 rounded border border-stone-200 text-stone-800">B. 天送埤林鐵園區</span>
+                <span class="bg-white px-2 py-0.5 rounded border border-stone-200 text-stone-800">C. 福美餐廳旁</span>
+                <span class="bg-white px-2 py-0.5 rounded border border-stone-200 text-stone-800">D. 平面停車場</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: 公共服務設施 -->
+          <div
+            class="bg-stone-50 hover:bg-stone-100/70 transition border border-stone-200 rounded-xl p-4 md:p-5 shadow-sm flex items-start gap-4">
+            <div
+              class="w-12 h-12 md:w-13 md:h-13 rounded-full bg-[#8c3c2a] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+              <i data-lucide="building-2" class="w-6 h-6"></i>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h3 class="font-bold text-sm md:text-base text-[#1e3d30] flex items-center gap-1.5">
+                  公共服務設施量能
+                </h3>
+                <span class="text-[10.5px] px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-semibold">
+                  生活機能 vs 保安缺口
+                </span>
+              </div>
+              <p class="text-xs md:text-[13px] text-stone-700 leading-relaxed mt-2">
+                多數設施供給尚可滿足聚落居民日常生活需求，但<strong>顯著缺乏衛生保安設施與專屬交通運具接駁設施</strong>，且部分既有公共集會活動空間品質與無障礙環境仍待改善升級。
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Field Photo Collage (Authentic Replica of Briefing Images) -->
+        <div class="bg-stone-900 text-white rounded-xl p-3 md:p-4 shadow-md border border-stone-800">
+          <div class="flex items-center justify-between mb-2.5">
+            <h4 class="text-xs md:text-sm font-bold flex items-center gap-1.5 text-stone-200">
+              <i data-lucide="camera" class="w-4 h-4 text-emerald-400"></i>
+              聚落路側空間與重要停車場現況實景
+            </h4>
+            <span class="text-[10px] text-stone-400">現場勘查紀錄</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+
+            <!-- Big Photo: Tai 7 Bing Traffic Conflict (Double Parking) -->
+            <div
+              class="sm:col-span-6 relative rounded-lg overflow-hidden border border-stone-700 bg-stone-800 group h-36">
+              <!-- Visualized SVG Vector Replica of Tai 7-Bing Street Scene -->
+              <svg viewBox="0 0 300 180" class="w-full h-full object-cover">
+                <defs>
+                  <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#38bdf8" />
+                    <stop offset="100%" stop-color="#e0f2fe" />
+                  </linearGradient>
+                </defs>
+                <rect width="300" height="180" fill="#cbd5e1" />
+                <!-- Sky -->
+                <rect width="300" height="70" fill="url(#skyGrad)" />
+                <!-- Mountain Background -->
+                <polygon points="0,60 50,45 110,62 180,48 240,65 300,55 300,70 0,70" fill="#64748b" opacity="0.6" />
+                <!-- Shophouses left & right -->
+                <rect x="0" y="35" width="70" height="95" fill="#f1f5f9" stroke="#94a3b8" />
+                <rect x="8" y="45" width="20" height="12" fill="#ef4444" rx="2" />
+                <rect x="230" y="30" width="70" height="100" fill="#e2e8f0" stroke="#94a3b8" />
+                <!-- Overhead street signs & cables -->
+                <line x1="0" y1="30" x2="300" y2="35" stroke="#475569" stroke-width="0.8" />
+                <!-- Road surface perspective -->
+                <polygon points="40,180 120,70 180,70 260,180" fill="#334155" />
+                <polygon points="0,180 40,180 120,70 80,70" fill="#475569" />
+                <polygon points="260,180 300,180 220,70 180,70" fill="#475569" />
+                <!-- Double Yellow Center Lines -->
+                <line x1="148" y1="70" x2="145" y2="180" stroke="#facc15" stroke-width="2" />
+                <line x1="152" y1="70" x2="155" y2="180" stroke="#facc15" stroke-width="2" />
+                <!-- White lane boundaries -->
+                <line x1="130" y1="70" x2="90" y2="180" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="8,6" />
+                <line x1="170" y1="70" x2="210" y2="180" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="8,6" />
+                <!-- Roadside parked car blocking lane -->
+                <rect x="200" y="105" width="45" height="35" rx="5" fill="#f8fafc" stroke="#64748b"
+                  stroke-width="1.5" />
+                <rect x="208" y="112" width="28" height="12" rx="2" fill="#38bdf8" />
+                <!-- Temporary vendor cart / cones -->
+                <polygon points="85,145 92,145 95,160 82,160" fill="#ea580c" />
+                <rect x="65" y="125" width="22" height="28" rx="2" fill="#f97316" />
+              </svg>
+              <div
+                class="absolute bottom-0 inset-x-0 bg-red-950/85 backdrop-blur-sm px-2.5 py-1 text-[11px] font-bold text-red-200 flex items-center justify-between">
+                <span>臨停等使用衍生交通問題</span>
+                <span class="text-[9px] px-1 bg-red-800 text-white rounded">台7丙三星路</span>
+              </div>
+            </div>
+
+            <!-- Big Photo: A. 泰雅大橋下停車空間 -->
+            <div
+              class="sm:col-span-6 relative rounded-lg overflow-hidden border border-stone-700 bg-stone-800 group h-36">
+              <svg viewBox="0 0 300 180" class="w-full h-full object-cover">
+                <rect width="300" height="180" fill="#94a3b8" />
+                <!-- Sky -->
+                <rect width="300" height="90" fill="#bae6fd" />
+                <!-- Concrete Bridge Piers & Deck -->
+                <polygon points="0,30 220,10 220,50 0,75" fill="#64748b" />
+                <polygon points="20,70 50,65 75,180 40,180" fill="#475569" stroke="#334155" />
+                <polygon points="120,55 145,50 170,180 145,180" fill="#475569" stroke="#334155" />
+                <!-- Ground and parking slots under bridge -->
+                <polygon points="0,120 300,90 300,180 0,180" fill="#1e293b" />
+                <line x1="80" y1="140" x2="130" y2="180" stroke="#f1f5f9" stroke-width="1.8" stroke-dasharray="4,4" />
+                <line x1="140" y1="130" x2="190" y2="180" stroke="#f1f5f9" stroke-width="1.8" stroke-dasharray="4,4" />
+                <!-- Parked tour buses -->
+                <rect x="85" y="100" width="60" height="35" rx="4" fill="#3b82f6" stroke="#1d4ed8" />
+                <rect x="90" y="105" width="48" height="12" rx="2" fill="#bfdbfe" />
+                <rect x="160" y="95" width="55" height="32" rx="4" fill="#10b981" stroke="#047857" />
+              </svg>
+              <div
+                class="absolute bottom-0 inset-x-0 bg-stone-900/85 backdrop-blur-sm px-2.5 py-1 text-[11px] font-bold text-stone-200 flex items-center justify-between">
+                <span>A. 泰雅大橋下停車空間</span>
+                <span class="text-[9px] px-1 bg-stone-700 text-stone-300 rounded">大客車/小型車</span>
+              </div>
+            </div>
+
+            <!-- Photo B: 天送埤林鐵園區停車場 -->
+            <div class="sm:col-span-4 relative rounded-lg overflow-hidden border border-stone-700 bg-stone-800 h-24">
+              <svg viewBox="0 0 200 120" class="w-full h-full object-cover">
+                <rect width="200" height="120" fill="#15803d" />
+                <polygon points="0,40 200,30 200,120 0,120" fill="#475569" />
+                <circle cx="35" cy="55" r="14" fill="#a855f7" opacity="0.8" />
+                <rect x="25" y="45" width="22" height="40" fill="#78350f" rx="3" />
+                <rect x="70" y="65" width="40" height="25" rx="3" fill="#ffffff" />
+                <rect x="120" y="60" width="42" height="26" rx="3" fill="#38bdf8" />
+              </svg>
+              <div
+                class="absolute bottom-0 inset-x-0 bg-black/80 px-2 py-0.5 text-[10px] font-semibold text-stone-200 truncate">
+                B. 平面停車場 (林鐵園區)
+              </div>
+            </div>
+
+            <!-- Photo C: 福美餐廳平面停車場 -->
+            <div class="sm:col-span-4 relative rounded-lg overflow-hidden border border-stone-700 bg-stone-800 h-24">
+              <svg viewBox="0 0 200 120" class="w-full h-full object-cover">
+                <rect width="200" height="120" fill="#84cc16" />
+                <!-- Road and farm field -->
+                <polygon points="0,60 140,20 200,30 200,120 0,120" fill="#334155" />
+                <line x1="20" y1="120" x2="110" y2="40" stroke="#facc15" stroke-width="2" />
+                <rect x="110" y="55" width="45" height="28" rx="3" fill="#cbd5e1" />
+                <rect x="150" y="65" width="40" height="25" rx="3" fill="#f87171" />
+              </svg>
+              <div
+                class="absolute bottom-0 inset-x-0 bg-black/80 px-2 py-0.5 text-[10px] font-semibold text-stone-200 truncate">
+                C. 平面停車場 (福美餐廳)
+              </div>
+            </div>
+
+            <!-- Photo D: 水圳側路邊平面停車場 -->
+            <div class="sm:col-span-4 relative rounded-lg overflow-hidden border border-stone-700 bg-stone-800 h-24">
+              <svg viewBox="0 0 200 120" class="w-full h-full object-cover">
+                <rect width="200" height="120" fill="#0284c7" />
+                <!-- Canal and embankment parked cars -->
+                <polygon points="0,30 200,20 200,120 0,120" fill="#1e293b" />
+                <rect x="15" y="45" width="38" height="24" rx="2" fill="#f1f5f9" />
+                <rect x="60" y="48" width="38" height="24" rx="2" fill="#94a3b8" />
+                <rect x="105" y="52" width="38" height="24" rx="2" fill="#475569" />
+                <rect x="150" y="55" width="38" height="24" rx="2" fill="#facc15" />
+              </svg>
+              <div
+                class="absolute bottom-0 inset-x-0 bg-black/80 px-2 py-0.5 text-[10px] font-semibold text-stone-200 truncate">
+                D. 平面停車場 (水圳旁)
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ==================== RIGHT COLUMN: Two Stacked GIS Vector Maps (6 Cols) ==================== -->
+      <div class="xl:col-span-6 flex flex-col gap-4">
+
+        <!-- MAP 1: Top GIS Map - 公有地與公共設施分布 -->
+        <div
+          class="gis-top-bg border border-stone-800 rounded-xl p-3 md:p-4 shadow-inner relative overflow-hidden flex flex-col justify-between">
+
+          <!-- Map 1 Overlay Header -->
+          <div class="flex justify-between items-start z-10">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                <h3 class="text-white font-bold text-xs md:text-sm">
+                  公有地分布與公共服務設施配置圖
+                </h3>
+              </div>
+              <p class="text-stone-300 text-[11px] mt-0.5">淺藍色覆蓋區為公有土地，各色點位標註既有公共設施分布</p>
+            </div>
+            <!-- North Compass -->
+            <div
+              class="w-6 h-6 rounded-full bg-stone-900/80 border border-stone-600 flex flex-col items-center justify-center text-white text-[8px] font-mono shadow shrink-0">
+              <span class="text-emerald-400 leading-none">▲</span>
+              <span class="text-[7px] -mt-0.5 font-bold">N</span>
+            </div>
+          </div>
+
+          <!-- SVG Canvas: Public Land & Facilities -->
+          <div class="relative w-full h-[260px] my-1 flex items-center justify-center">
+            <svg viewBox="0 0 540 320" class="w-full h-full select-none" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <linearGradient id="satBase" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#243429" />
+                  <stop offset="100%" stop-color="#142019" />
+                </linearGradient>
+                <pattern id="publicLandGrid" width="8" height="8" patternUnits="userSpaceOnUse">
+                  <rect width="8" height="8" fill="#38bdf8" fill-opacity="0.32" />
+                  <path d="M 0,0 L 8,8 M 8,0 L 0,8" stroke="#0284c7" stroke-width="0.5" stroke-opacity="0.35" />
+                </pattern>
+              </defs>
+
+              <!-- Base Satellite Terrain -->
+              <rect width="540" height="320" fill="url(#satBase)" />
+
+              <!-- Lanyang River at top-left -->
+              <path d="M 0,110 C 60,95 120,70 180,45 C 220,25 260,10 320,0 L 0,0 Z" fill="#2d443b" opacity="0.6" />
+              <text x="50" y="45" fill="#6ee7b7" font-size="9" font-weight="bold" letter-spacing="1">蘭陽溪河床</text>
+
+              <!-- Village Outer Boundary Outline -->
+              <path d="M 180,45 
+                       C 230,35 280,30 320,40
+                       C 340,70 330,120 345,150
+                       C 360,180 400,200 370,245
+                       C 340,285 280,300 240,290
+                       C 190,270 140,240 120,215
+                       C 95,190 140,165 175,140
+                       C 165,110 140,80 180,45 Z" fill="#1e3328" fill-opacity="0.5" stroke="#cbd5e1" stroke-width="1.2"
+                stroke-dasharray="5,3" />
+
+              <!-- Public Land Parcels (淺藍色公有地分布塊面) -->
+              <!-- Cluster 1: Northern Bridge / Riverbank Public Land -->
+              <path d="M 190,70 C 210,65 240,68 250,85 C 230,95 205,95 190,70 Z" fill="url(#publicLandGrid)"
+                stroke="#38bdf8" stroke-width="0.8" />
+              <!-- Cluster 2: Central Station & School Public Land Reserve -->
+              <path d="M 215,135 C 255,130 285,138 290,165 C 265,175 230,170 215,135 Z" fill="url(#publicLandGrid)"
+                stroke="#38bdf8" stroke-width="0.8" />
+              <!-- Cluster 3: Large Southern Mountain Public Forestry Land (國有林與事業區) -->
+              <path
+                d="M 160,175 C 210,185 290,180 345,195 C 360,230 330,270 280,275 C 220,265 170,240 140,210 C 145,190 155,180 160,175 Z"
+                fill="url(#publicLandGrid)" stroke="#38bdf8" stroke-width="1" />
+              <text x="220" y="235" fill="#bae6fd" font-size="9" font-weight="bold"
+                opacity="0.8">大面積山林公有地（林業與水源保育）</text>
+
+              <!-- Road lines for reference -->
+              <path d="M 150,150 C 210,155 270,160 360,152" fill="none" stroke="#facc15" stroke-width="1.8"
+                opacity="0.75" />
+              <path d="M 210,75 L 235,150 L 250,210" fill="none" stroke="#e2e8f0" stroke-width="1.2" opacity="0.6" />
+
+              <!-- Public Facility Points & Labels -->
+              <!-- 1. 憲明國民小學 (教育文化設施 - 藍色) -->
+              <g onclick="selectFacility('憲明國民小學', '教育文化設施 / 防救災主要避難所與直升機起降場')" class="cursor-pointer hover:scale-105">
+                <circle cx="225" cy="155" r="4.5" fill="#3b82f6" stroke="#ffffff" stroke-width="1.5" />
+                <text x="175" y="152" fill="#ffffff" font-size="7.5" font-weight="bold">憲明國民小學</text>
+              </g>
+
+              <!-- 2. 天送埤社區活動中心 (社區與行政 - 青色) -->
+              <g onclick="selectFacility('天送埤社區活動中心', '公共公用設施 / 長者共餐與社區集會中心')" class="cursor-pointer hover:scale-105">
+                <circle cx="215" cy="142" r="4" fill="#06b6d4" stroke="#ffffff" stroke-width="1.2" />
+                <text x="155" y="138" fill="#a5f3fc" font-size="7.5" font-weight="bold">天送埤社區活動中心</text>
+              </g>
+
+              <!-- 3. 三星鄉天山村辦公處 -->
+              <g onclick="selectFacility('三星鄉天山村辦公處', '公用行政設施 / 基層自治推動站點')" class="cursor-pointer hover:scale-105">
+                <circle cx="240" cy="168" r="4" fill="#06b6d4" stroke="#ffffff" stroke-width="1.2" />
+                <text x="248" y="171" fill="#e2e8f0" font-size="7.5" font-weight="500">天山村辦公處</text>
+              </g>
+
+              <!-- 4. 福美餐廳停車場 (交通設施 - 綠色) -->
+              <g onclick="selectFacility('福美餐廳停車場', '交通設施 / 平面公共停駐點')" class="cursor-pointer hover:scale-105">
+                <circle cx="265" cy="148" r="4" fill="#22c55e" stroke="#ffffff" stroke-width="1.2" />
+                <text x="272" y="145" fill="#bbf7d0" font-size="7.5" font-weight="500">福美餐廳停車場</text>
+              </g>
+
+              <!-- 5. 泰雅橋下停車場 (交通設施 - 綠色) -->
+              <g onclick="selectFacility('泰雅橋下停車場', '交通設施 / 大客車及自小客集散場')" class="cursor-pointer hover:scale-105">
+                <circle cx="205" cy="85" r="4.5" fill="#22c55e" stroke="#ffffff" stroke-width="1.2" />
+                <text x="145" y="88" fill="#bbf7d0" font-size="7.5" font-weight="bold">泰雅橋下停車場</text>
+              </g>
+
+              <!-- 6. 天送埤車站 / 林鐵文創園區 (文化運動遊憩 - 紫色) -->
+              <g onclick="selectFacility('天送埤車站/文創園區', '運動遊憩設施 / 縣定歷史建築與鐵道觀光核心')"
+                class="cursor-pointer hover:scale-105">
+                <circle cx="250" cy="140" r="5" fill="#a855f7" stroke="#ffffff" stroke-width="1.8" />
+                <text x="257" y="137" fill="#f3e8ff" font-size="7.8" font-weight="bold">天送埤車站 / 文創園區</text>
+              </g>
+
+              <!-- 7. 蘭陽發電廠天埤機組 (水利與產業 - 橘黃) -->
+              <g onclick="selectFacility('蘭陽發電廠天埤機組', '水利與產業設施 / 日治百年水力電廠與尾水灌溉源')"
+                class="cursor-pointer hover:scale-105">
+                <circle cx="245" cy="190" r="4.5" fill="#f59e0b" stroke="#ffffff" stroke-width="1.2" />
+                <text x="253" y="193" fill="#fde68a" font-size="7.5" font-weight="bold">蘭陽發電廠天埤機組</text>
+              </g>
+
+              <!-- 8. 櫻花公園 / 雙陽聖堂宮 -->
+              <g class="cursor-pointer">
+                <circle cx="230" cy="215" r="3.5" fill="#ec4899" stroke="#ffffff" stroke-width="1" />
+                <text x="238" y="217" fill="#fbcfe8" font-size="7">櫻花公園</text>
+                <circle cx="300" cy="225" r="3.5" fill="#f97316" stroke="#ffffff" stroke-width="1" />
+                <text x="307" y="228" fill="#fed7aa" font-size="7">雙陽聖堂宮</text>
+              </g>
+
+              <!-- 9. 福山派出所 (衛生保安 - 紅色) -->
+              <g onclick="selectFacility('三星分局福山派出所', '衛生保安設施 / 維護聚落治安與緊急應變核心')" class="cursor-pointer">
+                <circle cx="235" cy="142" r="4.5" fill="#ef4444" stroke="#ffffff" stroke-width="1.5" />
+                <text x="202" y="128" fill="#fca5a5" font-size="7.5" font-weight="bold">福山派出所</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Map 1 Legend Bar -->
+          <div
+            class="bg-stone-900/80 border border-stone-700/80 rounded-lg px-2.5 py-1.5 text-[10.5px] text-stone-300 z-10 flex flex-wrap items-center justify-between gap-1.5 mt-1">
+            <div class="flex items-center gap-2">
+              <span class="flex items-center gap-1">
+                <span class="w-3 h-2 bg-[#38bdf8]/40 border border-[#38bdf8] inline-block rounded-xs"></span> 公有地
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-[#06b6d4]"></span> 公用/行政
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-[#22c55e]"></span> 交通設施
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-[#3b82f6]"></span> 教育文化
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-[#a855f7]"></span> 運動遊憩
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-[#ef4444]"></span> 衛生保安
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- MAP 2: Bottom GIS Map - 聚落道路網絡與停車場配置 (Road Network & Parking Slots) -->
+        <div
+          class="gis-bottom-bg border border-stone-200 rounded-xl p-3 md:p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
+
+          <!-- Map 2 Overlay Header -->
+          <div class="flex justify-between items-start z-10">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <h3 class="text-stone-900 font-bold text-xs md:text-sm">
+                  聚落道路系統階層與 A–D 停車場區位圖
+                </h3>
+              </div>
+              <p class="text-stone-600 text-[11px] mt-0.5">標示省道、鄉道等級與 4 處重點停車空間之串聯關係</p>
+            </div>
+            <span class="text-[10px] font-mono bg-stone-100 text-stone-600 px-2 py-0.5 rounded border border-stone-200">
+              路網拓撲圖
+            </span>
+          </div>
+
+          <!-- SVG Canvas: Road Hierarchy and Parking Letters -->
+          <div class="relative w-full h-[255px] my-1 flex items-center justify-center">
+            <svg viewBox="0 0 540 310" class="w-full h-full select-none" preserveAspectRatio="xMidYMid meet">
+
+              <!-- Background grid -->
+              <rect width="540" height="310" fill="#f8fafc" />
+              <path d="M 0,50 L 540,50 M 0,100 L 540,100 M 0,150 L 540,150 M 0,200 L 540,200 M 0,250 L 540,250"
+                stroke="#f1f5f9" stroke-width="1" />
+
+              <!-- Lanyang River & Basin -->
+              <path d="M 0,100 C 70,80 140,55 210,35 C 260,18 310,8 360,0 L 0,0 Z" fill="#e2e8f0" opacity="0.65" />
+              <text x="60" y="40" fill="#94a3b8" font-size="9" font-weight="bold">蘭陽溪</text>
+
+              <!-- Village Outer Outline -->
+              <path d="M 180,45 
+                       C 230,35 280,30 320,40
+                       C 340,70 330,120 345,150
+                       C 360,180 400,200 370,245
+                       C 340,285 280,300 240,290
+                       C 190,270 140,240 120,215
+                       C 95,190 140,165 175,140
+                       C 165,110 140,80 180,45 Z" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"
+                stroke-dasharray="6,4" />
+
+              <!-- Provincial Highway: Tai 7 (across river) -->
+              <path d="M 10,75 L 140,30" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" />
+              <rect x="50" y="42" width="22" height="11" rx="2" fill="#1e40af" />
+              <text x="54" y="50" fill="#ffffff" font-size="7.5" font-weight="bold">台7</text>
+
+              <!-- Taroko / Atayal Bridge (泰雅大橋) -->
+              <path d="M 135,32 L 205,85" fill="none" stroke="#dc2626" stroke-width="3.5" stroke-linecap="round" />
+              <text x="145" y="65" fill="#991b1b" font-size="8.5" font-weight="bold"
+                transform="rotate(36 145 65)">泰雅大橋</text>
+
+              <!-- Core East-West Arterial: Tai 7-Bing (省道台7丙 - 三星路) -->
+              <path d="M 130,145 C 190,152 245,155 370,140" fill="none" stroke="#1d4ed8" stroke-width="4.5"
+                stroke-linecap="round" />
+              <path d="M 130,145 C 190,152 245,155 370,140" fill="none" stroke="#facc15" stroke-width="2"
+                stroke-linecap="round" />
+
+              <!-- Road Label: 三星路 (台7丙) -->
+              <text x="300" y="132" fill="#1e3a8a" font-size="9" font-weight="bold">三星路 (台7丙)</text>
+              <rect x="365" y="132" width="28" height="12" rx="2" fill="#1e40af" />
+              <text x="368" y="141" fill="#fef08a" font-size="8" font-weight="bold">台7丙</text>
+
+              <!-- Secondary County / Rural Arterials: 宜63 & 福山街 (鄉道) -->
+              <!-- 福山街 (Yi-63 connect to bridge) -->
+              <path d="M 205,85 Q 220,120 225,150" fill="none" stroke="#f59e0b" stroke-width="2.5"
+                stroke-linecap="round" />
+              <text x="195" y="120" fill="#b45309" font-size="8" font-weight="bold">福山街</text>
+
+              <!-- Rural Local Alley & Canal Grid (宜蘭鄉道/村落巷弄) -->
+              <!-- South branch towards power plant and Changpi Lake -->
+              <path d="M 225,150 C 230,185 210,210 205,245 L 215,280" fill="none" stroke="#10b981" stroke-width="2" />
+              <!-- East branch towards Shuangxian / Yide -->
+              <path d="M 230,152 C 265,160 300,170 320,185" fill="none" stroke="#10b981" stroke-width="1.8" />
+              <!-- Northwest canal lane -->
+              <path d="M 175,140 C 185,115 195,95 205,85" fill="none" stroke="#10b981" stroke-width="1.5"
+                stroke-dasharray="3,3" />
+
+              <!-- Water Canal Network (安農溪上游分流與引水圳路) -->
+              <path d="M 220,155 Q 240,165 270,170 T 325,175" fill="none" stroke="#0ea5e9" stroke-width="1.5"
+                stroke-opacity="0.6" />
+              <path d="M 205,210 Q 235,215 280,210" fill="none" stroke="#0ea5e9" stroke-width="1.2"
+                stroke-opacity="0.6" />
+
+              <!-- PARKING LOCATIONS: A, B, C, D Badges -->
+              <!-- Parking A: 泰雅大橋下 -->
+              <g onclick="selectParking('A', '泰雅大橋下停車空間', '鄰近泰雅大橋端點，適宜遊覽車與大型客車停駐，避免重車進入狹小街區。')"
+                class="cursor-pointer hover:scale-110">
+                <circle cx="198" cy="85" r="9" fill="#dc2626" stroke="#ffffff" stroke-width="2" />
+                <text x="194.5" y="89" fill="#ffffff" font-size="10" font-weight="black" font-mono>A</text>
+                <text x="135" y="98" fill="#991b1b" font-size="7.5" font-weight="bold">A 泰雅橋下</text>
+              </g>
+
+              <!-- Parking B: 天送埤林鐵園區停車場 -->
+              <g onclick="selectParking('B', '平面停車場（天送埤林鐵園區）', '園區核心主要遊客車輛停放處，假日經常處於飽和狀態。')"
+                class="cursor-pointer hover:scale-110">
+                <circle cx="252" cy="136" r="9" fill="#ea580c" stroke="#ffffff" stroke-width="2" />
+                <text x="248.5" y="140" fill="#ffffff" font-size="10" font-weight="black" font-mono>B</text>
+                <text x="264" y="132" fill="#c2410c" font-size="7.5" font-weight="bold">B 林鐵園區</text>
+              </g>
+
+              <!-- Parking C: 福美餐廳旁平面停車場 -->
+              <g onclick="selectParking('C', '平面停車場（福美餐廳旁）', '鄰近台7丙核心餐飲區，常有進出車流與主線快慢車輛產生交織衝突。')"
+                class="cursor-pointer hover:scale-110">
+                <circle cx="272" cy="148" r="9" fill="#d97706" stroke="#ffffff" stroke-width="2" />
+                <text x="268.5" y="152" fill="#ffffff" font-size="10" font-weight="black" font-mono>C</text>
+                <text x="284" y="158" fill="#b45309" font-size="7.5" font-weight="bold">C 福美餐廳</text>
+              </g>
+
+              <!-- Parking D: 平面停車場 (水圳旁) -->
+              <g onclick="selectParking('D', '平面停車場（水圳巷弄旁）', '部分鋪面覆蓋於水圳上方，周邊巷弄路寬僅3~4公尺，動線狹窄難以會車。')"
+                class="cursor-pointer hover:scale-110">
+                <circle cx="236" cy="165" r="9" fill="#059669" stroke="#ffffff" stroke-width="2" />
+                <text x="232.5" y="169" fill="#ffffff" font-size="10" font-weight="black" font-mono>D</text>
+                <text x="188" y="174" fill="#047857" font-size="7.5" font-weight="bold">D 平面停車場</text>
+              </g>
+
+              <!-- Scale Bar (0 - 0.5 - 1 km) -->
+              <g transform="translate(420, 275)">
+                <rect x="0" y="0" width="80" height="3" fill="#334155" />
+                <rect x="0" y="0" width="40" height="3" fill="#94a3b8" />
+                <line x1="0" y1="-2" x2="0" y2="5" stroke="#334155" stroke-width="1" />
+                <line x1="40" y1="-2" x2="40" y2="5" stroke="#334155" stroke-width="1" />
+                <line x1="80" y1="-2" x2="80" y2="5" stroke="#334155" stroke-width="1" />
+                <text x="-2" y="14" fill="#64748b" font-size="7" font-mono>0</text>
+                <text x="36" y="14" fill="#64748b" font-size="7" font-mono>0.5</text>
+                <text x="74" y="14" fill="#64748b" font-size="7" font-mono>1 km</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Map 2 Legend Bar -->
+          <div
+            class="bg-white border border-stone-200 rounded-lg px-2.5 py-1.5 text-[10.5px] text-stone-700 z-10 flex flex-wrap items-center justify-between gap-1.5 mt-1">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1 font-medium">
+                <span class="w-3.5 h-1 bg-[#1d4ed8] inline-block rounded-xs"></span> 省道 (台7/台7丙)
+              </span>
+              <span class="flex items-center gap-1 font-medium">
+                <span class="w-3.5 h-1 bg-[#f59e0b] inline-block rounded-xs"></span> 鄉道 (宜63/福山街)
+              </span>
+              <span class="flex items-center gap-1 font-medium">
+                <span class="w-3.5 h-1 bg-[#10b981] inline-block rounded-xs"></span> 宜蘭鄉道/村落巷弄
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="flex items-center gap-1 text-red-700 font-bold">
+                <span
+                  class="w-2.5 h-2.5 rounded-full bg-red-600 text-[8px] text-white flex items-center justify-center font-mono">P</span>
+                A–D 處重點停車場
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Interactive Inspector Modal / Toast -->
+    <div id="inspectorBox"
+      class="bg-stone-50 border-l-4 border-emerald-600 rounded-r-xl p-3.5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-xs">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+          <i data-lucide="info" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h4 id="inspectTitle" class="text-xs md:text-sm font-bold text-stone-900">
+            點擊右側地圖點位（如 A–D 停車場或公共設施標籤）查看節點定位與分析
+          </h4>
+          <p id="inspectDetail" class="text-xs text-stone-600 mt-0.5">
+            天送埤主要瓶頸在於省道台7丙車流速度快，與核心聚落生活巷弄、觀光停車需求交織，亟待串聯微循環接駁系統。
+          </p>
+        </div>
+      </div>
+      <div class="shrink-0 flex items-center gap-2">
+        <span id="inspectBadge" class="text-[11px] px-2.5 py-1 rounded bg-stone-200 text-stone-700 font-medium">
+          節點導覽
+        </span>
+      </div>
+    </div>
+
+    <!-- Bottom Warning Callout Banner: 規劃策略與檢討方向 -->
+    <footer class="bg-[#fcf5eb] border-l-4 border-[#8c3c2a] rounded-r-xl p-4 md:p-5 flex items-start gap-4 shadow-sm">
+      <div
+        class="w-10 h-10 rounded-full bg-[#8c3c2a] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-200"></i>
+      </div>
+      <div class="flex-1">
+        <h4 class="font-bold text-sm text-[#8c3c2a] mb-1 flex items-center gap-2">
+          規劃策略與檢討方向
+          <span class="text-xs font-normal text-stone-500 font-sans">｜ Strategic Planning & Traffic Improvement</span>
+        </h4>
+        <ul class="text-stone-800 text-xs md:text-[13.5px] leading-relaxed space-y-1.5 font-medium">
+          <li class="flex items-start gap-2">
+            <span class="text-[#8c3c2a] font-bold">1.</span>
+            <span><strong>整頓幹道交通與路側管理</strong>：台7丙線應重新整頓路側臨停與攤販空間，理順人車動線，並補齊自行車系統斷點與導引標誌。</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-[#8c3c2a] font-bold">2.</span>
+            <span><strong>優化微循環與停車串聯</strong>：善用零散之停車空間與公有空地，串接步行系統至核心商業與文創節點，減少違規佔道。</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-[#8c3c2a] font-bold">3.</span>
+            <span><strong>補足衛生保安與無障礙設施</strong>：強化高齡醫療照護站點與公共衛生配套，全面升級公共設施環境品質。</span>
+          </li>
+        </ul>
+      </div>
+    </footer>
+
+
+    <!-- Chapter Pagination Footer Navigation (No Print) -->
+    <nav class="no-print pt-4 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <a href="index.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#1e3d30] font-bold border border-emerald-200 transition shadow-sm">
+          <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-800"></i>
+          <span>回目錄總覽首頁</span>
+        </a>
+        <a href="02人口結構與高齡化課題.html"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium transition shadow-sm">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          <span>上一單元：02 人口結構課題</span>
+        </a>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="04生態及防災.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1e3d30] hover:bg-[#2a5543] text-white font-semibold transition shadow-sm">
+          <span>下一單元：04 自然生態與防救災資源</span>
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </nav>
+
+  </main>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Facility selector interaction
+    function selectFacility(name, desc) {
+      document.getElementById('inspectTitle').textContent = `設施節點：${name}`;
+      document.getElementById('inspectDetail').textContent = desc;
+      document.getElementById('inspectBadge').textContent = '公共服務設施';
+      document.getElementById('inspectBadge').className = 'text-[11px] px-2.5 py-1 rounded bg-blue-100 text-blue-800 font-bold';
+    }
+
+    // Parking slot selector interaction
+    function selectParking(letter, name, desc) {
+      document.getElementById('inspectTitle').textContent = `停車空間 ${letter}：${name}`;
+      document.getElementById('inspectDetail').textContent = desc;
+      document.getElementById('inspectBadge').textContent = `停車設施 (${letter})`;
+      document.getElementById('inspectBadge').className = 'text-[11px] px-2.5 py-1 rounded bg-amber-100 text-amber-900 font-bold';
+    }
+  </script>
+</body>
+
+</html>

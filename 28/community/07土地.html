@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天送埤聚落現況與議題｜居住與土地使用現況</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap');
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #f4f5f4;
+      color: #1f2937;
+    }
+
+    .serif-title {
+      font-family: 'Noto Serif TC', serif;
+    }
+
+    .gis-sat-bg {
+      background: radial-gradient(circle at 48% 32%, #223428 0%, #15231a 65%, #0b140f 100%);
+    }
+
+    .pulse-glow {
+      animation: pulseGlow 2.5s infinite;
+    }
+
+    @keyframes pulseGlow {
+
+      0%,
+      100% {
+        opacity: 0.9;
+      }
+
+      50% {
+        opacity: 0.45;
+      }
+    }
+
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      main {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen p-3 md:p-8 flex flex-col justify-center items-center">
+
+  <!-- Main Container -->
+  <main
+    class="w-full max-w-[1520px] bg-white rounded-2xl shadow-xl border border-stone-200 overflow-hidden p-5 md:p-8 flex flex-col gap-6">
+
+    <!-- Header Section -->
+    <header class="flex flex-col md:flex-row md:items-end justify-between border-b border-stone-200 pb-4 gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span
+            class="text-xs font-bold tracking-widest text-[#1e3d30] uppercase bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded border border-emerald-200">
+            天送埤聚落現況與議題 ｜ 居住與土地使用
+          </span>
+          <span class="text-xs text-stone-500 font-medium">宜蘭縣三星鄉（天山村・天福村）</span>
+        </div>
+        <h1
+          class="text-2xl md:text-4xl font-bold serif-title text-[#1e3d30] tracking-tight mt-1.5 flex items-center gap-3">
+          居住與土地使用現況
+        </h1>
+      </div>
+      <div class="flex items-center gap-3 no-print">
+        <a href="index.html"
+          class="px-3 py-1.5 text-xs font-bold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] border border-emerald-300 hover:border-emerald-500 rounded-lg transition-all flex items-center gap-1.5 shadow-sm group">
+          <i data-lucide="home" class="w-3.5 h-3.5 text-emerald-800 group-hover:scale-110 transition-transform"></i>
+          <span>回首頁</span>
+        </a>
+        <div
+          class="flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-lg text-xs font-semibold">
+          <i data-lucide="scale" class="w-3.5 h-3.5 text-amber-700"></i>
+          計畫建築供給 14.73 ha vs. 現況居住使用 16.17 ha
+        </div>
+        <button onclick="window.print()"
+          class="px-3.5 py-1.5 text-xs font-semibold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> 列印 / 匯出 PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Layout (Left: GIS Map & Legend | Right: Key Observations & Comparison Chart) -->
+    <section class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+
+      <!-- ==================== LEFT COLUMN: GIS Vector Land Use Map (6.5 Cols) ==================== -->
+      <div
+        class="xl:col-span-7 gis-sat-bg border border-stone-800 rounded-xl p-3 md:p-4 shadow-inner flex flex-col justify-between relative overflow-hidden">
+
+        <!-- GIS Map Header Overlay -->
+        <div class="flex justify-between items-start z-10">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+              <h3 class="text-white font-bold text-xs md:text-sm flex items-center gap-2">
+                居住建築與土地使用編定空間分布圖
+              </h3>
+            </div>
+            <p class="text-stone-300 text-[11px] mt-0.5">
+              疊合非都市土地編定建地（甲/乙/丙建）、國土功能分區（農發四類）與國土利用住宅現況
+            </p>
+          </div>
+
+          <!-- North Compass -->
+          <div
+            class="w-7 h-7 rounded-full bg-stone-900/85 border border-stone-600 flex flex-col items-center justify-center text-white text-[9px] font-mono shadow shrink-0">
+            <span class="text-emerald-400 leading-none">▲</span>
+            <span class="text-[8px] -mt-0.5 font-bold">N</span>
+          </div>
+        </div>
+
+        <!-- Layer Toggle Filter Bar -->
+        <div class="flex flex-wrap gap-1.5 my-2 z-10 text-[10.5px]">
+          <button onclick="toggleMapLayer('all')" id="layer-btn-all"
+            class="gis-btn px-2.5 py-1 rounded bg-emerald-700 text-white font-medium shadow-sm transition">
+            全部圖層
+          </button>
+          <button onclick="toggleMapLayer('core')" id="layer-btn-core"
+            class="gis-btn px-2 py-1 rounded bg-stone-800/80 text-stone-300 hover:text-white border border-stone-700 transition">
+            🏘️ 核心建地 (甲/乙/丙建)
+          </button>
+          <button onclick="toggleMapLayer('sprawl')" id="layer-btn-sprawl"
+            class="gis-btn px-2 py-1 rounded bg-stone-800/80 text-stone-300 hover:text-white border border-stone-700 transition">
+            🌾 農田蔓延混和住宅
+          </button>
+          <button onclick="toggleMapLayer('agri4')" id="layer-btn-agri4"
+            class="gis-btn px-2 py-1 rounded bg-stone-800/80 text-stone-300 hover:text-white border border-stone-700 transition">
+            📐 農業發展地區第四類
+          </button>
+        </div>
+
+        <!-- SVG Map Representation of Authentic Slide -->
+        <div class="relative w-full h-[400px] md:h-[450px] my-1 flex items-center justify-center">
+          <svg viewBox="0 0 660 510" class="w-full h-full select-none" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <!-- Satellite Terrain Base Gradient -->
+              <linearGradient id="satLandBg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#24372c" />
+                <stop offset="50%" stop-color="#16261d" />
+                <stop offset="100%" stop-color="#0c1811" />
+              </linearGradient>
+
+              <!-- Mountain Forest Pattern -->
+              <linearGradient id="mountainShade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#182e21" />
+                <stop offset="100%" stop-color="#0b1710" />
+              </linearGradient>
+
+              <!-- Agri 4 Zone Hatch Pattern -->
+              <pattern id="agri4Pattern" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 0,10 L 10,0 M -2,2 L 2,-2 M 8,12 L 12,8" stroke="#38bdf8" stroke-width="0.8"
+                  stroke-opacity="0.4" />
+              </pattern>
+            </defs>
+
+            <!-- 1. Background Aerial Base -->
+            <rect width="660" height="510" fill="url(#satLandBg)" />
+
+            <!-- Lanyang River Gravel Bed at Northwest -->
+            <path d="M 0,210 C 70,180 140,140 200,110 C 260,85 300,50 350,10 L 270,0 L 0,0 Z" fill="#2e443a"
+              opacity="0.65" />
+            <text x="75" y="75" fill="#7fa996" font-size="10.5" font-weight="bold" letter-spacing="2"
+              transform="rotate(-26 75 75)">蘭陽溪向東北出海</text>
+
+            <!-- Surrounding Farmland Cadastral Texture (Northeast Plain) -->
+            <g stroke="#395243" stroke-width="0.7" opacity="0.45" fill="none">
+              <rect x="250" y="70" width="45" height="32" />
+              <rect x="295" y="70" width="40" height="32" />
+              <rect x="335" y="65" width="55" height="37" />
+              <rect x="260" y="102" width="50" height="35" />
+              <rect x="310" y="102" width="65" height="38" />
+              <rect x="375" y="102" width="45" height="42" />
+              <rect x="280" y="140" width="70" height="32" />
+              <rect x="350" y="140" width="60" height="35" />
+            </g>
+
+            <!-- Southern Mountain / Hill Backdrop (Non-urban Forestry Zone) -->
+            <path d="M 180,225 
+                     C 240,245 310,235 360,255
+                     C 375,305 420,325 380,395
+                     C 350,435 280,455 240,435
+                     C 190,415 140,365 110,345
+                     C 80,315 130,265 180,225 Z" fill="url(#mountainShade)" stroke="#476d57" stroke-width="1.2" />
+            <text x="225" y="360" fill="#6c927d" font-size="11" font-weight="bold">南部山區林地（非都市保育/林業區）</text>
+
+            <!-- Tiansongpi Cluster Boundary (Dashed White Polyline) -->
+            <path id="villageBoundary" d="M 230,135 
+                     C 270,105 320,90 330,105
+                     C 340,145 330,185 340,235
+                     C 355,285 415,315 375,405
+                     C 340,445 280,470 235,445
+                     C 185,415 135,365 110,335
+                     C 80,305 135,265 185,225
+                     C 190,195 170,165 230,135 Z" fill="none" stroke="#f1f5f9" stroke-width="1.8"
+              stroke-dasharray="6,4" />
+
+            <!-- Core Arterial Highway: Tai 7-Bing (省道台7丙 - 三星路) -->
+            <path d="M 150,240 C 210,245 270,250 380,236" fill="none" stroke="#facc15" stroke-width="3.5"
+              stroke-linecap="round" />
+            <text x="340" y="228" fill="#fef08a" font-size="8.5" font-weight="bold">台7丙 (三星路)</text>
+
+            <!-- County Road Yi-63 (福山街) -->
+            <path d="M 210,80 Q 230,150 238,240" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round"
+              opacity="0.8" />
+            <text x="214" y="160" fill="#e2e8f0" font-size="7.5" font-weight="bold">宜63</text>
+
+            <!-- LAYER 3: 國土功能分區 - 農業發展地區第四類 (Agri 4 Overlay) -->
+            <g id="layer-agri4-group">
+              <!-- Agri 4 Polygon Buffer around Core Settlement -->
+              <path d="M 215,215 C 240,205 310,210 335,225 C 345,255 320,285 275,285 C 230,285 205,255 215,215 Z"
+                fill="url(#agri4Pattern)" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="4,2" />
+              <text x="280" y="278" fill="#7dd3fc" font-size="8.5" font-weight="bold">農發四類範圍</text>
+            </g>
+
+            <!-- LAYER 1: 非都市土地編定建築用地 (甲建、乙建、丙建塊面) -->
+            <g id="layer-core-group">
+              <!-- 甲種建築用地 (Red/Crimson Blocks - 10.38 ha) -->
+              <path d="M 235,230 L 265,228 L 275,242 L 245,246 Z" fill="#dc2626" fill-opacity="0.85" stroke="#ef4444"
+                stroke-width="0.8" />
+              <path d="M 268,232 L 295,230 L 302,244 L 275,245 Z" fill="#dc2626" fill-opacity="0.85" stroke="#ef4444"
+                stroke-width="0.8" />
+              <path d="M 240,248 L 265,248 L 268,262 L 242,260 Z" fill="#dc2626" fill-opacity="0.85" stroke="#ef4444"
+                stroke-width="0.8" />
+              <path d="M 272,246 L 290,246 L 292,258 L 273,258 Z" fill="#dc2626" fill-opacity="0.85" stroke="#ef4444"
+                stroke-width="0.8" />
+              <path d="M 228,238 L 235,236 L 238,248 L 229,248 Z" fill="#dc2626" fill-opacity="0.85" />
+              <path d="M 305,234 L 320,233 L 322,242 L 306,243 Z" fill="#dc2626" fill-opacity="0.85" />
+
+              <!-- 乙種建築用地 (Dark Orange / Coral - 3.21 ha) -->
+              <path d="M 250,220 L 265,219 L 268,227 L 252,228 Z" fill="#ea580c" fill-opacity="0.85" stroke="#f97316"
+                stroke-width="0.8" />
+              <path d="M 292,222 L 308,221 L 310,229 L 294,230 Z" fill="#ea580c" fill-opacity="0.85" stroke="#f97316"
+                stroke-width="0.8" />
+              <path d="M 225,250 L 236,250 L 237,258 L 226,258 Z" fill="#ea580c" fill-opacity="0.85" />
+
+              <!-- 丙種建築用地 (Yellowish Orange - 1.14 ha - Hillside margin) -->
+              <path d="M 215,265 L 230,264 L 232,274 L 217,275 Z" fill="#f59e0b" fill-opacity="0.85" stroke="#fbbf24"
+                stroke-width="0.8" />
+              <path d="M 265,270 L 278,268 L 280,278 L 267,279 Z" fill="#f59e0b" fill-opacity="0.85" stroke="#fbbf24"
+                stroke-width="0.8" />
+            </g>
+
+            <!-- LAYER 2: 國土利用現況 - 住宅使用散點與農田蔓延點位 -->
+            <g id="layer-sprawl-group">
+
+              <!-- 核心純住宅點位 (Pure Residential - Pure Bright Yellow Dots) -->
+              <g fill="#fde047" opacity="0.95">
+                <circle cx="242" cy="235" r="2.4" />
+                <circle cx="248" cy="238" r="2.6" />
+                <circle cx="255" cy="234" r="2.8" />
+                <circle cx="262" cy="237" r="2.5" />
+                <circle cx="270" cy="235" r="2.6" />
+                <circle cx="278" cy="238" r="2.9" />
+                <circle cx="285" cy="235" r="2.7" />
+                <circle cx="245" cy="245" r="2.5" />
+                <circle cx="252" cy="248" r="2.8" />
+                <circle cx="260" cy="246" r="2.7" />
+                <circle cx="270" cy="250" r="2.6" />
+                <circle cx="280" cy="247" r="2.8" />
+                <circle cx="288" cy="252" r="2.5" />
+                <circle cx="248" cy="255" r="2.4" />
+                <circle cx="258" cy="258" r="2.6" />
+                <circle cx="268" cy="256" r="2.5" />
+              </g>
+
+              <!-- 混和住宅 (兼商業/工業/其他使用住宅 - 綠色/橘黃色/藍色點位) -->
+              <!-- 兼商業使用住宅 (Amber/Orange) -->
+              <g fill="#fb923c">
+                <circle cx="250" cy="232" r="2.8" />
+                <circle cx="265" cy="232" r="3.0" />
+                <circle cx="275" cy="233" r="2.8" />
+                <circle cx="282" cy="233" r="3.0" />
+                <circle cx="292" cy="236" r="2.7" />
+              </g>
+
+              <!-- 兼工業/農產加工使用住宅 (Cyan/Green) -->
+              <g fill="#4ade80">
+                <circle cx="236" cy="225" r="2.6" />
+                <circle cx="288" cy="225" r="2.8" />
+                <circle cx="274" cy="265" r="2.6" />
+                <circle cx="240" cy="265" r="2.7" />
+              </g>
+
+              <!-- 農田蔓延混和住宅 (Sprawling onto Agricultural Fields - Red Halos) -->
+              <!-- North & Northeast Farm Fields -->
+              <g class="pulse-glow cursor-pointer"
+                onclick="showLandInspect('東北側農田蔓延住宅（散漫擴張）', '建築分布於一般農業區與農發四類邊界之外，多為自建農舍或農村混和住宅，侵蝕原本完整之農地單元與排灌水路。', '農地破碎化警示')">
+                <circle cx="310" cy="145" r="3.2" fill="#ef4444" stroke="#ffffff" stroke-width="0.8" />
+                <circle cx="325" cy="135" r="3.0" fill="#f59e0b" stroke="#ffffff" stroke-width="0.8" />
+                <circle cx="335" cy="155" r="3.0" fill="#ef4444" stroke="#ffffff" stroke-width="0.8" />
+                <circle cx="318" cy="165" r="3.2" fill="#f59e0b" stroke="#ffffff" stroke-width="0.8" />
+                <circle cx="295" cy="140" r="2.8" fill="#ef4444" stroke="#ffffff" stroke-width="0.8" />
+                <circle cx="280" cy="150" r="3.0" fill="#f59e0b" stroke="#ffffff" stroke-width="0.8" />
+                <circle cx="268" cy="135" r="2.8" fill="#ef4444" stroke="#ffffff" stroke-width="0.8" />
+                <circle cx="285" cy="115" r="3.0" fill="#ef4444" stroke="#ffffff" stroke-width="0.8" />
+                <circle cx="345" cy="120" r="2.9" fill="#ef4444" stroke="#ffffff" stroke-width="0.8" />
+                <rect x="295" y="112" width="76" height="15" rx="3" fill="#881337" stroke="#f43f5e"
+                  stroke-width="0.8" />
+                <text x="299" y="123" fill="#ffe4e6" font-size="8.5" font-weight="bold">農地蔓延擴張點</text>
+              </g>
+
+              <!-- Southeast Outskirts Sprawl -->
+              <circle cx="340" cy="250" r="2.8" fill="#ef4444" stroke="#ffffff" stroke-width="0.6" />
+              <circle cx="355" cy="275" r="3.0" fill="#ef4444" stroke="#ffffff" stroke-width="0.6" />
+              <circle cx="325" cy="285" r="2.7" fill="#f59e0b" stroke="#ffffff" stroke-width="0.6" />
+              <circle cx="310" cy="305" r="2.6" fill="#f59e0b" stroke="#ffffff" stroke-width="0.6" />
+
+              <!-- Sparse South Mountain fringe points -->
+              <circle cx="245" cy="280" r="2.4" fill="#fbbf24" opacity="0.8" />
+              <circle cx="270" cy="300" r="2.4" fill="#fbbf24" opacity="0.8" />
+              <circle cx="225" cy="315" r="2.2" fill="#fbbf24" opacity="0.8" />
+            </g>
+
+            <!-- Landmark Labels for Spatial Context -->
+            <g font-size="8.5" fill="#e2e8f0" font-weight="bold">
+              <text x="210" y="215">憲明國小</text>
+              <circle cx="230" cy="225" r="3" fill="#38bdf8" stroke="#ffffff" stroke-width="1" />
+
+              <text x="280" y="218">天送埤林鐵園區</text>
+              <circle cx="270" cy="224" r="3" fill="#a855f7" stroke="#ffffff" stroke-width="1" />
+            </g>
+
+            <!-- Scale Bar (0 - 1 - 2 km) -->
+            <g transform="translate(480, 475)">
+              <rect x="0" y="0" width="90" height="3" fill="#ffffff" />
+              <rect x="0" y="0" width="45" height="3" fill="#1e293b" />
+              <line x1="0" y1="-2" x2="0" y2="5" stroke="#ffffff" stroke-width="1" />
+              <line x1="45" y1="-2" x2="45" y2="5" stroke="#ffffff" stroke-width="1" />
+              <line x1="90" y1="-2" x2="90" y2="5" stroke="#ffffff" stroke-width="1" />
+              <text x="-2" y="14" fill="#cbd5e1" font-size="7.5" font-mono>0</text>
+              <text x="41" y="14" fill="#cbd5e1" font-size="7.5" font-mono>1</text>
+              <text x="82" y="14" fill="#cbd5e1" font-size="7.5" font-mono>2 km</text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Interactive Inspector Banner -->
+        <div id="landInspector"
+          class="bg-black/75 backdrop-blur-md border border-stone-700 rounded-lg p-2.5 text-xs text-stone-200 z-10 flex flex-col gap-1 transition-all">
+          <div class="flex items-center justify-between">
+            <span id="inspectTitle" class="font-bold text-emerald-300 text-xs flex items-center gap-1.5">
+              <i data-lucide="info" class="w-3.5 h-3.5 inline"></i> 空間聚集與擴張現象提示
+            </span>
+            <span id="inspectBadge"
+              class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
+              土地使用分析
+            </span>
+          </div>
+          <p id="inspectDetail" class="text-stone-300 text-[11px] leading-relaxed">
+            建築高度集中在台7丙省道核心街區；周邊農發四類與一般農業區間散佈混合住宅，農地正面臨散漫式擴張蠶食。
+          </p>
+        </div>
+
+        <!-- GIS Map Legend Bar -->
+        <div
+          class="bg-stone-900/85 border border-stone-800 rounded-lg px-3 py-2 text-[10.5px] text-stone-300 z-10 flex flex-wrap items-center justify-between gap-2 mt-1">
+          <!-- Non-urban building zoning -->
+          <div class="flex items-center gap-2.5">
+            <span class="text-stone-400 font-medium">非都編定：</span>
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 bg-[#dc2626] inline-block rounded-xs"></span> 甲建 (10.38 ha)
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 bg-[#ea580c] inline-block rounded-xs"></span> 乙建 (3.21 ha)
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 bg-[#f59e0b] inline-block rounded-xs"></span> 丙建 (1.14 ha)
+            </span>
+          </div>
+
+          <!-- Spatial points & Agro-4 -->
+          <div class="flex items-center gap-2.5">
+            <span class="flex items-center gap-1">
+              <span class="w-3 h-2 border border-[#38bdf8] bg-[#38bdf8]/30 inline-block"></span> 農發四類
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-[#fde047] inline-block"></span> 純住宅
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-[#ef4444] inline-block"></span> 蔓延/混和住宅
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ==================== RIGHT COLUMN: Key Observations & Comparison Chart (5.5 Cols) ==================== -->
+      <div class="xl:col-span-5 flex flex-col justify-between gap-4">
+
+        <!-- Card 1: 核心觀察與規劃重點 (3 Core Findings) -->
+        <div class="flex flex-col gap-3">
+
+          <!-- Item 1: 建築往周邊蔓延 -->
+          <div
+            class="bg-stone-50 hover:bg-stone-100/80 transition border border-stone-200 rounded-xl p-3.5 md:p-4 shadow-sm flex items-start gap-3.5">
+            <div
+              class="w-11 h-11 rounded-full bg-[#1b4332] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+              <i data-lucide="home" class="w-5 h-5 text-emerald-300"></i>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-xs md:text-sm text-[#1e3d30] flex items-center justify-between">
+                <span>建築往周邊蔓延</span>
+                <span
+                  class="text-[10px] text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.2 rounded font-medium">農地完整性受損</span>
+              </h3>
+              <p class="text-xs text-stone-600 leading-relaxed mt-1">
+                現況建築集中於聚落核心，但呈現往周邊農田蔓延趨勢，直接影響農地的完整性與連貫生產機能。
+              </p>
+            </div>
+          </div>
+
+          <!-- Item 2: 檢討發展範圍 -->
+          <div
+            class="bg-stone-50 hover:bg-stone-100/80 transition border border-stone-200 rounded-xl p-3.5 md:p-4 shadow-sm flex items-start gap-3.5">
+            <div
+              class="w-11 h-11 rounded-full bg-[#1b4332] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+              <i data-lucide="sprout" class="w-5 h-5 text-emerald-300"></i>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-xs md:text-sm text-[#1e3d30] flex items-center justify-between">
+                <span>檢討發展範圍</span>
+                <span
+                  class="text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded font-medium">嚴控擴張界線</span>
+              </h3>
+              <p class="text-xs text-stone-600 leading-relaxed mt-1">
+                檢討整體核心發展範圍，避免建築發展持續無序擴張，守護優質農業生產環境與里山地景紋理。
+              </p>
+            </div>
+          </div>
+
+          <!-- Item 3: 公有空置地匱乏 -->
+          <div
+            class="bg-stone-50 hover:bg-stone-100/80 transition border border-stone-200 rounded-xl p-3.5 md:p-4 shadow-sm flex items-start gap-3.5">
+            <div
+              class="w-11 h-11 rounded-full bg-[#8c3c2a] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+              <i data-lucide="percent" class="w-5 h-5 text-amber-200"></i>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-bold text-xs md:text-sm text-[#1e3d30] flex items-center justify-between">
+                <span>公有空置地匱乏</span>
+                <span
+                  class="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded font-medium">閒置老屋活化</span>
+              </h3>
+              <p class="text-xs text-stone-600 leading-relaxed mt-1">
+                現況聚落公有之空置地面積相當有限，進一步研析<strong>閒置老屋活化</strong>機制，以回應社區公共設施與長照日照需求。
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Card 2: 土地供給與使用現況對比 (Bar Chart + Stats Comparison) -->
+        <div
+          class="bg-stone-50 border border-stone-200 rounded-xl p-4 shadow-sm flex-1 flex flex-col justify-between gap-3">
+
+          <div>
+            <div class="flex items-center justify-between border-b border-stone-200 pb-2">
+              <h3 class="font-bold text-xs md:text-sm text-[#1e3d30] flex items-center gap-1.5">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-emerald-700"></i>
+                非都市土地使用編定 vs. 國土利用現況 (公頃)
+              </h3>
+              <span class="text-[10.5px] font-mono text-stone-500">113年國土利用調查</span>
+            </div>
+            <p class="text-[11.5px] text-stone-600 mt-1.5">
+              比較法定「計畫建築用地供給」與地面實質「住宅使用現況」，評估土地承載與外溢供需落差。
+            </p>
+          </div>
+
+          <!-- Chart.js Canvas Container -->
+          <div class="h-32 w-full relative">
+            <canvas id="landuseBalanceChart"></canvas>
+          </div>
+
+          <!-- Structured Comparison Table -->
+          <div class="overflow-x-auto">
+            <table
+              class="w-full text-[11px] text-left border-collapse bg-white rounded-lg overflow-hidden border border-stone-200">
+              <thead class="bg-stone-100 text-stone-700 font-semibold border-b border-stone-200">
+                <tr>
+                  <th class="py-1.5 px-2.5">統計類別</th>
+                  <th class="py-1.5 px-2.5">細項面積組成 (公頃)</th>
+                  <th class="py-1.5 px-2.5 text-right">合計 (公頃)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-stone-200 text-stone-700 font-mono">
+                <tr>
+                  <td class="py-1.5 px-2.5 font-sans font-medium text-stone-900">
+                    <span class="inline-block w-2 h-2 rounded-full bg-[#1b4332] mr-1"></span>非都市土地編定<br><span
+                      class="text-[9.5px] text-stone-500 font-sans">(計畫建築供給)</span>
+                  </td>
+                  <td class="py-1.5 px-2.5 text-[10.5px]">
+                    甲建 <strong>10.38</strong> ｜ 乙建 <strong>3.21</strong> ｜ 丙建 <strong>1.14</strong>
+                  </td>
+                  <td class="py-1.5 px-2.5 text-right font-bold text-stone-900 text-xs">14.73 ha</td>
+                </tr>
+                <tr class="bg-amber-50/40">
+                  <td class="py-1.5 px-2.5 font-sans font-medium text-amber-950">
+                    <span class="inline-block w-2 h-2 rounded-full bg-[#16a34a] mr-1"></span>國土利用現況<br><span
+                      class="text-[9.5px] text-amber-700 font-sans">(實質居住使用)</span>
+                  </td>
+                  <td class="py-1.5 px-2.5 text-[10.5px] text-stone-700">
+                    純住宅 <strong>9.84</strong> ｜ 混和住宅 <strong>6.33</strong>
+                  </td>
+                  <td class="py-1.5 px-2.5 text-right font-bold text-red-700 text-xs">16.17 ha</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Callout: 供需落差觀察 -->
+          <div
+            class="bg-amber-50/80 border border-amber-200 rounded-lg p-2.5 text-[11.5px] text-amber-900 flex items-start gap-2">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+            <div class="leading-relaxed">
+              <strong>供需落差觀察</strong>：現況居住使用（<strong>16.17 公頃</strong>）高於法定計畫建地供給（<strong>14.73 公頃</strong>），產生
+              <strong>+1.44 公頃溢出落差</strong>，印證既有建物或散佈農舍已外溢至非編定建地，農地受侵蝕課題值得高度關注。
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Bottom Strategy Banner: 規劃結論與因應策略 -->
+    <footer class="bg-[#fcf5eb] border-l-4 border-[#8c3c2a] rounded-r-xl p-4 md:p-5 flex items-start gap-4 shadow-sm">
+      <div
+        class="w-10 h-10 rounded-full bg-[#8c3c2a] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+        <i data-lucide="compass" class="w-5 h-5 text-amber-200"></i>
+      </div>
+      <div class="flex-1">
+        <h4 class="font-bold text-sm text-[#8c3c2a] mb-1 flex items-center gap-2">
+          規劃結論與因應策略
+          <span class="text-xs font-normal text-stone-500 font-sans">｜ Spatial Planning & Adaptive Land Reuse</span>
+        </h4>
+        <div class="text-stone-800 text-xs md:text-[13.5px] leading-relaxed space-y-1.5 font-medium">
+          <p class="text-stone-700 mb-1">
+            天送埤聚落長期受人口外流影響，實質新增居住開發壓力相對和緩，未來規劃應聚焦於界線控管與既有存量活化：
+          </p>
+          <ul class="space-y-1">
+            <li class="flex items-start gap-2">
+              <span class="text-[#8c3c2a] font-bold">1.</span>
+              <span><strong>定調核心發展空間，嚴格劃定界線</strong>：除應定調核心發展空間外，應嚴格劃定聚落擴張界限，遏止散漫式蔓延，全力維護周邊農地完整性與農業生產基盤。</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-[#8c3c2a] font-bold">2.</span>
+              <span><strong>策略轉向「既有空間活化」而非新增供給</strong>：在公有空地有限下，推動老舊房舍與閒置空間盤點再生，改建轉型為社區日照、微型公共設施與共享創生空間。</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </footer>
+
+
+    <!-- Chapter Pagination Footer Navigation (No Print) -->
+    <nav class="no-print pt-4 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <a href="index.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#1e3d30] font-bold border border-emerald-200 transition shadow-sm">
+          <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-800"></i>
+          <span>回目錄總覽首頁</span>
+        </a>
+        <a href="06環境敏感區.html"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium transition shadow-sm">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          <span>上一單元：06 環境敏感區位</span>
+        </a>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="index.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1e3d30] hover:bg-[#2a5543] text-white font-semibold transition shadow-sm">
+          <span>回專題總覽首頁</span>
+          <i data-lucide="home" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </nav>
+
+  </main>
+
+  <!-- JavaScript Section -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Chart.js Horizontal Bar Chart: Supply vs. Actual Use
+    const ctx = document.getElementById('landuseBalanceChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['國土利用現況 (實質使用)', '非都使用編定 (法定供給)'],
+        datasets: [
+          {
+            label: '純住宅 / 甲建',
+            data: [9.84, 10.38],
+            backgroundColor: '#1b4332',
+            borderRadius: 4,
+            barThickness: 18
+          },
+          {
+            label: '混和住宅 / 乙建',
+            data: [6.33, 3.21],
+            backgroundColor: '#4ade80',
+            borderRadius: 4,
+            barThickness: 18
+          },
+          {
+            label: '丙建 (山坡)',
+            data: [0, 1.14],
+            backgroundColor: '#f59e0b',
+            borderRadius: 4,
+            barThickness: 18
+          }
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            stacked: true,
+            max: 20,
+            grid: { color: '#e5e7eb' },
+            ticks: {
+              font: { family: 'monospace', size: 10 },
+              callback: function (value) { return value + ' ha'; }
+            }
+          },
+          y: {
+            stacked: true,
+            grid: { display: false },
+            ticks: {
+              font: { weight: 'bold', size: 10.5 }
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              boxWidth: 10,
+              font: { size: 10.5 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                return ` ${context.dataset.label}: ${context.parsed.x} 公頃`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Layer Toggle Functionality
+    function toggleMapLayer(layer) {
+      // Toggle button active classes
+      document.querySelectorAll('.gis-btn').forEach(btn => {
+        btn.classList.remove('bg-emerald-700', 'text-white', 'shadow-sm');
+        btn.classList.add('bg-stone-800/80', 'text-stone-300');
+      });
+
+      const activeBtn = document.getElementById(`layer-btn-${layer}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-stone-800/80', 'text-stone-300');
+        activeBtn.classList.add('bg-emerald-700', 'text-white', 'shadow-sm');
+      }
+
+      const coreGroup = document.getElementById('layer-core-group');
+      const sprawlGroup = document.getElementById('layer-sprawl-group');
+      const agri4Group = document.getElementById('layer-agri4-group');
+
+      if (layer === 'all') {
+        coreGroup.style.display = 'block';
+        sprawlGroup.style.display = 'block';
+        agri4Group.style.display = 'block';
+      } else if (layer === 'core') {
+        coreGroup.style.display = 'block';
+        sprawlGroup.style.display = 'none';
+        agri4Group.style.display = 'none';
+      } else if (layer === 'sprawl') {
+        coreGroup.style.display = 'none';
+        sprawlGroup.style.display = 'block';
+        agri4Group.style.display = 'none';
+      } else if (layer === 'agri4') {
+        coreGroup.style.display = 'none';
+        sprawlGroup.style.display = 'none';
+        agri4Group.style.display = 'block';
+      }
+    }
+
+    // Interactive Inspector Banner updater
+    function showLandInspect(title, desc, badge) {
+      document.getElementById('inspectTitle').innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 inline text-rose-400"></i> ${title}`;
+      document.getElementById('inspectBadge').textContent = badge;
+      document.getElementById('inspectDetail').textContent = desc;
+      lucide.createIcons();
+    }
+  </script>
+</body>
+
+</html>

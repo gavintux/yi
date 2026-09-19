@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天送埤聚落現況與議題｜人口結構與高齡化課題</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap');
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #f6f7f6;
+      color: #1f2937;
+    }
+
+    .serif-title {
+      font-family: 'Noto Serif TC', serif;
+    }
+
+    .gis-map-bg {
+      background: radial-gradient(circle at 50% 25%, #2a3d34 0%, #15221b 75%, #0d1611 100%);
+    }
+
+    @media print {
+      body {
+        background-color: #ffffff;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen p-4 md:p-8 flex flex-col justify-center items-center">
+
+  <!-- Dashboard Container -->
+  <main
+    class="w-full max-w-[1440px] bg-white rounded-2xl shadow-xl border border-stone-200 overflow-hidden p-6 md:p-10 flex flex-col gap-6">
+
+    <!-- Header / Title Bar -->
+    <header class="flex flex-col md:flex-row md:items-end justify-between border-b border-stone-200 pb-4 gap-4">
+      <div>
+        <span class="text-xs font-bold tracking-widest text-[#8c3c2a] uppercase">天送埤聚落現況與議題 ｜ 02</span>
+        <h1
+          class="text-2xl md:text-4xl font-bold serif-title text-[#1e3d30] tracking-tight mt-1 flex items-center gap-3">
+          人口結構與高齡化課題
+        </h1>
+      </div>
+      <div class="flex items-center gap-3 no-print">
+        <a href="index.html"
+          class="px-3 py-1.5 text-xs font-bold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] border border-emerald-300 hover:border-emerald-500 rounded-lg transition-all flex items-center gap-1.5 shadow-sm group">
+          <i data-lucide="home" class="w-3.5 h-3.5 text-emerald-800 group-hover:scale-110 transition-transform"></i>
+          <span>回首頁</span>
+        </a>
+        <span
+          class="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-full font-medium flex items-center gap-1.5">
+          <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i>
+          超高齡社會（29.3%）
+        </span>
+        <button onclick="window.print()"
+          class="px-3.5 py-1.5 text-xs font-semibold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> 列印 / 匯出 PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Grid Layout (3 Columns) -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+      <!-- LEFT COLUMN: Demographic Breakdown & 10-Year Growth Trend (4 Cols) -->
+      <div class="lg:col-span-4 flex flex-col gap-5 justify-between">
+
+        <!-- Card 1: Age Group Structure -->
+        <div class="bg-stone-50 border border-stone-200 rounded-xl p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-[#1e3d30] flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 bg-[#8c3c2a] rounded-sm"></span>
+              天送埤聚落三段年齡組人口結構 (%)
+            </h3>
+            <span class="text-[11px] text-stone-600 font-mono">114年6月現況</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-12 items-center gap-4">
+            <!-- Donut Chart Container -->
+            <div class="sm:col-span-6 relative flex justify-center items-center h-44">
+              <canvas id="ageStructureChart"></canvas>
+              <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span class="text-[10px] text-stone-600 uppercase font-semibold">老年人口</span>
+                <span class="text-xl font-black text-[#8c3c2a]">29.3%</span>
+              </div>
+            </div>
+            <!-- Custom Legend & Data Tags -->
+            <div class="sm:col-span-6 flex flex-col gap-2 text-xs">
+              <div class="flex items-center justify-between p-2 rounded-lg bg-amber-50 border border-amber-100">
+                <span class="flex items-center gap-1.5 text-stone-700">
+                  <span class="w-2.5 h-2.5 rounded-full bg-[#f39c12]"></span> 0–14 歲
+                </span>
+                <span class="font-bold font-mono text-stone-900">6.7%</span>
+              </div>
+              <div class="flex items-center justify-between p-2 rounded-lg bg-emerald-50 border border-emerald-100">
+                <span class="flex items-center gap-1.5 text-stone-700">
+                  <span class="w-2.5 h-2.5 rounded-full bg-[#1b4332]"></span> 15–64 歲
+                </span>
+                <span class="font-bold font-mono text-stone-900">64.1%</span>
+              </div>
+              <div class="flex items-center justify-between p-2 rounded-lg bg-red-50 border border-red-100">
+                <span class="flex items-center gap-1.5 text-[#8c3c2a] font-semibold">
+                  <span class="w-2.5 h-2.5 rounded-full bg-[#8c3c2a]"></span> 65 歲以上
+                </span>
+                <span class="font-bold font-mono text-[#8c3c2a]">29.3%</span>
+              </div>
+            </div>
+          </div>
+          <p class="text-[11px] text-stone-600 mt-2 bg-white px-2.5 py-1.5 rounded border border-stone-200">
+            📌 <strong>警訊</strong>：高齡人口比例 (29.3%) 遠超聯合國 20%「超高齡社會」門檻，少子化嚴重。
+          </p>
+        </div>
+
+        <!-- Card 2: 10-Year Growth Comparison -->
+        <div class="bg-stone-50 border border-stone-200 rounded-xl p-5 shadow-sm flex-1 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-bold text-sm text-[#1e3d30] flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 bg-[#1b4332] rounded-sm"></span>
+                近十年人口成長比較折線圖 (民國 104–113 年)
+              </h3>
+              <span
+                class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">人口多為負成長</span>
+            </div>
+            <p class="text-[11px] text-stone-600 mb-2">單位：‰（千分比）。十年歷程中於 104、110、112 年出現明顯負成長低谷。</p>
+          </div>
+
+          <div class="h-44 w-full relative">
+            <canvas id="tenYearsTrendChart"></canvas>
+          </div>
+
+          <div
+            class="flex flex-wrap justify-center gap-3 text-[11px] text-stone-600 pt-2 border-t border-stone-200 mt-2">
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-1 bg-[#0284c7]"></span> 自然增加率 (‰)
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-1 bg-[#f43f5e]"></span> 社會增加率 (‰)
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-1 bg-[#0d9488]"></span> 人口成長率 (‰)
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CENTER COLUMN: Interactive Spatial Population Distribution Map (5 Cols) -->
+      <div
+        class="lg:col-span-5 bg-[#14231b] border border-stone-800 rounded-xl p-4 flex flex-col justify-between relative shadow-inner overflow-hidden">
+
+        <!-- GIS Map Header Overlay -->
+        <div class="flex justify-between items-start z-10">
+          <div>
+            <h3 class="text-white font-bold text-sm flex items-center gap-2">
+              <i data-lucide="map-pin" class="w-4 h-4 text-emerald-400"></i>
+              聚落人口空間分布與聚集熱區
+            </h3>
+            <p class="text-stone-300 text-[11px] mt-0.5">高密度人口點位多集中於中北部平原及台7丙幹道</p>
+          </div>
+          <!-- Compass -->
+          <div
+            class="w-7 h-7 rounded-full bg-stone-900/80 border border-stone-600 flex flex-col items-center justify-center text-white text-[9px] font-mono shadow">
+            <span>▲</span>
+            <span class="text-[8px] -mt-1 font-bold">N</span>
+          </div>
+        </div>
+
+        <!-- SVG Map Representation -->
+        <div class="relative w-full h-[370px] my-2 flex items-center justify-center">
+          <svg viewBox="0 0 500 480" class="w-full h-full max-h-[380px] drop-shadow-lg"
+            preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <!-- Plain area gradient -->
+              <linearGradient id="plainGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#4a5d4e" stop-opacity="0.35" />
+                <stop offset="100%" stop-color="#2a3f33" stop-opacity="0.2" />
+              </linearGradient>
+              <!-- Mountain hill gradient -->
+              <linearGradient id="mountainGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1b3024" />
+                <stop offset="100%" stop-color="#0f1c15" />
+              </linearGradient>
+              <!-- Hotspot glow -->
+              <filter id="hotspotGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+
+            <!-- Lan-yang River Basin (North) -->
+            <path d="M 50,40 Q 180,90 320,50 T 480,20 L 480,0 L 50,0 Z" fill="#384f47" opacity="0.45" />
+            <text x="220" y="32" fill="#9cb3a8" font-size="11" font-weight="bold" letter-spacing="3">蘭陽溪河床向北</text>
+
+            <!-- Tiansongpi Village Outline (Composite shape of Tianfu & Tianshan) -->
+            <path d="M 180,60 
+                     C 280,65 330,85 365,110
+                     C 370,160 350,210 360,250
+                     C 375,300 420,320 380,390
+                     C 350,430 280,450 240,430
+                     C 190,410 140,360 110,340
+                     C 80,310 130,260 180,220
+                     C 160,180 140,110 180,60 Z" fill="url(#plainGrad)" stroke="#8cb398" stroke-width="1.8"
+              stroke-dasharray="6,4" />
+
+            <!-- Southern Mountain / Forest Region -->
+            <path d="M 180,220 
+                     C 240,240 310,230 360,250
+                     C 375,300 420,320 380,390
+                     C 350,430 280,450 240,430
+                     C 190,410 140,360 110,340
+                     C 80,310 130,260 180,220 Z" fill="url(#mountainGrad)" stroke="#527863" stroke-width="1" />
+            <text x="220" y="350" fill="#6d8e7c" font-size="13" font-weight="bold">南部山區林地（人口極稀疏）</text>
+
+            <!-- Primary Arterial: Tai 7-Bing Road (Gold Stroke) -->
+            <path d="M 140,160 Q 250,180 375,190" fill="none" stroke="#eab308" stroke-width="3"
+              stroke-linecap="round" />
+            <text x="310" y="175" fill="#fde047" font-size="10" font-weight="bold">台7丙 (三星路)</text>
+
+            <!-- High Density Core (4,000 - 13,000 persons/km²) -->
+            <!-- Heat Cluster 1: Tiansongpi Station & Commercial Core -->
+            <circle cx="260" cy="180" r="32" fill="#ef4444" fill-opacity="0.38" filter="url(#hotspotGlow)" />
+            <rect x="235" y="165" width="55" height="28" rx="6" fill="#dc2626" fill-opacity="0.6" stroke="#fecaca"
+              stroke-width="1.5" />
+            <text x="240" y="183" fill="#ffffff" font-size="9.5" font-weight="bold">核心密集帶</text>
+
+            <!-- Secondary Density Rings -->
+            <ellipse cx="255" cy="195" rx="55" ry="25" fill="#f97316" fill-opacity="0.25" stroke="#fb923c"
+              stroke-dasharray="3,2" />
+            <ellipse cx="270" cy="150" rx="40" ry="20" fill="#facc15" fill-opacity="0.2" stroke="#fde047"
+              stroke-dasharray="3,2" />
+
+            <!-- Population Household Distribution Points (Yellow scatter dots) -->
+            <!-- Concentrated around Tai 7 Bing & Core -->
+            <g fill="#fef08a" opacity="0.95">
+              <circle cx="240" cy="170" r="2.8" />
+              <circle cx="248" cy="174" r="2.5" />
+              <circle cx="256" cy="168" r="3.2" />
+              <circle cx="265" cy="176" r="3" />
+              <circle cx="272" cy="170" r="2.8" />
+              <circle cx="282" cy="178" r="3.5" />
+              <circle cx="250" cy="186" r="3" />
+              <circle cx="260" cy="190" r="3.2" />
+              <circle cx="270" cy="188" r="2.8" />
+              <circle cx="242" cy="198" r="2.5" />
+              <circle cx="252" cy="205" r="2.7" />
+              <circle cx="264" cy="200" r="3" />
+              <circle cx="280" cy="194" r="2.6" />
+              <circle cx="290" cy="185" r="2.9" />
+              <circle cx="230" cy="162" r="2.4" />
+              <circle cx="225" cy="172" r="2.6" />
+              <circle cx="235" cy="180" r="2.8" />
+              <circle cx="285" cy="165" r="2.6" />
+              <circle cx="295" cy="172" r="2.8" />
+              <circle cx="305" cy="178" r="2.5" />
+              <!-- Northeast farm outskirts -->
+              <circle cx="315" cy="140" r="2.4" />
+              <circle cx="330" cy="130" r="2.4" />
+              <circle cx="340" cy="150" r="2.2" />
+              <circle cx="320" cy="160" r="2.5" />
+              <circle cx="295" cy="135" r="2.4" />
+              <circle cx="280" cy="145" r="2.5" />
+              <circle cx="265" cy="138" r="2.2" />
+              <!-- Sparse south mountain points -->
+              <circle cx="245" cy="270" r="2" />
+              <circle cx="270" cy="290" r="2" />
+              <circle cx="320" cy="330" r="2" />
+              <circle cx="355" cy="285" r="2.2" />
+              <circle cx="220" cy="310" r="1.8" />
+            </g>
+
+            <!-- Landmarks -->
+            <g font-size="9" fill="#e2e8f0" font-weight="bold">
+              <text x="210" y="152">天送埤車站/文創園區</text>
+              <circle cx="250" cy="158" r="3" fill="#38bdf8" stroke="#ffffff" stroke-width="1" />
+
+              <text x="175" y="218">憲明國小</text>
+              <circle cx="225" cy="215" r="3" fill="#38bdf8" stroke="#ffffff" stroke-width="1" />
+            </g>
+          </svg>
+        </div>
+
+        <!-- GIS Legend & Spatial Summary Overlay -->
+        <div
+          class="bg-black/60 backdrop-blur-sm border border-stone-700/80 rounded-lg p-3 text-[11px] text-stone-300 z-10 flex flex-col gap-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="font-semibold text-white flex items-center gap-1">
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i> 圖例說明
+            </span>
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1">
+                <span class="w-3 h-0.5 border border-dashed border-[#8cb398] inline-block"></span> 聚落邊界
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-[#fef08a] inline-block"></span> 人口點位
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between border-t border-stone-700 pt-1.5">
+            <span class="text-stone-300 font-medium">聚落人口密度住宅族群：</span>
+            <div class="flex items-center gap-2 font-mono text-[10px]">
+              <span
+                class="px-1.5 py-0.5 rounded bg-yellow-400/30 border border-yellow-400/50 text-yellow-200">4,000–6,000</span>
+              <span
+                class="px-1.5 py-0.5 rounded bg-orange-500/30 border border-orange-500/50 text-orange-200">6,000–8,600</span>
+              <span
+                class="px-1.5 py-0.5 rounded bg-red-600/50 border border-red-500 text-red-200 font-bold">8,600–13,000</span>
+              <span class="text-stone-300 text-[10px]">(人/km²)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: 4 Demographic Load Cards (3 Cols) -->
+      <div class="lg:col-span-3 flex flex-col gap-3.5 justify-between">
+
+        <!-- Indicator 1: 扶養比 -->
+        <div
+          class="bg-[#1b4332] text-white p-4 rounded-xl shadow-md border-l-4 border-emerald-400 flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <span class="text-xs text-emerald-200 font-medium">總體撫養壓力</span>
+            <span
+              class="text-[10px] px-2 py-0.5 bg-emerald-900/60 rounded text-emerald-300 border border-emerald-700">高於全縣/全鄉</span>
+          </div>
+          <div class="my-2">
+            <span class="text-xs text-stone-300">扶養比</span>
+            <div class="text-3xl font-black tracking-tight text-white font-mono">54.56</div>
+          </div>
+          <div
+            class="flex items-center justify-between text-[11px] text-emerald-100/80 pt-2 border-t border-emerald-800/60 font-mono">
+            <span>宜蘭縣：45.75</span>
+            <span class="text-emerald-400">|</span>
+            <span>三星鄉：43.42</span>
+          </div>
+        </div>
+
+        <!-- Indicator 2: 扶老比 -->
+        <div
+          class="bg-[#1b4332] text-white p-4 rounded-xl shadow-md border-l-4 border-amber-400 flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <span class="text-xs text-amber-200 font-medium">長者撫養負擔</span>
+            <span
+              class="text-[10px] px-2 py-0.5 bg-amber-900/40 rounded text-amber-300 border border-amber-700">負擔沉重</span>
+          </div>
+          <div class="my-2">
+            <span class="text-xs text-stone-300">扶老比</span>
+            <div class="text-3xl font-black tracking-tight text-amber-300 font-mono">44.43</div>
+          </div>
+          <p class="text-[10.5px] text-stone-300 mb-1.5">每 100 位青壯年需撫養逾 <strong>44 位</strong> 老人</p>
+          <div
+            class="flex items-center justify-between text-[11px] text-emerald-100/80 pt-1.5 border-t border-emerald-800/60 font-mono">
+            <span>宜蘭縣：29.63</span>
+            <span class="text-emerald-400">|</span>
+            <span>三星鄉：32.74</span>
+          </div>
+        </div>
+
+        <!-- Indicator 3: 扶幼比 -->
+        <div
+          class="bg-[#1b4332] text-white p-4 rounded-xl shadow-md border-l-4 border-sky-400 flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <span class="text-xs text-sky-200 font-medium">幼年人口培育</span>
+            <span class="text-[10px] px-2 py-0.5 bg-sky-900/40 rounded text-sky-300 border border-sky-700">低於縣市</span>
+          </div>
+          <div class="my-2">
+            <span class="text-xs text-stone-300">扶幼比</span>
+            <div class="text-3xl font-black tracking-tight text-sky-200 font-mono">10.13</div>
+          </div>
+          <div
+            class="flex items-center justify-between text-[11px] text-emerald-100/80 pt-2 border-t border-emerald-800/60 font-mono">
+            <span>宜蘭縣：16.13</span>
+            <span class="text-emerald-400">|</span>
+            <span>三星鄉：10.69</span>
+          </div>
+        </div>
+
+        <!-- Indicator 4: 老化指數 -->
+        <div
+          class="bg-[#1b4332] text-white p-4 rounded-xl shadow-md border-l-4 border-red-500 flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <span class="text-xs text-red-200 font-medium">世代失衡倍數</span>
+            <span
+              class="text-[10px] px-2 py-0.5 bg-red-900/60 rounded text-red-300 font-bold border border-red-700">嚴峻危機</span>
+          </div>
+          <div class="my-2">
+            <span class="text-xs text-stone-300">老化指數</span>
+            <div class="text-3xl font-black tracking-tight text-red-400 font-mono">438.42</div>
+          </div>
+          <p class="text-[10.5px] text-stone-300 mb-1.5">老年人口為幼年人口約 <strong class="text-red-300 font-bold">4.4
+              倍</strong></p>
+          <div
+            class="flex items-center justify-between text-[11px] text-emerald-100/80 pt-1.5 border-t border-emerald-800/60 font-mono">
+            <span>宜蘭縣：183.69</span>
+            <span class="text-emerald-400">|</span>
+            <span>三星鄉：306.29</span>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Bottom Warning Callout Banner -->
+    <footer class="bg-[#fcf5eb] border-l-4 border-[#8c3c2a] rounded-r-xl p-4 md:p-5 flex items-start gap-4 shadow-sm">
+      <div
+        class="w-10 h-10 rounded-full bg-[#8c3c2a] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+        <i data-lucide="alert-circle" class="w-6 h-6"></i>
+      </div>
+      <div class="flex-1">
+        <h4 class="font-bold text-sm text-[#8c3c2a] mb-0.5 flex items-center gap-2">
+          核心課題與未來規劃警示
+          <span class="text-xs font-normal text-stone-500 font-sans">｜ High-risk Aging Vulnerability</span>
+        </h4>
+        <p class="text-stone-800 text-sm md:text-[14.5px] leading-relaxed font-medium">
+          聚落已處於<strong>深度超高齡狀態</strong>（老年人口 29.3%、老化指數
+          438.42），伴隨長者移動能力下降與醫療照護需求攀升；若無完善公共設施規劃（如微循環交通接駁、無障礙步道與在地巡迴醫療服務），將顯著降低高齡居民的出行安全性與生活品質。
+        </p>
+      </div>
+    </footer>
+
+
+    <!-- Chapter Pagination Footer Navigation (No Print) -->
+    <nav class="no-print pt-4 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <a href="index.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#1e3d30] font-bold border border-emerald-200 transition shadow-sm">
+          <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-800"></i>
+          <span>回目錄總覽首頁</span>
+        </a>
+        <a href="01聚落區位與基本概況.html"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium transition shadow-sm">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          <span>上一單元：01 聚落區位概況</span>
+        </a>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="03交通與公共設施現況.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1e3d30] hover:bg-[#2a5543] text-white font-semibold transition shadow-sm">
+          <span>下一單元：03 交通與公共設施現況</span>
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </nav>
+
+  </main>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // 1. Donut Chart: Three-tier Age Group Structure
+    const ctxAge = document.getElementById('ageStructureChart').getContext('2d');
+    new Chart(ctxAge, {
+      type: 'doughnut',
+      data: {
+        labels: ['0–14歲 (幼年)', '15–64歲 (青壯年)', '65歲以上 (老年)'],
+        datasets: [{
+          data: [6.7, 64.1, 29.3],
+          backgroundColor: [
+            '#f39c12', // 幼年
+            '#1b4332', // 青壯年
+            '#8c3c2a'  // 老年
+          ],
+          borderWidth: 2,
+          borderColor: '#ffffff',
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                return ` ${context.label}: ${context.parsed}%`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // 2. Line Chart: 10-Year Population Growth (ROC 104 - 113)
+    const ctxTrend = document.getElementById('tenYearsTrendChart').getContext('2d');
+    new Chart(ctxTrend, {
+      type: 'line',
+      data: {
+        labels: ['104', '105', '106', '107', '108', '109', '110', '111', '112', '113'],
+        datasets: [
+          {
+            label: '自然增加率 (‰)',
+            data: [-5.2, -8.1, -11.0, -9.4, -6.8, -12.5, -18.2, -22.4, -14.1, -11.3],
+            borderColor: '#0284c7',
+            backgroundColor: '#0284c7',
+            tension: 0.3,
+            pointRadius: 3,
+            borderWidth: 2
+          },
+          {
+            label: '社會增加率 (‰)',
+            data: [-80.5, 7.2, -5.3, 2.1, -6.4, 15.2, -67.8, -39.1, -63.9, -7.5],
+            borderColor: '#f43f5e',
+            backgroundColor: '#f43f5e',
+            tension: 0.3,
+            pointRadius: 3,
+            borderWidth: 2
+          },
+          {
+            label: '人口成長率 (‰)',
+            data: [-85.7, -0.9, -16.3, -7.3, -13.2, 2.7, -86.0, -61.5, -78.0, -18.8],
+            borderColor: '#0d9488',
+            backgroundColor: '#0d9488',
+            tension: 0.3,
+            pointRadius: 3.5,
+            borderWidth: 2.5
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 10, family: 'monospace' } }
+          },
+          y: {
+            min: -100,
+            max: 50,
+            grid: { color: '#e5e7eb' },
+            ticks: {
+              stepSize: 50,
+              font: { size: 9, family: 'monospace' },
+              callback: function (val) { return val; }
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(27, 67, 50, 0.92)',
+            padding: 8,
+            titleFont: { size: 11 },
+            bodyFont: { size: 10 }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

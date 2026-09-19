@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天送埤聚落區位與基本概況｜宜蘭縣三星鄉</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap');
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #f4f5f4;
+      color: #1f2937;
+    }
+
+    .serif-title {
+      font-family: 'Noto Serif TC', serif;
+    }
+
+    .map-glow {
+      filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.25));
+    }
+
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      main {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen p-3 md:p-8 flex flex-col justify-center items-center">
+
+  <!-- Main Container -->
+  <main
+    class="w-full max-w-[1440px] bg-white rounded-2xl shadow-xl border border-stone-200 overflow-hidden p-5 md:p-8 flex flex-col gap-6">
+
+    <!-- Header Section -->
+    <header class="flex flex-col md:flex-row md:items-end justify-between border-b border-stone-200 pb-4 gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span
+            class="text-xs font-bold tracking-widest text-[#1e3d30] uppercase bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded border border-emerald-200">
+            天送埤聚落現況與議題 ｜ 01
+          </span>
+          <span class="text-xs text-stone-600 font-medium">宜蘭縣三星鄉（天山村・天福村）</span>
+        </div>
+        <h1
+          class="text-2xl md:text-4xl font-bold serif-title text-[#1e3d30] tracking-tight mt-1.5 flex items-center gap-3">
+          天送埤聚落區位與基本概況
+        </h1>
+      </div>
+      <div class="flex items-center gap-3 no-print">
+        <a href="index.html"
+          class="px-3 py-1.5 text-xs font-bold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] border border-emerald-300 hover:border-emerald-500 rounded-lg transition-all flex items-center gap-1.5 shadow-sm group">
+          <i data-lucide="home" class="w-3.5 h-3.5 text-emerald-800 group-hover:scale-110 transition-transform"></i>
+          <span>回首頁</span>
+        </a>
+        <div
+          class="flex items-center gap-1.5 bg-stone-100 text-stone-700 px-3 py-1.5 rounded-lg text-xs font-medium border border-stone-200">
+          <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-700"></i>
+          統計基準：民國 114 年 6 月
+        </div>
+        <button onclick="window.print()"
+          class="px-3.5 py-1.5 text-xs font-semibold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> 列印 / 匯出 PDF
+        </button>
+      </div>
+    </header>
+
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+      <!-- LEFT COLUMN: Vector GIS Satellite Context Map (7 Cols) -->
+      <div
+        class="lg:col-span-7 bg-[#1c2921] border border-stone-800 rounded-xl p-4 md:p-5 flex flex-col justify-between relative shadow-inner overflow-hidden">
+
+        <!-- GIS Map Header Overlay -->
+        <div class="flex justify-between items-start z-10">
+          <div>
+            <h3 class="text-white font-bold text-sm md:text-base flex items-center gap-2">
+              <i data-lucide="map" class="w-4 h-4 text-emerald-400"></i>
+              聚落空間區位與主要設施點位分布
+            </h3>
+            <p class="text-stone-300 text-xs mt-0.5">位處蘭陽平原與雪山山麓交接帶，沿台7丙與宜63線發展</p>
+          </div>
+
+          <!-- North Compass -->
+          <div
+            class="w-8 h-8 rounded-full bg-stone-900/85 border border-stone-600 flex flex-col items-center justify-center text-white text-[10px] font-mono shadow-md">
+            <span class="text-emerald-400 leading-none">▲</span>
+            <span class="text-[9px] -mt-0.5 font-bold">N</span>
+          </div>
+        </div>
+
+        <!-- Interactive Category Quick Filter -->
+        <div class="flex flex-wrap gap-1.5 my-2 z-10 text-[11px]">
+          <button onclick="filterPOIs('all')" id="btn-all"
+            class="poi-filter-btn px-2.5 py-1 rounded-md font-medium transition bg-emerald-700 text-white shadow-sm">
+            全部節點 (6)
+          </button>
+          <button onclick="filterPOIs('edu')" id="btn-edu"
+            class="poi-filter-btn px-2.5 py-1 rounded-md font-medium transition bg-stone-800/80 text-stone-300 hover:text-white">
+            🎓 文教與社區
+          </button>
+          <button onclick="filterPOIs('history')" id="btn-history"
+            class="poi-filter-btn px-2.5 py-1 rounded-md font-medium transition bg-stone-800/80 text-stone-300 hover:text-white">
+            🚂 歷史與產業
+          </button>
+          <button onclick="filterPOIs('nature')" id="btn-nature"
+            class="poi-filter-btn px-2.5 py-1 rounded-md font-medium transition bg-stone-800/80 text-stone-300 hover:text-white">
+            🌲 自然與休閒
+          </button>
+        </div>
+
+        <div class="relative w-full h-[430px] my-1 flex items-center justify-center">
+          <svg viewBox="0 0 650 500" class="w-full h-full max-h-[440px] drop-shadow-md select-none"
+            preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <!-- Satellite Terrain Texture Filter / Gradient -->
+              <linearGradient id="satPlainBg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#2a392e" />
+                <stop offset="50%" stop-color="#213025" />
+                <stop offset="100%" stop-color="#18241d" />
+              </linearGradient>
+              <linearGradient id="satMountainBg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1a2d21" />
+                <stop offset="100%" stop-color="#0e1b13" />
+              </linearGradient>
+              <linearGradient id="tianfuFill" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#2d5843" stop-opacity="0.45" />
+                <stop offset="100%" stop-color="#1b3d2c" stop-opacity="0.25" />
+              </linearGradient>
+              <linearGradient id="tianshanFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1c4733" stop-opacity="0.4" />
+                <stop offset="100%" stop-color="#0c2417" stop-opacity="0.6" />
+              </linearGradient>
+              <filter id="lakeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+
+            <!-- Background Outer Terrain -->
+            <rect width="650" height="500" fill="url(#satPlainBg)" />
+
+            <!-- Lanyang River Basin (North-West Flow) -->
+            <path d="M 0,220 C 70,200 130,160 190,130 C 240,105 280,70 330,20 L 250,0 L 0,0 Z" fill="#314841"
+              opacity="0.6" />
+            <path d="M 0,260 C 90,230 160,180 230,140 C 280,110 330,70 370,10 L 320,0 L 0,0 Z" fill="#405c53"
+              opacity="0.35" />
+            <text x="75" y="80" fill="#7da696" font-size="11" font-weight="bold" letter-spacing="2"
+              transform="rotate(-28 75 80)">蘭陽溪流域向東北出海</text>
+
+            <!-- Surrounding Administrative Village Text Labels -->
+            <g fill="#8ea296" font-size="9.5" font-weight="500" opacity="0.85">
+              <text x="290" y="38">中華村</text>
+              <text x="390" y="32">貴林村</text>
+              <text x="395" y="78">萬德村</text>
+              <text x="325" y="115">人和村</text>
+              <text x="420" y="150">月眉村</text>
+              <text x="350" y="270">雙賢村</text>
+              <text x="385" y="335">集慶村</text>
+              <text x="335" y="355">義德村</text>
+              <text x="400" y="430">耕照村</text>
+              <text x="315" y="475">復興村</text>
+              <text x="400" y="485">寒溪村</text>
+              <text x="65" y="350">員山村</text>
+              <text x="50" y="225">松羅村</text>
+              <text x="125" y="115">崙埤村</text>
+            </g>
+
+            <!-- Tiansongpi Cluster Boundary (Tianfu + Tianshan Village Polygon) -->
+            <path id="clusterBoundary" d="M 230,140 
+                     C 270,110 320,95 330,110
+                     C 340,150 330,190 340,240
+                     C 355,290 405,330 365,400
+                     C 340,440 280,470 235,450
+                     C 185,420 135,370 110,340
+                     C 80,310 135,270 185,230
+                     C 190,200 170,170 230,140 Z" fill="url(#tianshanFill)" stroke="#5eead4" stroke-width="1.8"
+              stroke-dasharray="7,4" />
+
+            <!-- Tianfu Village & Tianshan Village Sub-division boundary line -->
+            <path d="M 185,230 C 230,245 285,235 340,240" fill="none" stroke="#99f6e4" stroke-width="1.2"
+              stroke-dasharray="3,3" opacity="0.65" />
+            <text x="285" y="160" fill="#a7f3d0" font-size="10" font-weight="bold" opacity="0.6">天福村 (739人)</text>
+            <text x="215" y="320" fill="#6ee7b7" font-size="10" font-weight="bold" opacity="0.6">天山村 (462人)</text>
+
+            <!-- Provincial Highway 7 (across river north) -->
+            <path d="M 110,195 Q 165,150 240,105" fill="none" stroke="#94a3b8" stroke-width="2"
+              stroke-linecap="round" />
+            <rect x="128" y="172" width="22" height="11" rx="2" fill="#1e293b" stroke="#94a3b8" stroke-width="0.8" />
+            <text x="131" y="181" fill="#f1f5f9" font-size="8" font-weight="bold">台7</text>
+
+            <!-- Provincial Highway 7-Bing (Tai 7-Bing) - Core East-West Arterial -->
+            <path d="M 160,245 C 210,250 250,255 370,242" fill="none" stroke="#facc15" stroke-width="3.5"
+              stroke-linecap="round" />
+            <path d="M 160,245 C 210,250 250,255 370,242" fill="none" stroke="#ca8a04" stroke-width="1"
+              stroke-dasharray="5,4" />
+            <rect x="330" y="230" width="28" height="12" rx="2" fill="#854d0e" stroke="#fef08a" stroke-width="0.8" />
+            <text x="333" y="239" fill="#fef08a" font-size="8" font-weight="bold">台7丙</text>
+
+            <!-- County Road Yi-63 -->
+            <path d="M 235,170 Q 248,210 255,250" fill="none" stroke="#cbd5e1" stroke-width="2.2"
+              stroke-linecap="round" />
+            <rect x="220" y="195" width="24" height="11" rx="2" fill="#334155" stroke="#cbd5e1" stroke-width="0.8" />
+            <text x="223" y="204" fill="#f8fafc" font-size="8" font-weight="bold">宜63</text>
+
+            <!-- Waterbodies inside cluster (Changpi Lake & Tianpi Tailrace Canal) -->
+            <!-- Changpi Lake (長埤湖) -->
+            <ellipse cx="205" cy="385" rx="16" ry="9" fill="#0284c7" filter="url(#lakeGlow)" opacity="0.85" />
+
+            <!-- Group: 文教與社區 (Education & Community) -->
+            <g id="group-edu" class="poi-group cursor-pointer transition-transform duration-200">
+              <!-- 1. 憲明國小 -->
+              <g onclick="showPoiDetail('憲明國民小學', '在地核心初等教育基地，同時擔任天送埤主要防救災避難收容所與直升機起降節點。', '文教與社區')"
+                class="hover:scale-105">
+                <circle cx="238" cy="245" r="5" fill="#3b82f6" stroke="#ffffff" stroke-width="1.8" />
+                <rect x="180" y="232" width="52" height="14" rx="3" fill="#1e3a8a" fill-opacity="0.85" stroke="#60a5fa"
+                  stroke-width="0.8" />
+                <text x="184" y="242" fill="#ffffff" font-size="8.5" font-weight="bold">憲明國民小學</text>
+              </g>
+
+              <!-- 2. 天送埤社區活動中心 -->
+              <g onclick="showPoiDetail('天送埤社區活動中心', '聚落居民生活凝聚、長者共餐與社區發展協會的核心基盤。', '文教與社區')" class="hover:scale-105">
+                <circle cx="248" cy="265" r="5" fill="#3b82f6" stroke="#ffffff" stroke-width="1.8" />
+                <rect x="256" y="258" width="80" height="14" rx="3" fill="#1e3a8a" fill-opacity="0.85" stroke="#60a5fa"
+                  stroke-width="0.8" />
+                <text x="260" y="268" fill="#ffffff" font-size="8.5" font-weight="bold">天送埤社區活動中心</text>
+              </g>
+            </g>
+
+            <!-- Group: 歷史與產業 (History & Industry) -->
+            <g id="group-history" class="poi-group cursor-pointer transition-transform duration-200">
+              <!-- 3. 天送埤林鐵文創園區 -->
+              <g onclick="showPoiDetail('天送埤林鐵文創園區', '民國93年公告為歷史建築，見證羅東森林鐵路與伐木產業輝煌歷史，現為熱門觀光火車地標。', '歷史與產業')"
+                class="hover:scale-105">
+                <circle cx="268" cy="235" r="5.5" fill="#f59e0b" stroke="#ffffff" stroke-width="2" />
+                <rect x="276" y="226" width="84" height="15" rx="3" fill="#78350f" fill-opacity="0.9" stroke="#fcd34d"
+                  stroke-width="0.8" />
+                <text x="280" y="237" fill="#ffffff" font-size="8.5" font-weight="bold">天送埤林鐵文創園區</text>
+              </g>
+
+              <!-- 4. 蘭陽發電廠天埤機組 -->
+              <g onclick="showPoiDetail('蘭陽發電廠天埤機組', '引截安農溪水源之百年水力發電歷史樞紐，具重要工業遺產與水資源涵養意涵。', '歷史與產業')"
+                class="hover:scale-105">
+                <circle cx="260" cy="290" r="5.5" fill="#f59e0b" stroke="#ffffff" stroke-width="2" />
+                <rect x="268" y="283" width="84" height="15" rx="3" fill="#78350f" fill-opacity="0.9" stroke="#fcd34d"
+                  stroke-width="0.8" />
+                <text x="272" y="294" fill="#ffffff" font-size="8.5" font-weight="bold">蘭陽發電廠天埤機組</text>
+              </g>
+            </g>
+
+            <!-- Group: 自然與休閒 (Nature & Leisure) -->
+            <g id="group-nature" class="poi-group cursor-pointer transition-transform duration-200">
+              <!-- 5. 長埤湖風景區 -->
+              <g onclick="showPoiDetail('長埤湖風景區', '依傍翠綠山巒之天然高山湧泉堰塞湖，環湖步道生態豐富，為三星鄉代表性山麓休閒風景名勝。', '自然與休閒')"
+                class="hover:scale-105">
+                <circle cx="205" cy="385" r="6" fill="#10b981" stroke="#ffffff" stroke-width="2" />
+                <rect x="180" y="396" width="65" height="15" rx="3" fill="#064e3b" fill-opacity="0.9" stroke="#6ee7b7"
+                  stroke-width="0.8" />
+                <text x="185" y="407" fill="#ffffff" font-size="8.5" font-weight="bold">長埤湖風景區</text>
+              </g>
+
+              <!-- 6. 九芎湖幸福月台 -->
+              <g onclick="showPoiDetail('九芎湖幸福月台', '昔日林鐵沿線懷舊月台景觀，串聯蘭陽溪河谷與堤防單車漫遊路線。', '自然與休閒')" class="hover:scale-105">
+                <circle cx="188" cy="275" r="5" fill="#10b981" stroke="#ffffff" stroke-width="2" />
+                <rect x="120" y="268" width="62" height="15" rx="3" fill="#064e3b" fill-opacity="0.9" stroke="#6ee7b7"
+                  stroke-width="0.8" />
+                <text x="124" y="279" fill="#ffffff" font-size="8.5" font-weight="bold">九芎湖幸福月台</text>
+              </g>
+            </g>
+
+            <!-- Scale Bar (0 - 1 - 2 km) -->
+            <g transform="translate(370, 460)">
+              <rect x="0" y="0" width="100" height="4" fill="#ffffff" />
+              <rect x="0" y="0" width="50" height="4" fill="#1e293b" />
+              <line x1="0" y1="-3" x2="0" y2="7" stroke="#ffffff" stroke-width="1.5" />
+              <line x1="50" y1="-3" x2="50" y2="7" stroke="#ffffff" stroke-width="1.5" />
+              <line x1="100" y1="-3" x2="100" y2="7" stroke="#ffffff" stroke-width="1.5" />
+              <text x="-2" y="17" fill="#e2e8f0" font-size="8" font-mono>0</text>
+              <text x="47" y="17" fill="#e2e8f0" font-size="8" font-mono>1</text>
+              <text x="94" y="17" fill="#e2e8f0" font-size="8" font-mono>2 km</text>
+            </g>
+          </svg>
+        </div>
+
+        <div id="poiDetailModal"
+          class="bg-black/75 backdrop-blur-md border border-stone-700/90 rounded-lg p-3 text-xs text-stone-200 z-10 flex flex-col gap-1.5 transition-all">
+          <div class="flex items-center justify-between">
+            <span id="poiTitle" class="font-bold text-emerald-300 text-xs md:text-sm flex items-center gap-1.5">
+              <i data-lucide="info" class="w-3.5 h-3.5"></i> 點擊地圖點位查看詳細介紹
+            </span>
+            <span id="poiCategoryBadge"
+              class="text-[10px] px-2 py-0.5 rounded bg-stone-800 text-stone-300 border border-stone-600">
+              提示
+            </span>
+          </div>
+          <p id="poiDesc" class="text-stone-300 text-[11px] leading-relaxed">
+            天送埤聚落兼具林鐵文化、百年水力發電與山湖地景，為進入太平山與大同鄉之關鍵觀光前哨門戶。
+          </p>
+        </div>
+
+        <!-- GIS Legend Bar -->
+        <div
+          class="bg-stone-900/80 border border-stone-800 rounded-lg px-3 py-2 text-[11px] text-stone-300 z-10 flex flex-wrap items-center justify-between gap-2 mt-2">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1 text-stone-300">
+              <span class="w-3 h-0.5 border border-dashed border-[#5eead4] inline-block"></span> 聚落範圍
+            </span>
+            <span class="flex items-center gap-1 text-stone-300">
+              <span class="w-3 h-1 bg-[#facc15] inline-block rounded-sm"></span> 台7丙省道
+            </span>
+            <span class="flex items-center gap-1 text-stone-300">
+              <span class="w-3 h-1 bg-[#cbd5e1] inline-block rounded-sm"></span> 宜63鄉道
+            </span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1 text-blue-300">
+              <span class="w-2 h-2 rounded-full bg-[#3b82f6] inline-block"></span> 文教與社區
+            </span>
+            <span class="flex items-center gap-1 text-amber-300">
+              <span class="w-2 h-2 rounded-full bg-[#f59e0b] inline-block"></span> 歷史與產業
+            </span>
+            <span class="flex items-center gap-1 text-emerald-300">
+              <span class="w-2 h-2 rounded-full bg-[#10b981] inline-block"></span> 自然與休閒
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: 5 Core Demographic & Location Indicators (5 Cols) -->
+      <div class="lg:col-span-5 flex flex-col justify-between gap-3.5">
+
+        <!-- Indicator 1: 土地面積 -->
+        <div
+          class="bg-stone-50 hover:bg-stone-100/80 transition-colors border border-stone-200 rounded-xl p-4 shadow-sm flex items-center gap-4">
+          <div
+            class="w-13 h-13 md:w-14 md:h-14 rounded-full bg-[#1b4332] text-white flex items-center justify-center shrink-0 shadow-md">
+            <i data-lucide="map-pin" class="w-6 h-6 md:w-7 md:h-7 text-emerald-300"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-baseline gap-1.5">
+              <span class="text-2xl md:text-3xl font-black font-mono text-[#1e3d30] tracking-tight">10.12</span>
+              <span class="text-xs font-semibold text-stone-600">平方公里</span>
+            </div>
+            <div class="text-xs text-stone-700 font-medium mt-0.5 flex items-center justify-between">
+              <span>村域土地總面積</span>
+              <span class="text-[11px] px-2 py-0.5 bg-stone-200/70 rounded text-stone-700 font-mono">天山村 ＋ 天福村</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Indicator 2: 人口總數 -->
+        <div
+          class="bg-stone-50 hover:bg-stone-100/80 transition-colors border border-stone-200 rounded-xl p-4 shadow-sm flex items-center gap-4">
+          <div
+            class="w-13 h-13 md:w-14 md:h-14 rounded-full bg-[#d97706] text-white flex items-center justify-center shrink-0 shadow-md">
+            <i data-lucide="users" class="w-6 h-6 md:w-7 md:h-7 text-amber-200"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-baseline justify-between">
+              <div class="flex items-baseline gap-1.5">
+                <span class="text-2xl md:text-3xl font-black font-mono text-stone-900 tracking-tight">1,201</span>
+                <span class="text-xs font-semibold text-stone-600">人</span>
+              </div>
+              <span
+                class="text-[10px] text-stone-600 font-mono bg-amber-50 border border-amber-200 text-amber-800 px-1.5 py-0.5 rounded">
+                114年6月現況
+              </span>
+            </div>
+            <div class="text-xs text-stone-700 font-medium mt-0.5 flex items-center justify-between">
+              <span>聚落人口總數</span>
+              <span class="text-[11px] text-stone-600 font-mono">
+                天福村 <strong class="text-stone-800">739</strong> 人 ｜ 天山村 <strong class="text-stone-800">462</strong> 人
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Indicator 3: 聚落戶數 -->
+        <div
+          class="bg-stone-50 hover:bg-stone-100/80 transition-colors border border-stone-200 rounded-xl p-4 shadow-sm flex items-center gap-4">
+          <div
+            class="w-13 h-13 md:w-14 md:h-14 rounded-full bg-[#1b4332] text-white flex items-center justify-center shrink-0 shadow-md">
+            <i data-lucide="home" class="w-6 h-6 md:w-7 md:h-7 text-emerald-300"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-baseline gap-1.5">
+              <span class="text-2xl md:text-3xl font-black font-mono text-[#1e3d30] tracking-tight">519</span>
+              <span class="text-xs font-semibold text-stone-600">戶</span>
+            </div>
+            <div class="text-xs text-stone-700 font-medium mt-0.5 flex items-center justify-between">
+              <span>聚落戶數結構</span>
+              <span class="text-[11px] text-stone-600 font-mono">
+                天福村 <strong class="text-stone-800">313</strong> 戶 ｜ 天山村 <strong class="text-stone-800">206</strong> 戶
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Indicator 4: 人口密度 -->
+        <div
+          class="bg-stone-50 hover:bg-stone-100/80 transition-colors border border-stone-200 rounded-xl p-4 shadow-sm flex items-center gap-4">
+          <div
+            class="w-13 h-13 md:w-14 md:h-14 rounded-full bg-[#2d5843] text-white flex items-center justify-center shrink-0 shadow-md">
+            <i data-lucide="percent" class="w-6 h-6 md:w-7 md:h-7 text-teal-200"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between text-[11px] text-stone-600 font-medium">
+              <span>天福村密度</span>
+              <span>天山村密度</span>
+            </div>
+            <div class="flex items-baseline justify-between mt-0.5">
+              <span class="text-xl md:text-2xl font-black font-mono text-[#1b4332]">169.8</span>
+              <span class="text-stone-400 font-serif">/</span>
+              <span class="text-xl md:text-2xl font-black font-mono text-[#1b4332]">80.02</span>
+              <span class="text-[11px] font-semibold text-stone-600">人 / km²</span>
+            </div>
+            <div
+              class="text-[11px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-1 flex items-center gap-1 font-medium">
+              <i data-lucide="trending-up" class="w-3 h-3 text-emerald-600"></i>
+              天福村人口密度明顯高於三星鄉全鄉平均
+            </div>
+          </div>
+        </div>
+
+        <!-- Indicator 5: 區位定位 (觀光入山門戶) -->
+        <div
+          class="bg-[#1b4332] text-white rounded-xl p-4 shadow-md border-l-4 border-amber-400 flex items-center gap-4">
+          <div
+            class="w-13 h-13 md:w-14 md:h-14 rounded-full bg-white/10 text-white flex items-center justify-center shrink-0 border border-white/20 shadow-inner">
+            <i data-lucide="compass" class="w-6 h-6 md:w-7 md:h-7 text-amber-300"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <h4 class="text-base md:text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
+                觀光入山門戶
+              </h4>
+              <span
+                class="text-[10px] px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-300/40 font-semibold">
+                戰略節點
+              </span>
+            </div>
+            <p class="text-stone-200 text-xs mt-1 leading-relaxed">
+              居於平原與山麓交接地帶，串接平原農業體驗與大同山區森林遊憩，具顯著之交通樞紐與觀光集散功能。
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Bottom Description Banner -->
+    <footer class="bg-[#eef5f1] border-l-4 border-[#1e3d30] rounded-r-xl p-4 md:p-5 flex items-start gap-4 shadow-sm">
+      <div
+        class="w-10 h-10 rounded-full bg-[#1e3d30] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+        <i data-lucide="sprout" class="w-5 h-5 text-emerald-300"></i>
+      </div>
+      <div class="flex-1">
+        <h4 class="font-bold text-sm text-[#1e3d30] mb-1 flex items-center gap-2">
+          聚落核心價值與地景特色
+          <span class="text-xs font-normal text-stone-600 font-sans">｜ Heritage, Ecology & Cultural Landscape</span>
+        </h4>
+        <p class="text-stone-800 text-sm md:text-[14.5px] leading-relaxed font-medium">
+          天送埤車站於<strong>民國 93
+            年公告為歷史建築</strong>，見證台灣林鐵文化與百年水力發電史。天送埤聚落兼具<strong>「生態景觀」</strong>、<strong>「生活文化」</strong>與<strong>「人為文化」</strong>三大鄉村地景資源，為三星鄉進入山林生態遊憩之重要觀光興盛聚落。
+        </p>
+      </div>
+    </footer>
+
+
+    <!-- Chapter Pagination Footer Navigation (No Print) -->
+    <nav class="no-print pt-4 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <a href="index.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#1e3d30] font-bold border border-emerald-200 transition shadow-sm">
+          <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-800"></i>
+          <span>回目錄總覽首頁</span>
+        </a>
+
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="02人口結構與高齡化課題.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1e3d30] hover:bg-[#2a5543] text-white font-semibold transition shadow-sm">
+          <span>下一單元：02 人口結構與高齡化課題</span>
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </nav>
+
+  </main>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // POI Details Dataset
+    const poiData = {
+      '憲明國民小學': {
+        category: '文教與社區',
+        desc: '聚落唯一的基礎公立國民小學，長期深耕社區文史與環境教育；在防救災體系中兼具主要避難收容所（容量40人）與緊急直升機起降場功能。'
+      },
+      '天送埤社區活動中心': {
+        category: '文教與社區',
+        desc: '天送埤居民公共集會、銀髮日照關懷據點、社區營造推展的核心基地，鄰近憲明國小與主要聚落核心。'
+      },
+      '天送埤林鐵文創園區': {
+        category: '歷史與產業',
+        desc: '日治時期羅東森林鐵路重要停靠站，原木造站體完好保存，民國93年獲登錄為宜蘭縣歷史建築；現結合蒸汽小火車體驗與文創產業，為聚落最高人氣景點。'
+      },
+      '蘭陽發電廠天埤機組': {
+        category: '歷史與產業',
+        desc: '建於日治時期大正年間的百年水力發電重鎮，截取安農溪水源發電，發電後尾水灌溉三星、冬山與五結廣大蘭陽平原農田，深具產業地景指標意義。'
+      },
+      '長埤湖風景區': {
+        category: '自然與休閒',
+        desc: '位於聚落南端台7丙省道旁的高山天然湖泊，周圍山巒疊翠，設有環湖生態步道、露營區與咖啡遊憩區，為入山遊客必訪之自然生態休閒名所。'
+      },
+      '九芎湖幸福月台': {
+        category: '自然與休閒',
+        desc: '位處安農溪水源上游及林鐵舊線周圍，規劃幸福月台造景與步道，提供漫遊休憩、水資源認識及騎乘鐵馬打卡的幽靜親水節點。'
+      }
+    };
+
+    // POI Interactivity: Click to show detail
+    function showPoiDetail(name, fallbackDesc, category) {
+      const data = poiData[name] || { category: category, desc: fallbackDesc };
+      document.getElementById('poiTitle').innerHTML = `<i data-lucide="map-pin" class="w-4 h-4 text-emerald-400 inline"></i> ${name}`;
+      document.getElementById('poiCategoryBadge').textContent = data.category;
+      document.getElementById('poiDesc').textContent = data.desc;
+      lucide.createIcons();
+    }
+
+    // Filter POIs on Map
+    function filterPOIs(type) {
+      // Update filter button styles
+      document.querySelectorAll('.poi-filter-btn').forEach(btn => {
+        btn.classList.remove('bg-emerald-700', 'text-white', 'shadow-sm');
+        btn.classList.add('bg-stone-800/80', 'text-stone-300');
+      });
+
+      const activeBtn = document.getElementById(`btn-${type}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-stone-800/80', 'text-stone-300');
+        activeBtn.classList.add('bg-emerald-700', 'text-white', 'shadow-sm');
+      }
+
+      const eduGroup = document.getElementById('group-edu');
+      const histGroup = document.getElementById('group-history');
+      const natGroup = document.getElementById('group-nature');
+
+      if (type === 'all') {
+        eduGroup.style.display = 'block';
+        histGroup.style.display = 'block';
+        natGroup.style.display = 'block';
+      } else if (type === 'edu') {
+        eduGroup.style.display = 'block';
+        histGroup.style.display = 'none';
+        natGroup.style.display = 'none';
+      } else if (type === 'history') {
+        eduGroup.style.display = 'none';
+        histGroup.style.display = 'block';
+        natGroup.style.display = 'none';
+      } else if (type === 'nature') {
+        eduGroup.style.display = 'none';
+        histGroup.style.display = 'none';
+        natGroup.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+
+</html>

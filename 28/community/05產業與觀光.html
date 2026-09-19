@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天送埤聚落現況與議題｜產業與觀光發展現況</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap');
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #f4f5f4;
+      color: #1f2937;
+    }
+
+    .serif-title {
+      font-family: 'Noto Serif TC', serif;
+    }
+
+    .gis-top-bg {
+      background: radial-gradient(circle at 48% 30%, #22372b 0%, #15251d 65%, #0b150f 100%);
+    }
+
+    .gis-bottom-bg {
+      background: radial-gradient(circle at 48% 30%, #1c2e24 0%, #13211a 65%, #09120d 100%);
+    }
+
+    .pulse-warning {
+      animation: pulseWarning 2.2s infinite;
+    }
+
+    @keyframes pulseWarning {
+
+      0%,
+      100% {
+        opacity: 0.95;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.45;
+        transform: scale(1.1);
+      }
+    }
+
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      main {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen p-3 md:p-8 flex flex-col justify-center items-center">
+
+  <!-- Main Dashboard Container -->
+  <main
+    class="w-full max-w-[1520px] bg-white rounded-2xl shadow-xl border border-stone-200 overflow-hidden p-5 md:p-8 flex flex-col gap-6">
+
+    <!-- Header Section -->
+    <header class="flex flex-col md:flex-row md:items-end justify-between border-b border-stone-200 pb-4 gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span
+            class="text-xs font-bold tracking-widest text-[#1e3d30] uppercase bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded border border-emerald-200">
+            天送埤聚落現況與議題 ｜ 05
+          </span>
+          <span class="text-xs text-stone-500 font-medium">宜蘭縣三星鄉（天山村・天福村）</span>
+        </div>
+        <h1
+          class="text-2xl md:text-4xl font-bold serif-title text-[#1e3d30] tracking-tight mt-1.5 flex items-center gap-3">
+          產業與觀光發展現況
+        </h1>
+      </div>
+      <div class="flex items-center gap-3 no-print">
+        <a href="index.html"
+          class="px-3 py-1.5 text-xs font-bold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] border border-emerald-300 hover:border-emerald-500 rounded-lg transition-all flex items-center gap-1.5 shadow-sm group">
+          <i data-lucide="home" class="w-3.5 h-3.5 text-emerald-800 group-hover:scale-110 transition-transform"></i>
+          <span>回首頁</span>
+        </a>
+        <div
+          class="flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-lg text-xs font-semibold">
+          <i data-lucide="tractor" class="w-3.5 h-3.5 text-amber-700"></i>
+          以農為本・向觀光延伸 ✕ 產業用地適法性
+        </div>
+        <button onclick="window.print()"
+          class="px-3.5 py-1.5 text-xs font-semibold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> 列印 / 匯出 PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Subheader: Core Thesis Statement -->
+    <div
+      class="bg-stone-50 border-l-4 border-emerald-700 p-3.5 rounded-r-xl text-xs md:text-[13.5px] text-stone-700 leading-relaxed font-medium">
+      天送埤目前產業發展以「<strong>以農為本、向觀光延伸</strong>」為主軸；惟目前各休閒農場缺乏整合，多為<strong>單點觀光發展</strong>，且面臨<strong>部分用地合法性</strong>等問題，亟待改善。
+    </div>
+
+    <!-- Main Content Layout (Left Column: Analytical Cards | Right Column: Stacked GIS Vector Maps) -->
+    <section class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+
+      <!-- ==================== LEFT COLUMN: Key Issues & Structural Bottlenecks (5.5 Cols) ==================== -->
+      <div class="xl:col-span-5 flex flex-col justify-between gap-4">
+
+        <!-- Card 1: 傳統產業轉型發展 -->
+        <div
+          class="bg-stone-50 hover:bg-stone-100/70 transition border border-stone-200 rounded-xl p-4 md:p-5 shadow-sm flex items-start gap-4">
+          <div
+            class="w-12 h-12 md:w-13 md:h-13 rounded-full bg-[#1b4332] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+            <i data-lucide="tractor" class="w-6 h-6 text-emerald-300"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-sm md:text-base text-[#1e3d30]">
+                傳統產業轉型發展
+              </h3>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-100/80 text-emerald-800 font-semibold">
+                休閒農業體驗
+              </span>
+            </div>
+            <ul class="text-xs md:text-[13px] text-stone-700 leading-relaxed mt-2 space-y-1.5">
+              <li class="flex items-start gap-1.5">
+                <span class="text-emerald-700 font-bold mt-0.5">▪</span>
+                <span><strong>休閒化趨勢</strong>：一級農業朝向休閒農業發展，聚落內已包含多家農事體驗場域。</span>
+              </li>
+              <li class="flex items-start gap-1.5">
+                <span class="text-amber-700 font-bold mt-0.5">▪</span>
+                <span><strong>缺乏跨場整合</strong>：各農場間缺乏整合性串聯規劃，多各自為政經營。</span>
+              </li>
+              <li class="flex items-start gap-1.5">
+                <span class="text-rose-700 font-bold mt-0.5">▪</span>
+                <span><strong>人口拉力不足</strong>：產業效益與就業規模相對有限，<strong>不足以產生足夠拉力吸引青年與人口回流</strong>。</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card 2: 觀光遊憩門戶 -->
+        <div
+          class="bg-stone-50 hover:bg-stone-100/70 transition border border-stone-200 rounded-xl p-4 md:p-5 shadow-sm flex items-start gap-4">
+          <div
+            class="w-12 h-12 md:w-13 md:h-13 rounded-full bg-[#1b4332] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+            <i data-lucide="camera" class="w-6 h-6 text-emerald-300"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-sm md:text-base text-[#1e3d30]">
+                觀光遊憩門戶
+              </h3>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-blue-100/80 text-blue-800 font-semibold">
+                入口樞紐節點
+              </span>
+            </div>
+            <p class="text-xs md:text-[13px] text-stone-700 leading-relaxed mt-1.5">
+              聚落匯聚多處指標性亮點設施：
+            </p>
+            <div class="grid grid-cols-2 gap-1.5 my-2 text-[11px] font-medium">
+              <span class="bg-white border border-stone-200 px-2 py-1 rounded text-stone-800 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span> 天送埤林鐵文創園區
+              </span>
+              <span class="bg-white border border-stone-200 px-2 py-1 rounded text-stone-800 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 蘭陽發電廠天埤機組
+              </span>
+              <span class="bg-white border border-stone-200 px-2 py-1 rounded text-stone-800 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span> 安農溪水系景觀
+              </span>
+              <span class="bg-white border border-stone-200 px-2 py-1 rounded text-stone-800 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 多家休閒體驗農場
+              </span>
+            </div>
+            <p class="text-xs text-stone-600">
+              作為通往山區遊憩景點之入口門戶，惟<strong>缺乏整體串聯規劃，各節點多呈現各自發展態勢</strong>。
+            </p>
+          </div>
+        </div>
+
+        <!-- Card 3: 土地利用侷限與課題 -->
+        <div
+          class="bg-stone-50 hover:bg-stone-100/70 transition border border-stone-200 rounded-xl p-4 md:p-5 shadow-sm flex items-start gap-4">
+          <div
+            class="w-12 h-12 md:w-13 md:h-13 rounded-full bg-[#8c3c2a] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+            <i data-lucide="factory" class="w-6 h-6 text-amber-200"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-sm md:text-base text-[#1e3d30]">
+                土地利用侷限與課題
+              </h3>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-rose-100 text-rose-900 font-semibold">
+                適法性與負面外溢
+              </span>
+            </div>
+            <p class="text-xs md:text-[13px] text-stone-700 leading-relaxed mt-1.5">
+              面臨部分產業用地的適用性與合法性問題（含<strong>非法旅宿與違規使用</strong>）。農舍與民宿的失序蔓延，衍生三大地方課題：
+            </p>
+            <div class="flex flex-col gap-2 mt-2 pt-2 border-t border-stone-200">
+              <div class="flex items-center gap-2 text-xs text-stone-800">
+                <span
+                  class="text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded text-[11px] font-bold">🌾
+                  農地破碎化</span>
+                <span>蠶食原本完整之農業生產環境與排灌系統。</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-stone-800">
+                <span
+                  class="text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded text-[11px] font-bold">🚗
+                  交通停車壅塞</span>
+                <span>假日遊客與外來車輛湧入，擠壓核心狹小巷道。</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-stone-800">
+                <span
+                  class="text-rose-800 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded text-[11px] font-bold">⚠️
+                  環境污染隱憂</span>
+                <span>生活與觀光排廢未經妥善處理，衝擊里山水域。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Node Inspector Banner -->
+        <div id="industryInspector"
+          class="bg-[#1b4332] border border-emerald-800 rounded-xl p-3 text-xs text-stone-200 flex flex-col gap-1 shadow-inner">
+          <div class="flex items-center justify-between">
+            <span id="inspectTitle" class="font-bold text-emerald-300 text-xs flex items-center gap-1.5">
+              <i data-lucide="info" class="w-3.5 h-3.5 inline"></i> 點擊右側地圖節點或圖層查看詳情
+            </span>
+            <span id="inspectBadge"
+              class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
+              圖資導覽
+            </span>
+          </div>
+          <p id="inspectDetail" class="text-stone-300 text-[11px] leading-relaxed">
+            天送埤觀光產業集中於台7丙兩側及安農溪沿線，山麓周邊散佈非法與未立案旅宿，土地使用管制面臨結構性挑戰。
+          </p>
+        </div>
+
+      </div>
+
+      <!-- ==================== RIGHT COLUMN: Two Stacked Vector GIS Maps (6.5 Cols) ==================== -->
+      <div class="xl:col-span-7 flex flex-col gap-4">
+
+        <!-- MAP 1: Top GIS Map - 非都市土地使用分區與編定 (Land Zoning & Building Parcels) -->
+        <div
+          class="gis-top-bg border border-stone-800 rounded-xl p-3 md:p-4 shadow-inner relative overflow-hidden flex flex-col justify-between">
+
+          <!-- Map 1 Overlay Header -->
+          <div class="flex justify-between items-start z-10">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                <h3 class="text-white font-bold text-xs md:text-sm flex items-center gap-1.5">
+                  非都市土地使用分區與編定圖
+                </h3>
+              </div>
+              <p class="text-stone-300 text-[11px] mt-0.5">
+                黃色一般農業區、綠色山坡地保育區與森林區，紅/橘色標註建地集中於台7丙沿線
+              </p>
+            </div>
+
+            <!-- North Compass -->
+            <div
+              class="w-6 h-6 rounded-full bg-stone-900/80 border border-stone-600 flex flex-col items-center justify-center text-white text-[8px] font-mono shadow shrink-0">
+              <span class="text-emerald-400 leading-none">▲</span>
+              <span class="text-[7px] -mt-0.5 font-bold">N</span>
+            </div>
+          </div>
+
+          <!-- SVG Canvas: Land Zoning (Authentic reproduction of top slide map) -->
+          <div class="relative w-full h-[255px] my-1 flex items-center justify-center">
+            <svg viewBox="0 0 560 300" class="w-full h-full select-none" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <!-- Riverbed gradient -->
+                <linearGradient id="riverGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#334d42" />
+                  <stop offset="100%" stop-color="#1f332a" />
+                </linearGradient>
+              </defs>
+
+              <!-- Base Background -->
+              <rect width="560" height="300" fill="#14211a" />
+
+              <!-- Lanyang River Bed (Northwest - River Area #0284c7) -->
+              <path d="M 0,110 C 60,95 120,70 180,45 C 220,25 260,10 320,0 L 0,0 Z" fill="url(#riverGrad)"
+                stroke="#1d4ed8" stroke-width="0.8" opacity="0.85" />
+              <text x="45" y="45" fill="#93c5fd" font-size="8.5" font-weight="bold">河川區（蘭陽溪）</text>
+
+              <!-- ZONING POLYS (Non-urban Land Use Zones) -->
+              <!-- 1. 一般農業區 (General Agricultural Zone - Pale Yellow #fef08a / #eab308) -->
+              <path d="M 180,45 C 230,35 280,30 320,40 C 350,75 345,115 365,142 L 310,150 L 225,145 L 180,140 Z"
+                fill="#fef08a" fill-opacity="0.85" stroke="#ca8a04" stroke-width="0.8" />
+              <text x="245" y="85" fill="#854d0e" font-size="9" font-weight="bold">一般農業區</text>
+
+              <!-- 2. 山坡地保育區 (Slope Conservation Zone - Yellowish Green / Ochre #84cc16 / #65a30d) -->
+              <path d="M 225,145 L 310,150 L 365,142 C 390,175 425,190 395,230 L 330,240 L 290,195 L 225,145 Z"
+                fill="#ca8a04" fill-opacity="0.75" stroke="#a16207" stroke-width="0.8" />
+              <text x="330" y="195" fill="#fef08a" font-size="8.5" font-weight="bold">山坡地保育區</text>
+
+              <!-- 3. 森林區 (Forestry Zone - Deep Forest Green #15803d / #166534) -->
+              <path
+                d="M 180,140 L 225,145 L 290,195 L 330,240 C 310,275 260,285 220,275 C 170,255 130,220 110,195 C 95,175 140,155 180,140 Z"
+                fill="#15803d" fill-opacity="0.9" stroke="#14532d" stroke-width="0.8" />
+              <text x="175" y="220" fill="#bbf7d0" font-size="9" font-weight="bold">森林區（水源涵養）</text>
+
+              <!-- Cluster Outer Dashed Boundary -->
+              <path d="M 180,45 
+                       C 230,35 280,30 320,40
+                       C 350,75 345,115 365,142
+                       C 390,175 425,190 395,230
+                       C 370,270 310,285 260,285
+                       C 210,275 160,245 130,220
+                       C 95,185 140,155 180,140 Z" fill="none" stroke="#ffffff" stroke-width="1.4"
+                stroke-dasharray="5,3" />
+
+              <!-- Core Highway: Tai 7-Bing (三星路) -->
+              <path d="M 150,148 C 210,152 270,156 380,145" fill="none" stroke="#eab308" stroke-width="2.5"
+                stroke-linecap="round" />
+              <text x="335" y="138" fill="#fef08a" font-size="7.5" font-weight="bold">台7丙</text>
+
+              <!-- Non-urban Building Parcels (甲建/乙建/丙建 blocks) -->
+              <g id="zoning-building-blocks">
+                <!-- 甲種建築用地 (Red) -->
+                <rect x="235" y="142" width="10" height="7" fill="#dc2626" rx="1" />
+                <rect x="248" y="140" width="12" height="8" fill="#dc2626" rx="1" />
+                <rect x="263" y="141" width="14" height="9" fill="#dc2626" rx="1" />
+                <rect x="280" y="143" width="12" height="7" fill="#dc2626" rx="1" />
+                <rect x="295" y="144" width="8" height="6" fill="#dc2626" rx="1" />
+                <!-- 乙種建築用地 (Orange) -->
+                <rect x="242" y="134" width="9" height="6" fill="#ea580c" rx="1" />
+                <rect x="270" y="133" width="10" height="6" fill="#ea580c" rx="1" />
+                <!-- 丙種建築用地 (Ochre/Amber) -->
+                <rect x="230" y="155" width="8" height="6" fill="#f59e0b" rx="1" />
+                <rect x="255" y="160" width="9" height="7" fill="#f59e0b" rx="1" />
+                <!-- Scatter Agricultural Outskirts building points -->
+                <circle cx="280" cy="95" r="2.2" fill="#dc2626" />
+                <circle cx="295" cy="85" r="2" fill="#ea580c" />
+                <circle cx="260" cy="105" r="2.2" fill="#dc2626" />
+                <circle cx="230" cy="115" r="2" fill="#dc2626" />
+              </g>
+
+              <!-- Scale Bar (0 - 1 - 2 km) -->
+              <g transform="translate(430, 265)">
+                <rect x="0" y="0" width="80" height="3" fill="#ffffff" />
+                <rect x="0" y="0" width="40" height="3" fill="#1e293b" />
+                <line x1="0" y1="-2" x2="0" y2="5" stroke="#ffffff" stroke-width="1" />
+                <line x1="40" y1="-2" x2="40" y2="5" stroke="#ffffff" stroke-width="1" />
+                <line x1="80" y1="-2" x2="80" y2="5" stroke="#ffffff" stroke-width="1" />
+                <text x="-2" y="14" fill="#cbd5e1" font-size="7" font-mono>0</text>
+                <text x="36" y="14" fill="#cbd5e1" font-size="7" font-mono>1</text>
+                <text x="74" y="14" fill="#cbd5e1" font-size="7" font-mono>2 km</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Map 1 Legend Bar -->
+          <div
+            class="bg-stone-900/85 border border-stone-700/80 rounded-lg px-2.5 py-1 text-[10px] text-stone-300 z-10 flex flex-wrap items-center justify-between gap-1.5 mt-0.5">
+            <div class="flex items-center gap-2">
+              <span class="flex items-center gap-1">
+                <span class="w-2.5 h-2 bg-[#fef08a] inline-block border border-[#ca8a04]"></span> 一般農業區
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="w-2.5 h-2 bg-[#ca8a04] inline-block border border-[#a16207]"></span> 山坡地保育區
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="w-2.5 h-2 bg-[#15803d] inline-block border border-[#14532d]"></span> 森林區
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 bg-[#dc2626] inline-block rounded-xs"></span> 甲建
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 bg-[#ea580c] inline-block rounded-xs"></span> 乙建
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 bg-[#f59e0b] inline-block rounded-xs"></span> 丙建
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- MAP 2: Bottom GIS Map - 觀光產業資源與休閒農場分佈 (Tourism Facilities & Accommodations) -->
+        <div
+          class="gis-bottom-bg border border-stone-800 rounded-xl p-3 md:p-4 shadow-inner relative overflow-hidden flex flex-col justify-between">
+
+          <!-- Map 2 Overlay Header -->
+          <div class="flex justify-between items-start z-10">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                <h3 class="text-white font-bold text-xs md:text-sm flex items-center gap-1.5">
+                  觀光產業資源、休閒農場與旅宿分佈圖
+                </h3>
+              </div>
+              <p class="text-stone-300 text-[11px] mt-0.5">
+                斜線區為休閒農業區範圍，點位標註休閒農場、觀光景點、合法旅宿與非法旅宿
+              </p>
+            </div>
+
+            <!-- Accommodations Ratio Badge -->
+            <span
+              class="text-[10px] font-mono bg-rose-950/80 text-rose-300 px-2 py-0.5 rounded border border-rose-800 shrink-0">
+              合法 vs 非法旅宿
+            </span>
+          </div>
+
+          <!-- SVG Canvas: Tourism Points and Leisure Agriculture Zone -->
+          <div class="relative w-full h-[260px] my-1 flex items-center justify-center">
+            <svg viewBox="0 0 560 300" class="w-full h-full select-none" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <!-- Leisure Agricultural Hatch Pattern -->
+                <pattern id="leisureAgriHatch" width="10" height="10" patternUnits="userSpaceOnUse">
+                  <path d="M 0,10 L 10,0 M -2,2 L 2,-2 M 8,12 L 12,8" stroke="#f59e0b" stroke-width="0.8"
+                    stroke-opacity="0.35" />
+                </pattern>
+              </defs>
+
+              <!-- Base Aerial Orthophoto Tint -->
+              <rect width="560" height="300" fill="#14221a" />
+
+              <!-- Lanyang River at Northwest -->
+              <path d="M 0,110 C 60,95 120,70 180,45 C 220,25 260,10 320,0 L 0,0 Z" fill="#2d443b" opacity="0.65" />
+              <text x="45" y="45" fill="#7fa996" font-size="8.5" font-weight="bold">蘭陽溪</text>
+
+              <!-- Village Cluster Boundary (Dashed White Polyline) -->
+              <path d="M 180,45 
+                       C 230,35 280,30 320,40
+                       C 350,75 345,115 365,142
+                       C 390,175 425,190 395,230
+                       C 370,270 310,285 260,285
+                       C 210,275 160,245 130,220
+                       C 95,185 140,155 180,140 Z" fill="none" stroke="#ffffff" stroke-width="1.4"
+                stroke-dasharray="5,3" />
+
+              <!-- 休閒農業區範圍 (Leisure Agriculture Area Hatch Overlay) -->
+              <path d="M 185,55 C 230,45 280,42 315,50 C 335,80 330,120 355,145 C 310,155 240,150 185,55 Z"
+                fill="url(#leisureAgriHatch)" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,2" />
+              <text x="270" y="70" fill="#fde68a" font-size="8" font-weight="bold">休閒農業區範圍</text>
+
+              <!-- Highway: Tai 7-Bing (三星路) -->
+              <path d="M 150,148 C 210,152 270,156 380,145" fill="none" stroke="#eab308" stroke-width="2.5"
+                stroke-linecap="round" />
+
+              <!-- Annong River Course (安農溪流向) -->
+              <path d="M 230,165 Q 260,175 295,180 T 360,190" fill="none" stroke="#38bdf8" stroke-width="1.8"
+                opacity="0.8" />
+              <text x="305" y="174" fill="#7dd3fc" font-size="7.5" font-weight="bold">安農溪</text>
+
+              <!-- Changpi Lake (長埤湖) -->
+              <ellipse cx="225" cy="245" rx="15" ry="8" fill="#0284c7" opacity="0.85" />
+              <text x="180" y="248" fill="#93c5fd" font-size="7.5" font-weight="bold">長埤湖風景區</text>
+
+              <!-- TOURISM FACILITIES & ATTRACTIONS -->
+              <!-- 1. 天送埤車站 / 林鐵文創園區 (Purple Circle) -->
+              <g onclick="showIndustryInfo('天送埤林鐵文創園區', '縣定歷史建築與鐵道觀光核心，也是假日遊客人流最密集的亮點地標。周邊面臨臨停壅塞與微循環串聯不足課題。', '觀光景點')"
+                class="cursor-pointer hover:scale-110 transition-transform">
+                <circle cx="265" cy="142" r="5" fill="#a855f7" stroke="#ffffff" stroke-width="1.5" />
+                <rect x="273" y="135" width="84" height="13" rx="2" fill="#581c87" stroke="#c084fc"
+                  stroke-width="0.8" />
+                <text x="276" y="144" fill="#ffffff" font-size="7.5" font-weight="bold">天送埤林鐵文創園區</text>
+              </g>
+
+              <!-- 2. 蘭陽發電廠天埤機組 (Blue Circle) -->
+              <g onclick="showIndustryInfo('蘭陽發電廠天埤機組', '日治百年水力電廠，具工業文化資產價值，發電後尾水注入安農溪，是聚落重要水文化觀光門戶。', '觀光景點')"
+                class="cursor-pointer hover:scale-110">
+                <circle cx="255" cy="172" r="4.5" fill="#0284c7" stroke="#ffffff" stroke-width="1.2" />
+                <text x="263" y="175" fill="#bae6fd" font-size="7.5" font-weight="bold">蘭陽發電廠天埤機組</text>
+              </g>
+
+              <!-- 3. 九芎湖幸福月台 -->
+              <g onclick="showIndustryInfo('九芎湖幸福月台', '昔日林鐵舊線月台，結合親水步道與鐵馬單車動線，為安農溪水源上游重要漫遊節點。', '觀光景點')"
+                class="cursor-pointer hover:scale-110">
+                <circle cx="195" cy="165" r="4" fill="#0284c7" stroke="#ffffff" stroke-width="1.2" />
+                <text x="140" y="168" fill="#bae6fd" font-size="7">九芎湖幸福月台</text>
+              </g>
+
+              <!-- 4. 休閒農場 (Cyan Triangles) -->
+              <!-- 農場1: 拳頭姆步道旁體驗場 -->
+              <g onclick="showIndustryInfo('休閒農場群（農事體驗）', '以蔥蒜、柑橘採果與農村手作體驗為主，多為個別農戶獨立經營，缺乏整體行銷與聯合套票微循環串接。', '休閒農場')"
+                class="cursor-pointer hover:scale-110">
+                <polygon points="230,105 235,114 225,114" fill="#06b6d4" stroke="#ffffff" stroke-width="1" />
+                <polygon points="255,95 260,104 250,104" fill="#06b6d4" stroke="#ffffff" stroke-width="1" />
+                <polygon points="280,100 285,109 275,109" fill="#06b6d4" stroke="#ffffff" stroke-width="1" />
+                <polygon points="310,110 315,119 305,119" fill="#06b6d4" stroke="#ffffff" stroke-width="1" />
+                <text x="245" y="112" fill="#a5f3fc" font-size="7">休閒體驗農場群</text>
+              </g>
+
+              <!-- 5. 合法旅宿 (Green Stars / Dots) -->
+              <g onclick="showIndustryInfo('合法立案旅宿', '依法取得民宿登記之聚落旅宿，主要分佈於核心建地周邊或休閒農業區核准範圍內。', '合法旅宿')">
+                <circle cx="248" cy="148" r="3.5" fill="#22c55e" stroke="#ffffff" stroke-width="1" />
+                <circle cx="260" cy="152" r="3.5" fill="#22c55e" stroke="#ffffff" stroke-width="1" />
+                <circle cx="278" cy="148" r="3.5" fill="#22c55e" stroke="#ffffff" stroke-width="1" />
+                <circle cx="235" cy="125" r="3.2" fill="#22c55e" stroke="#ffffff" stroke-width="1" />
+              </g>
+
+              <!-- 6. 非法旅宿 (Red Warning Dots / Pulsing Halo) -->
+              <g onclick="showIndustryInfo('非法/未立案旅宿（土地違規課題）', '未符非都市土地使用編定或未取得民宿登記證之違規營業點，多隱匿於外圍農田或坡地保育區，衍生排廢污染與消費安全隱憂。', '非法旅宿')"
+                class="cursor-pointer">
+                <!-- Outer pulse halo -->
+                <circle cx="295" cy="120" r="4.5" fill="#ef4444" stroke="#ffffff" stroke-width="1"
+                  class="pulse-warning" />
+                <circle cx="320" cy="125" r="4.5" fill="#ef4444" stroke="#ffffff" stroke-width="1"
+                  class="pulse-warning" />
+                <circle cx="340" cy="140" r="4" fill="#ef4444" stroke="#ffffff" stroke-width="1" />
+                <circle cx="275" cy="205" r="4" fill="#ef4444" stroke="#ffffff" stroke-width="1"
+                  class="pulse-warning" />
+                <circle cx="240" cy="225" r="3.8" fill="#ef4444" stroke="#ffffff" stroke-width="1" />
+
+                <rect x="300" y="105" width="58" height="13" rx="2" fill="#881337" stroke="#f43f5e"
+                  stroke-width="0.8" />
+                <text x="303" y="114" fill="#ffe4e6" font-size="7.5" font-weight="bold">非法旅宿群</text>
+              </g>
+
+              <!-- Scale Bar (0 - 1 - 2 km) -->
+              <g transform="translate(430, 265)">
+                <rect x="0" y="0" width="80" height="3" fill="#ffffff" />
+                <rect x="0" y="0" width="40" height="3" fill="#1e293b" />
+                <line x1="0" y1="-2" x2="0" y2="5" stroke="#ffffff" stroke-width="1" />
+                <line x1="40" y1="-2" x2="40" y2="5" stroke="#ffffff" stroke-width="1" />
+                <line x1="80" y1="-2" x2="80" y2="5" stroke="#ffffff" stroke-width="1" />
+                <text x="-2" y="14" fill="#cbd5e1" font-size="7" font-mono>0</text>
+                <text x="36" y="14" fill="#cbd5e1" font-size="7" font-mono>1</text>
+                <text x="74" y="14" fill="#cbd5e1" font-size="7" font-mono>2 km</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Map 2 Legend Bar -->
+          <div
+            class="bg-stone-900/85 border border-stone-700/80 rounded-lg px-2.5 py-1 text-[10px] text-stone-300 z-10 flex flex-wrap items-center justify-between gap-1 mt-0.5">
+            <div class="flex items-center gap-2">
+              <span class="flex items-center gap-1">
+                <span class="w-3 h-2 border border-[#f59e0b] bg-[#f59e0b]/30 inline-block"></span> 休閒農業區
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-[#a855f7]"></span> 林鐵文創園區
+              </span>
+              <span class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-[#0284c7]"></span> 觀光景點/電廠
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="flex items-center gap-1 text-cyan-300">
+                ▲ 休閒農場
+              </span>
+              <span class="flex items-center gap-1 text-green-300">
+                ● 合法旅宿
+              </span>
+              <span class="flex items-center gap-1 text-rose-400 font-bold">
+                ● 非法旅宿
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Bottom Strategic Action Callout: 因應策略與規劃方向 -->
+    <footer class="bg-[#fcf5eb] border-l-4 border-[#8c3c2a] rounded-r-xl p-4 md:p-5 flex items-start gap-4 shadow-sm">
+      <div
+        class="w-10 h-10 rounded-full bg-[#8c3c2a] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-200"></i>
+      </div>
+      <div class="flex-1">
+        <h4 class="font-bold text-sm text-[#8c3c2a] mb-1 flex items-center gap-2">
+          因應策略與規劃方向
+          <span class="text-xs font-normal text-stone-500 font-sans">｜ Tourism Governance & Land Legitimacy</span>
+        </h4>
+        <ul class="text-stone-800 text-xs md:text-[13.5px] leading-relaxed space-y-1.5 font-medium">
+          <li class="flex items-start gap-2">
+            <span class="text-[#8c3c2a] font-bold">1.</span>
+            <span><strong>推動觀光整體整合與設施配套</strong>：改善缺乏整體規劃之現況，增建關鍵觀光配套設施，完善產業生態系，將過路人流轉化為實質留宿人流，以多元就業吸引人口回流。</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-[#8c3c2a] font-bold">2.</span>
+            <span><strong>全面檢討產業用地適法性</strong>：檢討並輔導相關產業用地與旅宿合法化，健全管理機制以避免土地利用持續失序。</span>
+          </li>
+        </ul>
+      </div>
+    </footer>
+
+
+    <!-- Chapter Pagination Footer Navigation (No Print) -->
+    <nav class="no-print pt-4 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <a href="index.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#1e3d30] font-bold border border-emerald-200 transition shadow-sm">
+          <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-800"></i>
+          <span>回目錄總覽首頁</span>
+        </a>
+        <a href="04生態及防災.html"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium transition shadow-sm">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          <span>上一單元：04 自然生態與防災</span>
+        </a>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="06環境敏感區.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1e3d30] hover:bg-[#2a5543] text-white font-semibold transition shadow-sm">
+          <span>下一單元：06 環境敏感區位與國土綠網</span>
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </nav>
+
+  </main>
+
+  <!-- JavaScript Section -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Interactive Inspector details updater
+    function showIndustryInfo(title, desc, badge) {
+      document.getElementById('inspectTitle').innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5 inline text-amber-300"></i> ${title}`;
+      document.getElementById('inspectBadge').textContent = badge;
+      document.getElementById('inspectDetail').textContent = desc;
+      lucide.createIcons();
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天送埤聚落現況與議題｜環境敏感區位與國土生態綠網</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap');
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #f4f5f4;
+      color: #1f2937;
+    }
+
+    .serif-title {
+      font-family: 'Noto Serif TC', serif;
+    }
+
+    .gis-dark-bg {
+      background: radial-gradient(circle at 50% 32%, #22372c 0%, #15241d 68%, #0b1510 100%);
+    }
+
+    .gis-green-bg {
+      background: radial-gradient(circle at 50% 30%, #1d3326 0%, #132219 65%, #09130e 100%);
+    }
+
+    .pulse-glow {
+      animation: pulseGlow 2.4s infinite;
+    }
+
+    @keyframes pulseGlow {
+
+      0%,
+      100% {
+        opacity: 0.95;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.45;
+        transform: scale(1.08);
+      }
+    }
+
+    @media print {
+      body {
+        background-color: #ffffff;
+        padding: 0;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      main {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen p-3 md:p-8 flex flex-col justify-center items-center">
+
+  <!-- Main Dashboard Container -->
+  <main
+    class="w-full max-w-[1540px] bg-white rounded-2xl shadow-xl border border-stone-200 overflow-hidden p-5 md:p-8 flex flex-col gap-6">
+
+    <!-- Header Section -->
+    <header class="flex flex-col md:flex-row md:items-end justify-between border-b border-stone-200 pb-4 gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span
+            class="text-xs font-bold tracking-widest text-[#1e3d30] uppercase bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded border border-emerald-200">
+            天送埤聚落現況與議題 ｜ 生態環境規劃
+          </span>
+          <span class="text-xs text-stone-500 font-medium">宜蘭縣三星鄉（天山村・天福村）</span>
+        </div>
+        <h1
+          class="text-2xl md:text-4xl font-bold serif-title text-[#1e3d30] tracking-tight mt-1.5 flex items-center gap-3">
+          環境敏感區位與國土生態綠網
+        </h1>
+      </div>
+      <div class="flex items-center gap-3 no-print">
+        <a href="index.html"
+          class="px-3 py-1.5 text-xs font-bold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] border border-emerald-300 hover:border-emerald-500 rounded-lg transition-all flex items-center gap-1.5 shadow-sm group">
+          <i data-lucide="home" class="w-3.5 h-3.5 text-emerald-800 group-hover:scale-110 transition-transform"></i>
+          <span>回首頁</span>
+        </a>
+        <div
+          class="flex items-center gap-1.5 bg-emerald-50 text-emerald-900 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-700"></i>
+          山水交界樞紐 ✕ 東北二分區里山地景
+        </div>
+        <button onclick="window.print()"
+          class="px-3.5 py-1.5 text-xs font-semibold text-[#1e3d30] bg-[#eef4f0] hover:bg-[#dce9e0] rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> 列印 / 匯出 PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Layout (2 Master Columns: Left for Sensitive Areas | Right for Green Network) -->
+    <section class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+
+      <!-- ==================== LEFT PANEL: 一、環境敏感區位分析 (6.5 Cols) ==================== -->
+      <div class="xl:col-span-7 flex flex-col justify-between gap-4">
+
+        <!-- Header of Panel 1 -->
+        <div class="bg-stone-50 border border-stone-200 rounded-xl p-4 shadow-sm flex flex-col gap-2.5">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-sm md:text-base text-[#1e3d30] flex items-center gap-2">
+              <span
+                class="w-7 h-7 rounded-lg bg-[#1b4332] text-emerald-300 flex items-center justify-center shrink-0 shadow-xs">
+                <i data-lucide="trees" class="w-4 h-4"></i>
+              </span>
+              一、環境敏感區位分析
+            </h2>
+            <span class="text-[10.5px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-semibold font-mono">
+              山水林田交界
+            </span>
+          </div>
+          <p class="text-xs md:text-[13px] text-stone-700 leading-relaxed font-medium">
+            天送埤聚落整體發展空間位於<strong>河川、農地與山林交界</strong>，土地使用與周邊自然環境關係極為密切：
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div class="bg-white p-2.5 rounded-lg border border-stone-200 shadow-2xs">
+              <span class="text-sky-800 font-bold flex items-center gap-1 text-[11.5px]">
+                <i data-lucide="waves" class="w-3.5 h-3.5 text-sky-600"></i> 北側平原與水系
+              </span>
+              <p class="text-stone-600 text-[11px] mt-1 leading-relaxed">
+                涉及<strong>蘭陽溪河川區域</strong>與周邊廣大之<strong>優良農田</strong>，具備高產值農業與滯洪補注功能。
+              </p>
+            </div>
+            <div class="bg-white p-2.5 rounded-lg border border-stone-200 shadow-2xs">
+              <span class="text-emerald-800 font-bold flex items-center gap-1 text-[11.5px]">
+                <i data-lucide="mountain" class="w-3.5 h-3.5 text-emerald-600"></i> 南側山區資源
+              </span>
+              <p class="text-stone-600 text-[11px] mt-1 leading-relaxed">
+                涵蓋<strong>水庫集水區</strong>（非水庫侵蝕公用給水）、<strong>森林區</strong>、<strong>國有林事業區</strong>及<strong>保安林</strong>。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stacked 2 GIS Maps for Environmental Constraints -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <!-- MAP 1: Top GIS Map - 環境保護與水源保育管制 -->
+          <div
+            class="gis-dark-bg border border-stone-800 rounded-xl p-3 flex flex-col justify-between relative overflow-hidden shadow-inner">
+            <div class="flex justify-between items-start z-10">
+              <div>
+                <h3 class="text-white font-bold text-xs flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 環境保護與水源保育圖
+                </h3>
+                <p class="text-stone-300 text-[10px] mt-0.5">河川區、優良農地、水庫集水區與保安林</p>
+              </div>
+              <span
+                class="text-[9px] font-mono text-emerald-300 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800">
+                資源保育
+              </span>
+            </div>
+
+            <!-- SVG Vector Map 1: Protection & Conservation -->
+            <div class="relative w-full h-[220px] my-1 flex items-center justify-center">
+              <svg viewBox="0 0 320 260" class="w-full h-full select-none" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <!-- Farmland texture -->
+                  <pattern id="primeAgriPattern" width="6" height="6" patternUnits="userSpaceOnUse">
+                    <line x1="0" y1="6" x2="6" y2="0" stroke="#fef08a" stroke-width="0.7" stroke-opacity="0.5" />
+                  </pattern>
+                  <!-- Forest pattern -->
+                  <linearGradient id="forestAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#15803d" stop-opacity="0.85" />
+                    <stop offset="100%" stop-color="#052e16" stop-opacity="0.95" />
+                  </linearGradient>
+                </defs>
+
+                <!-- Base Canvas -->
+                <rect width="320" height="260" fill="#122019" />
+
+                <!-- River Area (Lanyang River - Cyan/Blue) -->
+                <path d="M 0,95 C 40,80 80,60 120,40 C 150,22 180,10 220,0 L 0,0 Z" fill="#0284c7" fill-opacity="0.75"
+                  stroke="#38bdf8" stroke-width="0.8" />
+                <text x="25" y="35" fill="#bae6fd" font-size="7.5" font-weight="bold">河川區域（蘭陽溪）</text>
+
+                <!-- Prime Farmland (優良農田 - Yellow Hatch) -->
+                <path d="M 120,40 C 150,30 180,25 210,32 C 230,60 225,95 240,118 L 195,125 L 140,120 L 120,115 Z"
+                  fill="#fef08a" fill-opacity="0.85" stroke="#ca8a04" stroke-width="0.8" />
+                <text x="160" y="70" fill="#854d0e" font-size="7.5" font-weight="bold">優良農田</text>
+
+                <!-- Water Catchment Area (水庫集水區 - Mid Blue Overlay) -->
+                <path d="M 140,120 L 195,125 L 240,118 C 255,145 280,158 260,192 L 210,200 L 185,160 L 140,120 Z"
+                  fill="#0369a1" fill-opacity="0.65" stroke="#38bdf8" stroke-width="0.8" />
+                <text x="205" y="155" fill="#e0f2fe" font-size="7" font-weight="bold">水庫集水區</text>
+
+                <!-- Forest Zone & National Forest / Protection Forest (森林區/國有林事業區/保安林) -->
+                <path
+                  d="M 120,115 L 140,120 L 185,160 L 210,200 C 195,230 160,240 135,230 C 100,215 75,185 65,165 C 55,145 85,130 120,115 Z"
+                  fill="url(#forestAreaGrad)" stroke="#16a34a" stroke-width="1" />
+                <text x="95" y="180" fill="#86efac" font-size="7.5" font-weight="bold">森林區・國有林・保安林</text>
+
+                <!-- Tiansongpi Cluster Boundary (Dashed White Polyline) -->
+                <path d="M 120,40 
+                         C 150,30 180,25 210,32
+                         C 230,60 225,95 240,118
+                         C 255,145 280,158 260,192
+                         C 240,225 200,240 165,238
+                         C 135,230 95,205 75,185
+                         C 55,155 85,130 120,115 Z" fill="none" stroke="#ffffff" stroke-width="1.2"
+                  stroke-dasharray="4,2" />
+
+                <!-- Core Highway: Tai 7-Bing -->
+                <path d="M 90,125 C 135,128 175,132 250,122" fill="none" stroke="#facc15" stroke-width="1.8"
+                  stroke-linecap="round" />
+                <text x="215" y="117" fill="#fef08a" font-size="6.5" font-weight="bold">台7丙</text>
+              </svg>
+            </div>
+
+            <!-- Legend 1 -->
+            <div
+              class="bg-stone-900/90 border border-stone-700 rounded p-1.5 text-[9px] text-stone-300 flex flex-wrap items-center justify-between gap-1 mt-0.5">
+              <span class="flex items-center gap-1"><span class="w-2 h-1.5 bg-[#0284c7] inline-block"></span>
+                河川區域</span>
+              <span class="flex items-center gap-1"><span class="w-2 h-1.5 bg-[#fef08a] inline-block"></span>
+                優良農田</span>
+              <span class="flex items-center gap-1"><span class="w-2 h-1.5 bg-[#0369a1] inline-block"></span>
+                水庫集水區</span>
+              <span class="flex items-center gap-1"><span class="w-2 h-1.5 bg-[#15803d] inline-block"></span>
+                森林與保安林</span>
+            </div>
+          </div>
+
+          <!-- MAP 2: Bottom GIS Map - 災害敏感與資源劃設 -->
+          <div
+            class="gis-dark-bg border border-stone-800 rounded-xl p-3 flex flex-col justify-between relative overflow-hidden shadow-inner">
+            <div class="flex justify-between items-start z-10">
+              <div>
+                <h3 class="text-white font-bold text-xs flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-400"></span> 災害敏感與資源劃設圖
+                </h3>
+                <p class="text-stone-300 text-[10px] mt-0.5">地質敏感區、自來水水質水量保護區與土石流</p>
+              </div>
+              <span
+                class="text-[9px] font-mono text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800">
+                災害防制
+              </span>
+            </div>
+
+            <!-- SVG Vector Map 2: Hazard & Geological Constraints -->
+            <div class="relative w-full h-[220px] my-1 flex items-center justify-center">
+              <svg viewBox="0 0 320 260" class="w-full h-full select-none" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <!-- Ground water recharge diagonal hatch -->
+                  <pattern id="rechargeHatch" width="6" height="6" patternUnits="userSpaceOnUse">
+                    <line x1="0" y1="0" x2="6" y2="6" stroke="#38bdf8" stroke-width="0.6" stroke-opacity="0.4" />
+                  </pattern>
+                </defs>
+
+                <!-- Base Canvas -->
+                <rect width="320" height="260" fill="#142119" />
+
+                <!-- Cluster Outline (Dashed White Polyline) -->
+                <path d="M 120,40 
+                         C 150,30 180,25 210,32
+                         C 230,60 225,95 240,118
+                         C 255,145 280,158 260,192
+                         C 240,225 200,240 165,238
+                         C 135,230 95,205 75,185
+                         C 55,155 85,130 120,115 Z" fill="#1e3427" fill-opacity="0.4" stroke="#ffffff"
+                  stroke-width="1.2" stroke-dasharray="4,2" />
+
+                <!-- 地質敏感區：地下水補注 (Groundwater recharge area - Light Blue Tint) -->
+                <path d="M 120,40 C 150,30 180,25 210,32 C 230,60 225,95 240,118 L 170,125 L 120,115 Z"
+                  fill="url(#rechargeHatch)" stroke="#38bdf8" stroke-width="0.8" />
+                <text x="145" y="75" fill="#7dd3fc" font-size="7" font-weight="bold">地下水補注地質敏感區</text>
+
+                <!-- 自來水水質水量保護區 (Water Quality Protection Zone - Deep Green) -->
+                <path
+                  d="M 120,115 L 170,125 L 240,118 C 255,145 280,158 260,192 C 240,225 200,240 165,238 C 135,230 95,205 75,185 Z"
+                  fill="#065f46" fill-opacity="0.6" stroke="#059669" stroke-width="0.8" />
+                <text x="140" y="165" fill="#a7f3d0" font-size="7" font-weight="bold">自來水水質水量保護區</text>
+
+                <!-- 地質敏感區：山崩與地滑 (Slope collapse / landslide area) -->
+                <path d="M 185,160 C 215,155 245,170 250,190 C 235,205 210,210 185,195 Z" fill="#b45309"
+                  fill-opacity="0.75" stroke="#f59e0b" stroke-width="0.8" />
+                <text x="195" y="180" fill="#fde68a" font-size="6.5" font-weight="bold">山崩與地滑敏感區</text>
+
+                <!-- 土石流潛勢溪流 (Debris Flow Stream Course) -->
+                <path d="M 245,190 Q 235,170 225,155" fill="none" stroke="#22c55e" stroke-width="2"
+                  stroke-linecap="round" />
+                <circle cx="225" cy="155" r="3" fill="#eab308" class="pulse-glow" />
+                <text x="210" y="150" fill="#86efac" font-size="6.5" font-weight="bold">土石流溪流</text>
+
+                <!-- 縣定古蹟 (天送埤木造車站 - Cultural Heritage Monument) -->
+                <circle cx="168" cy="122" r="4.5" fill="#ec4899" stroke="#ffffff" stroke-width="1.2" />
+                <rect x="135" y="108" width="55" height="11" rx="2" fill="#831843" stroke="#f472b6"
+                  stroke-width="0.6" />
+                <text x="138" y="116" fill="#fce7f3" font-size="6.5" font-weight="bold">🏛️ 縣定古蹟 (車站)</text>
+
+                <!-- Highway: Tai 7-Bing -->
+                <path d="M 90,125 C 135,128 175,132 250,122" fill="none" stroke="#facc15" stroke-width="1.5"
+                  stroke-linecap="round" />
+              </svg>
+            </div>
+
+            <!-- Legend 2 -->
+            <div
+              class="bg-stone-900/90 border border-stone-700 rounded p-1.5 text-[9px] text-stone-300 flex flex-wrap items-center justify-between gap-1 mt-0.5">
+              <span class="flex items-center gap-1"><span
+                  class="w-2 h-1.5 border border-[#38bdf8] bg-[#38bdf8]/30 inline-block"></span> 地下水補注</span>
+              <span class="flex items-center gap-1"><span class="w-2 h-1.5 bg-[#065f46] inline-block"></span>
+                自來水保護區</span>
+              <span class="flex items-center gap-1"><span class="w-2 h-1.5 bg-[#b45309] inline-block"></span>
+                山崩地滑區</span>
+              <span class="flex items-center gap-1"><span
+                  class="w-1.5 h-1.5 rounded-full bg-[#ec4899] inline-block"></span> 縣定古蹟</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ==================== RIGHT PANEL: 二、國土生態綠網架構 (5.5 Cols) ==================== -->
+      <div class="xl:col-span-5 flex flex-col justify-between gap-4">
+
+        <!-- Header of Panel 2 -->
+        <div class="bg-stone-50 border border-stone-200 rounded-xl p-4 shadow-sm flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-sm md:text-base text-[#1e3d30] flex items-center gap-2">
+              <span
+                class="w-7 h-7 rounded-lg bg-[#1b4332] text-emerald-300 flex items-center justify-center shrink-0 shadow-xs">
+                <i data-lucide="network" class="w-4 h-4"></i>
+              </span>
+              二、國土生態綠網架構
+            </h2>
+            <span class="text-[10.5px] px-2 py-0.5 rounded bg-blue-100 text-blue-900 font-semibold font-mono">
+              東北二分區樞紐
+            </span>
+          </div>
+          <p class="text-xs md:text-[13px] text-stone-700 leading-relaxed font-medium">
+            天送埤座落於<strong>國土生態綠網東北二分區</strong>，扮演串接高山山脈與平原濕地之關鍵樞紐：
+          </p>
+        </div>
+
+        <!-- GIS Map 3: 國土生態綠網保育軸帶與重要關注里山地景圖 -->
+        <div
+          class="gis-green-bg border border-stone-800 rounded-xl p-3 md:p-4 shadow-inner relative overflow-hidden flex flex-col justify-between flex-1">
+
+          <div class="flex justify-between items-start z-10">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                <h3 class="text-white font-bold text-xs md:text-sm">
+                  國土生態綠網保育軸帶與里山地景分布圖
+                </h3>
+              </div>
+              <p class="text-stone-300 text-[11px] mt-0.5">
+                北側平原濕地保育軸帶 ✕ 南側重要關注里山地景
+              </p>
+            </div>
+            <!-- North Compass -->
+            <div
+              class="w-6 h-6 rounded-full bg-stone-900/80 border border-stone-600 flex flex-col items-center justify-center text-white text-[8px] font-mono shadow shrink-0">
+              <span class="text-emerald-400 leading-none">▲</span>
+              <span class="text-[7px] -mt-0.5 font-bold">N</span>
+            </div>
+          </div>
+
+          <!-- SVG Canvas: Green Network -->
+          <div class="relative w-full h-[255px] md:h-[285px] my-1 flex items-center justify-center">
+            <svg viewBox="0 0 460 300" class="w-full h-full select-none" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <!-- Wetland axis linear gradient -->
+                <linearGradient id="wetlandAxisGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8" />
+                  <stop offset="100%" stop-color="#0284c7" stop-opacity="0.7" />
+                </linearGradient>
+                <!-- Satoyama hatch pattern -->
+                <pattern id="satoyamaHatch" width="8" height="8" patternUnits="userSpaceOnUse">
+                  <path d="M 0,8 L 8,0 M -2,2 L 2,-2 M 6,10 L 10,6" stroke="#22c55e" stroke-width="0.8"
+                    stroke-opacity="0.6" />
+                </pattern>
+              </defs>
+
+              <!-- Base Canvas -->
+              <rect width="460" height="300" fill="#0e1a14" />
+
+              <!-- Lanyang River / Wetland Basin (North - Conservation Axis) -->
+              <!-- 蘭陽平原平原濕地暨溪流保育軸帶 (Cyan buffer zone) -->
+              <path d="M 0,140 C 70,110 140,75 220,40 C 270,20 330,8 400,0 L 0,0 Z" fill="url(#wetlandAxisGrad)"
+                stroke="#38bdf8" stroke-width="1.5" />
+              <path d="M 20,80 L 360,20" fill="none" stroke="#ffffff" stroke-width="1" stroke-dasharray="6,4"
+                opacity="0.7" />
+
+              <!-- Conservation Axis Label Badge -->
+              <g transform="translate(45, 38)">
+                <rect x="0" y="0" width="225" height="19" rx="3" fill="#082f49" fill-opacity="0.9" stroke="#38bdf8"
+                  stroke-width="1" />
+                <text x="8" y="13" fill="#bae6fd" font-size="8.5" font-weight="bold">
+                  蘭陽平原平原濕地暨溪流保育軸帶
+                </text>
+              </g>
+
+              <!-- Tiansongpi Cluster Boundary (White dashed polyline) -->
+              <path d="M 155,50 
+                       C 200,38 245,35 285,45
+                       C 315,80 310,130 330,160
+                       C 350,195 385,215 355,255
+                       C 330,290 270,300 230,295
+                       C 180,280 135,245 110,215
+                       C 85,180 120,145 155,120
+                       C 145,90 120,65 155,50 Z" fill="#152b20" fill-opacity="0.55" stroke="#ffffff" stroke-width="1.5"
+                stroke-dasharray="6,3" />
+
+              <!-- Core Arterial: Tai 7-Bing -->
+              <path d="M 125,132 C 185,138 245,142 350,130" fill="none" stroke="#facc15" stroke-width="2.5"
+                stroke-linecap="round" />
+              <text x="310" y="122" fill="#fef08a" font-size="7.5" font-weight="bold">台7丙</text>
+
+              <!-- Irrigation canal lines (Blue ribbons through settlement) -->
+              <path d="M 180,110 Q 210,135 260,145 T 320,155" fill="none" stroke="#38bdf8" stroke-width="1.5"
+                stroke-opacity="0.8" />
+              <path d="M 155,140 Q 200,165 250,175" fill="none" stroke="#38bdf8" stroke-width="1.2"
+                stroke-opacity="0.7" />
+
+              <!-- 重要關注里山地景 (Satoyama Landscape Polygon - South foothills) -->
+              <path d="M 140,165 C 190,175 270,170 325,185 C 340,225 310,270 260,275 C 200,265 150,240 120,205 Z"
+                fill="#14532d" fill-opacity="0.75" stroke="#22c55e" stroke-width="1.5" />
+              <path d="M 140,165 C 190,175 270,170 325,185 C 340,225 310,270 260,275 C 200,265 150,240 120,205 Z"
+                fill="url(#satoyamaHatch)" />
+
+              <!-- Satoyama Label Badge -->
+              <g transform="translate(165, 215)">
+                <rect x="0" y="0" width="135" height="19" rx="3" fill="#052e16" fill-opacity="0.9" stroke="#4ade80"
+                  stroke-width="1" />
+                <text x="8" y="13" fill="#86efac" font-size="8.5" font-weight="bold">
+                  重要關注里山地景
+                </text>
+              </g>
+
+              <!-- Ecological corridor transition arrow -->
+              <g stroke="#67e8f9" stroke-width="1.5" fill="none" opacity="0.85">
+                <line x1="235" y1="65" x2="235" y2="105" marker-end="url(#arrow)" />
+                <path d="M 235,105 L 232,97 M 235,105 L 238,97" stroke="#67e8f9" stroke-width="1.5" />
+                <line x1="235" y1="165" x2="235" y2="195" />
+                <path d="M 235,195 L 232,187 M 235,195 L 238,187" stroke="#67e8f9" stroke-width="1.5" />
+              </g>
+
+              <!-- Scale Bar (0 - 1 - 2 km) -->
+              <g transform="translate(350, 270)">
+                <rect x="0" y="0" width="70" height="3" fill="#ffffff" />
+                <rect x="0" y="0" width="35" height="3" fill="#1e293b" />
+                <line x1="0" y1="-2" x2="0" y2="5" stroke="#ffffff" stroke-width="1" />
+                <line x1="35" y1="-2" x2="35" y2="5" stroke="#ffffff" stroke-width="1" />
+                <line x1="70" y1="-2" x2="70" y2="5" stroke="#ffffff" stroke-width="1" />
+                <text x="-2" y="13" fill="#cbd5e1" font-size="6.5" font-mono>0</text>
+                <text x="31" y="13" fill="#cbd5e1" font-size="6.5" font-mono>1</text>
+                <text x="64" y="13" fill="#cbd5e1" font-size="6.5" font-mono>2 km</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Map 3 Legend Bar -->
+          <div
+            class="bg-stone-900/85 border border-stone-700 rounded-lg px-2.5 py-1.5 text-[10px] text-stone-300 z-10 flex flex-wrap items-center justify-between gap-1.5 mt-0.5">
+            <span class="flex items-center gap-1">
+              <span class="w-3 h-2 bg-[#0284c7] inline-block border border-[#38bdf8]"></span> 平原濕地暨溪流保育軸帶
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-3 h-2 bg-[#14532d] inline-block border border-[#22c55e]"></span> 重要關注里山地景
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="w-3 h-0.5 bg-[#38bdf8] inline-block"></span> 藍綠網絡（水圳溪流）
+            </span>
+          </div>
+
+        </div>
+
+        <!-- Structured Explanatory Bullet Points for Green Network -->
+        <div class="bg-stone-50 border border-stone-200 rounded-xl p-3.5 shadow-sm flex flex-col gap-2">
+          <ul class="text-xs text-stone-700 leading-relaxed space-y-2">
+            <li class="flex items-start gap-2">
+              <span
+                class="w-4 h-4 rounded-full bg-sky-100 text-sky-800 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
+              <span><strong>核心生態廊帶</strong>：北側蘭陽溪納入「<strong>蘭陽平原平原濕地暨溪流保育軸帶</strong>」，為山林、溪流與平原濕地銜接的重要生態廊帶。</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span
+                class="w-4 h-4 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
+              <span><strong>重要關注里山地景</strong>：聚落南側山麓涉及重要關注里山地景，呈現<strong>山林、農田、水圳與聚落交錯</strong>之複合生態地景。</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span
+                class="w-4 h-4 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
+              <span><strong>藍綠網絡維護功能</strong>：聚落內部河川、水圳及農田共同構成綿密藍綠網絡，具備<strong>維持生態棲地及區域生態連結</strong>的關鍵功能。</span>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Bottom Strategic Action Callout: 規劃核心指引 -->
+    <footer class="bg-[#fcf5eb] border-l-4 border-[#8c3c2a] rounded-r-xl p-4 md:p-5 flex items-start gap-4 shadow-sm">
+      <div
+        class="w-10 h-10 rounded-full bg-[#8c3c2a] text-white flex items-center justify-center shrink-0 shadow mt-0.5">
+        <i data-lucide="compass" class="w-5 h-5 text-amber-200"></i>
+      </div>
+      <div class="flex-1">
+        <h4 class="font-bold text-sm text-[#8c3c2a] mb-1 flex items-center gap-2">
+          規劃核心指引
+          <span class="text-xs font-normal text-stone-500 font-sans">｜ Strategic Ecological Guidelines</span>
+        </h4>
+        <p class="text-stone-700 text-xs md:text-[13px] mb-2 font-medium">
+          天送埤居於高敏感山水交會帶，空間規劃與後續開發應以「<strong>維持藍綠網絡連續性</strong>」為最高前提：
+        </p>
+        <ul class="text-stone-800 text-xs md:text-[13.5px] leading-relaxed space-y-1.5 font-medium">
+          <li class="flex items-start gap-2">
+            <span class="text-[#8c3c2a] font-bold">1.</span>
+            <span><strong>嚴格管制高敏感水源保育帶</strong>：嚴控南側水庫集水區與保安林帶之非農或高強度開發，杜絕邊坡土地違規使用。</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-[#8c3c2a] font-bold">2.</span>
+            <span><strong>縫合溪流與農田生態廊道</strong>：北側連結蘭陽溪保育軸帶，強化水圳與農田的生態廊道功能，避免水圳全面水泥加蓋，實踐人與自然和諧共生的里山倡議價值。</span>
+          </li>
+        </ul>
+      </div>
+    </footer>
+
+
+    <!-- Chapter Pagination Footer Navigation (No Print) -->
+    <nav class="no-print pt-4 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <a href="index.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#1e3d30] font-bold border border-emerald-200 transition shadow-sm">
+          <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-800"></i>
+          <span>回目錄總覽首頁</span>
+        </a>
+        <a href="05產業與觀光.html"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium transition shadow-sm">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          <span>上一單元：05 產業與觀光現況</span>
+        </a>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="07土地.html"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1e3d30] hover:bg-[#2a5543] text-white font-semibold transition shadow-sm">
+          <span>下一單元：07 居住與土地使用現況</span>
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </nav>
+
+  </main>
+
+  <!-- JavaScript Section -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+  </script>
+</body>
+
+</html>
