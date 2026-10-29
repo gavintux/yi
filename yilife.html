@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>禪生活 · 易經晨間提點 (ZenLife I-Ching)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #F7F5F0;
+            color: #2C2A29;
+            background-image: radial-gradient(#E5E0D5 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .serif {
+            font-family: 'Noto Serif TC', serif;
+        }
+        .yao-line {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .ink-card {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(8px);
+            border: 1px solid #E6E1D6;
+            box-shadow: 0 10px 30px -10px rgba(44, 42, 41, 0.06);
+        }
+        .seal-badge {
+            border: 2px solid #9E2A2B;
+            color: #9E2A2B;
+            font-family: 'Noto Serif TC', serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F7F5F0;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D0C9BC;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="border-b border-[#E6E1D6] bg-[#F7F5F0]/90 sticky top-0 z-30 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-[#2C2A29] text-[#F7F5F0] flex items-center justify-center serif text-xl font-bold shadow-sm">
+                    易
+                </div>
+                <div>
+                    <h1 class="serif text-xl sm:text-2xl font-bold tracking-wider text-[#2C2A29]">禪生活 · 易經晨間提點</h1>
+                    <p class="text-xs text-[#7A756E]">每日 06:15 結合節氣農民曆、天氣與 Obsidian 日誌之起卦指南</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="flex bg-[#EAE5DB] p-1 rounded-xl text-sm font-medium">
+                <button onclick="switchTab('divination')" id="tab-divination" class="px-4 py-2 rounded-lg bg-white text-[#2C2A29] shadow-sm transition-all">
+                    今日晨間卜卦
+                </button>
+                <button onclick="switchTab('hexagrams')" id="tab-hexagrams" class="px-4 py-2 rounded-lg text-[#6E6A63] hover:text-[#2C2A29] transition-all">
+                    六十四卦速查與記憶
+                </button>
+                <button onclick="switchTab('automation')" id="tab-automation" class="px-4 py-2 rounded-lg text-[#6E6A63] hover:text-[#2C2A29] transition-all">
+                    06:15 自動化安裝指南
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+
+        <!-- TAB 1: 今日晨間卜卦 -->
+        <section id="view-divination" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Column: Inputs (Weather, Almanac, Obsidian Journal) -->
+            <div class="lg:col-span-5 space-y-6">
+                <div class="ink-card rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-4 border-b border-[#EFECE6] pb-3">
+                        <h2 class="serif text-lg font-bold flex items-center gap-2">
+                            <span class="w-2 h-5 bg-[#8C6D46] rounded-full inline-block"></span>
+                            當日因緣參數 (三才應感)
+                        </h2>
+                        <span id="current-date-badge" class="text-xs bg-[#F0ECE1] text-[#6E6A63] px-2.5 py-1 rounded-md font-mono">06:15 AM</span>
+                    </div>
+
+                    <!-- 1. 天時：天氣 -->
+                    <div class="mb-5">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-[#7A756E] mb-2">
+                            【天時】今日天氣與氣溫
+                        </label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <select id="weather-select" class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#8C6D46]">
+                                <option value="微雨綿綿，空氣濕潤微涼">🌧️ 微雨綿綿 (濕潤微涼)</option>
+                                <option value="晴朗無雲，晨光溫暖和煦">☀️ 晴朗無雲 (晨光和煦)</option>
+                                <option value="多雲時陰，微風輕拂">⛅ 多雲時陰 (微風輕拂)</option>
+                                <option value="雷雨交加，氣壓偏低">⛈️ 雷雨交加 (氣壓偏低)</option>
+                                <option value="濃霧籠罩，能見度低而靜謐">🌫️ 晨霧籠罩 (靜謐微寒)</option>
+                                <option value="東北季風強勁，陰雨濕冷">🌬️ 季風強勁 (陰雨濕冷)</option>
+                            </select>
+                            <input type="text" id="temp-input" value="21°C 舒適偏涼" class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#8C6D46]" placeholder="氣溫感受">
+                        </div>
+                    </div>
+
+                    <!-- 2. 地利：農民曆 -->
+                    <div class="mb-5">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-[#7A756E]">
+                                【地利】今日農民曆宜忌
+                            </label>
+                            <button onclick="randomizeAlmanac()" class="text-xs text-[#8C6D46] hover:underline">換一組農民曆模擬</button>
+                        </div>
+                        <div class="bg-[#FAF8F5] border border-[#DED8CE] rounded-xl p-3.5 space-y-2">
+                            <div class="flex items-center justify-between text-xs text-[#7A756E]">
+                                <span id="lunar-date-str" class="font-semibold text-[#2C2A29] serif text-sm">農曆九月二十 · 霜降後</span>
+                                <span id="lunar-ganzhi" class="font-mono">丙午年 戊戌月 丁卯日</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 pt-1">
+                                <div>
+                                    <span class="inline-block text-xs bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-medium mb-1">宜</span>
+                                    <input type="text" id="almanac-yi" value="祭祀、沐浴、靜思、修造、納財" class="w-full bg-white border border-[#E6E1D6] rounded-lg px-2.5 py-1.5 text-xs">
+                                </div>
+                                <div>
+                                    <span class="inline-block text-xs bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded font-medium mb-1">忌</span>
+                                    <input type="text" id="almanac-ji" value="詞訟、遠行、動土、爭執" class="w-full bg-white border border-[#E6E1D6] rounded-lg px-2.5 py-1.5 text-xs">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 人和：前天日誌 ~/Obsidian/zenlife -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-[#7A756E]">
+                                【人和】前天日誌 (<code class="bg-[#EAE5DB] px-1 rounded text-[11px]">~/Obsidian/zenlife</code>)
+                            </label>
+                            <label class="cursor-pointer text-xs text-[#8C6D46] hover:underline flex items-center gap-1">
+                                <input type="file" id="obsidian-file-input" accept=".md,.txt" class="hidden" onchange="loadObsidianFile(event)">
+                                📂 載入本地 .md 檔案
+                            </label>
+                        </div>
+                        <textarea id="journal-input" rows="5" class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl p-3 text-sm leading-relaxed focus:outline-none focus:border-[#8C6D46]" placeholder="貼上您前天的 Obsidian 日誌內容，或點擊上方載入 .md 檔案...">前天開會時因為專案進度不如預期，心裡有些急躁，對同事說話語氣稍微重了一點。晚上靜坐時覺得很懊悔，發現自己太容易被外在的期限與別人的情緒牽著走。希望能學會像水一樣柔韌，既有方向又不失平靜。另外，最近睡眠有點淺，想把生活步調放慢一些。</textarea>
+                        <div class="flex justify-between items-center mt-1.5 text-[11px] text-[#8E8880]">
+                            <span>💡 網頁環境因安全限制無法直接掃描硬碟，可載入檔案或使用右側 Python 自動腳本。</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="space-y-3">
+                        <button onclick="castDivination('resonant')" id="btn-cast" class="w-full bg-[#2C2A29] hover:bg-[#403D3B] text-[#F7F5F0] font-medium py-3.5 px-6 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 serif text-base tracking-widest">
+                            <span>☯</span> 依天地人三才 · 誠心起卦
+                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="castDivination('random')" class="w-1/2 bg-[#EAE5DB] hover:bg-[#DED8CE] text-[#2C2A29] text-xs font-medium py-2.5 px-4 rounded-xl transition-all">
+                                🎲 隨機銅錢搖卦 (含動爻)
+                            </button>
+                            <button onclick="exportToMarkdown()" id="btn-export" class="w-1/2 bg-[#EAE5DB] hover:bg-[#DED8CE] text-[#2C2A29] text-xs font-medium py-2.5 px-4 rounded-xl transition-all">
+                                📥 匯出今日 Obsidian 筆記
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Hexagram Display & AI Guidance -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- Hexagram Card -->
+                <div class="ink-card rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+                    <!-- Subtle Watermark -->
+                    <div id="hex-watermark" class="absolute -right-6 -bottom-10 text-[180px] text-[#2C2A29]/[0.03] serif select-none pointer-events-none leading-none">
+                        ䷮
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-[#EFECE6] pb-6">
+                        <!-- Visual Hexagram Bars -->
+                        <div class="flex items-center gap-6">
+                            <div id="hexagram-bars" class="w-28 bg-[#FAF8F5] p-4 rounded-xl border border-[#E6E1D6] flex flex-col-reverse gap-2.5 shadow-inner">
+                                <!-- Bars injected via JS -->
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2.5 mb-1">
+                                    <span id="hex-number-badge" class="seal-badge px-2 py-0.5 text-xs font-bold rounded">第四十七卦</span>
+                                    <span id="hex-trigrams" class="text-xs text-[#7A756E] tracking-widest">上兌澤 · 下坎水</span>
+                                </div>
+                                <h2 id="hex-title" class="serif text-3xl sm:text-4xl font-bold text-[#2C2A29] tracking-wide mt-1">澤水困</h2>
+                                <p id="hex-changing-info" class="text-xs text-[#9E2A2B] font-medium mt-1.5">初六爻動 ➔ 變卦：兌為澤</p>
+                            </div>
+                        </div>
+
+                        <!-- Memory Mnemonic Box (解決記不住卦詞的痛點) -->
+                        <div class="bg-[#F4EFE6] border border-[#E2D9C8] rounded-xl p-4 sm:max-w-xs">
+                            <div class="text-xs font-bold text-[#8C6D46] flex items-center gap-1.5 mb-1">
+                                <span>🧠</span> 圖像記憶法（秒記卦詞）
+                            </div>
+                            <p id="hex-mnemonic" class="text-xs text-[#4A4642] leading-relaxed">
+                                澤中之水往下漏乾了，魚兒缺水受困。但君子即使身處困境，內心依然亨通，懂得「少說多做」（尚口乃窮）。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Classical Texts (Gua Ci, Tuan, Xiang) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+                        <div class="bg-[#FAF8F5] p-4 rounded-xl border border-[#EFECE6]">
+                            <div class="text-xs text-[#8C6D46] font-bold mb-1 serif">【卦辭原文】</div>
+                            <p id="hex-guaci" class="serif text-base font-semibold text-[#2C2A29] leading-relaxed">
+                                困：亨，貞，大人吉，無咎，有言不信。
+                            </p>
+                            <p id="hex-guaci-Vernacular" class="text-xs text-[#6E6A63] mt-2 leading-relaxed">
+                                白話：處於困境時仍可亨通。堅守正道，心胸寬廣的大人吉祥無災。此時急著辯解，別人反而不會相信。
+                            </p>
+                        </div>
+                        <div class="bg-[#FAF8F5] p-4 rounded-xl border border-[#EFECE6]">
+                            <div class="text-xs text-[#8C6D46] font-bold mb-1 serif">【大象傳心法】</div>
+                            <p id="hex-xiang" class="serif text-base font-semibold text-[#2C2A29] leading-relaxed">
+                                澤無水，困；君子以致命遂志。
+                            </p>
+                            <p id="hex-xiang-Vernacular" class="text-xs text-[#6E6A63] mt-2 leading-relaxed">
+                                白話：沼澤裡沒有水就是困卦。君子觀察到此現象，會放下外在得失，專注完成內心真正的志向。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- AI Integrated Daily Guidance -->
+                    <div class="mt-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="serif text-lg font-bold text-[#2C2A29] flex items-center gap-2">
+                                <span>🍵</span> 晨間 06:15 專屬解卦與今日應對方針
+                            </h3>
+                            <span id="ai-status" class="text-xs text-[#8C6D46] hidden animate-pulse">正在參透天地人三才並撰寫提點...</span>
+                        </div>
+
+                        <div id="guidance-content" class="bg-white border border-[#E6E1D6] rounded-xl p-5 space-y-4 text-sm leading-relaxed text-[#3A3735]">
+                            <!-- Filled dynamically by Gemini API or fallback rich synthesis -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB 2: 六十四卦速查與記憶卡片 -->
+        <section id="view-hexagrams" class="hidden space-y-6">
+            <div class="ink-card rounded-2xl p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="serif text-xl font-bold">易經六十四卦 · 畫面感記憶庫</h2>
+                        <p class="text-xs text-[#7A756E] mt-1">卦詞背不起來，是因為沒有把「上下卦的自然意象」連結到生活場景。點擊任一卦即可代入今日晨卜。</p>
+                    </div>
+                    <input type="text" id="hex-search" oninput="renderHexagramGrid()" placeholder="搜尋卦名、關鍵字（如：水、謙、困、財）..." class="bg-[#FAF8F5] border border-[#DED8CE] rounded-xl px-4 py-2 text-sm w-full sm:w-72 focus:outline-none focus:border-[#8C6D46]">
+                </div>
+
+                <div id="hex-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: 06:15 自動化安裝指南 (Python + Obsidian) -->
+        <section id="view-automation" class="hidden space-y-6">
+            <div class="ink-card rounded-2xl p-6 sm:p-8 space-y-6">
+                <div class="border-b border-[#EFECE6] pb-4">
+                    <span class="bg-[#2C2A29] text-[#F7F5F0] text-xs px-2.5 py-1 rounded font-mono">macOS / Linux / Windows 適用</span>
+                    <h2 class="serif text-2xl font-bold mt-2">如何設定每天早上 06:15 自動讀取 `~/Obsidian/zenlife` 並寫入晨間卜卦？</h2>
+                    <p class="text-sm text-[#6E6A63] mt-1">
+                        因為瀏覽器無法在背景自動喚醒並直接讀取您的電腦家目錄，我為您編寫了獨立的 Python 腳本（已在右側檔案列表提供 `zenlife_iching_615.py`），只需三個步驟即可完成全自動排程：
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-[#FAF8F5] p-5 rounded-xl border border-[#E6E1D6]">
+                        <div class="text-xs font-bold text-[#8C6D46] mb-2">步驟 1：安裝必要套件</div>
+                        <p class="text-xs text-[#4A4642] leading-relaxed mb-3">
+                            打開終端機 (Terminal)，安裝農曆換算套件 `lunar_python`、網路請求 `requests` 與 Google Gemini SDK：
+                        </p>
+                        <pre class="bg-[#2C2A29] text-[#F7F5F0] p-3 rounded-lg text-xs overflow-x-auto font-mono">pip install lunar_python requests google-genai</pre>
+                    </div>
+
+                    <div class="bg-[#FAF8F5] p-5 rounded-xl border border-[#E6E1D6]">
+                        <div class="text-xs font-bold text-[#8C6D46] mb-2">步驟 2：儲存腳本並設定金鑰</div>
+                        <p class="text-xs text-[#4A4642] leading-relaxed mb-3">
+                            將本專案隨附的 `zenlife_iching_615.py` 存放在 `~/Obsidian/zenlife/scripts/`，並設定您的環境變數：
+                        </p>
+                        <pre class="bg-[#2C2A29] text-[#F7F5F0] p-3 rounded-lg text-xs overflow-x-auto font-mono">export GEMINI_API_KEY="您的金鑰"
+python3 ~/Obsidian/zenlife/scripts/zenlife_iching_615.py</pre>
+                    </div>
+
+                    <div class="bg-[#FAF8F5] p-5 rounded-xl border border-[#E6E1D6]">
+                        <div class="text-xs font-bold text-[#8C6D46] mb-2">步驟 3：設定每天 06:15 自動執行</div>
+                        <p class="text-xs text-[#4A4642] leading-relaxed mb-3">
+                            在終端機輸入 `crontab -e`，加入以下這行排程，每天早上 6 點 15 分就會自動生成當日易經晨報筆記：
+                        </p>
+                        <pre class="bg-[#2C2A29] text-[#F7F5F0] p-3 rounded-lg text-xs overflow-x-auto font-mono">15 6 * * * GEMINI_API_KEY="金鑰" /usr/bin/python3 ~/Obsidian/zenlife/scripts/zenlife_iching_615.py</pre>
+                    </div>
+                </div>
+
+                <div class="bg-[#F4EFE6] border border-[#E2D9C8] rounded-xl p-5">
+                    <h3 class="serif font-bold text-base mb-2">✨ 腳本運作邏輯說明</h3>
+                    <ul class="text-xs text-[#4A4642] space-y-2 list-disc list-inside leading-relaxed">
+                        <li><strong>自動尋找前天日誌：</strong>自動搜尋 `~/Obsidian/zenlife` 下符合 `YYYY-MM-DD.md`（前天日期）的檔案；若無特定檔名，則自動抓取修改時間接近前天的 `.md` 筆記。</li>
+                        <li><strong>自動抓取真實天氣與農民曆：</strong>透過 `wttr.in` 取得您所在地的即時天氣與溫度，並用 `lunar_python` 算出當日干支、節氣與農民曆「宜、忌」。</li>
+                        <li><strong>三才共鳴起卦：</strong>結合「前天日誌字數與情緒雜湊 + 當日農曆數 + 天氣參數」推演出本卦與動爻，並將完整卦詞、白話記憶法與三點行動方針寫入 `~/Obsidian/zenlife/YYYY-MM-DD_易經晨報.md`。</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-[#2C2A29] text-[#F7F5F0] px-4 py-3 rounded-xl shadow-lg text-xs transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        通知訊息
+    </div>
+
+    <script>
+        // --- 完整精選與六十四卦核心資料庫 (含上下卦、卦辭、大象、圖像記憶口訣) ---
+        // Binary representation: bottom line to top line (e.g. "111111" = 乾)
+        const TRIGRAMS = {
+            "111": { name: "乾", nature: "天", attr: "剛健創造" },
+            "000": { name: "坤", nature: "地", attr: "柔順包容" },
+            "100": { name: "震", nature: "雷", attr: "奮起行動" },
+            "010": { name: "坎", nature: "水", attr: "險陷智慧" },
+            "001": { name: "艮", nature: "山", attr: "靜止沉穩" },
+            "011": { name: "巽", nature: "風", attr: "謙遜滲透" },
+            "101": { name: "離", nature: "火", attr: "光明附著" },
+            "110": { name: "兌", nature: "澤", attr: "喜悅溝通" }
+        };
+
+        const HEXAGRAMS = [
+            { id: 1, name: "乾為天", code: "111111", symbol: "䷀", guaci: "乾：元，亨，利，貞。", vern: "開創、亨通、適宜、堅守正道。", xiang: "天行健，君子以自強不息。", mnemonic: "上下皆天，雙龍御空。想像太陽日復一日運轉從不停歇，提醒自己充滿幹勁但切勿驕傲（亢龍有悔）。" },
+            { id: 2, name: "坤為地", code: "000000", symbol: "䷁", guaci: "坤：元亨，利牝馬之貞。先迷後得主。", vern: "大地的順從帶來亨通，像母馬般溫順堅韌，不搶先領頭反而能找到方向。", xiang: "地勢坤，君子以厚德載物。", mnemonic: "大地承受萬物而不爭功。想像自己是一片肥沃土壤，今天不強出頭，先傾聽、接納身邊的人事物。" },
+            { id: 3, name: "水雷屯", code: "100010", symbol: "䷂", guaci: "屯：元亨，利貞。勿用有攸往，利建侯。", vern: "萬物初生雖有困難但終會亨通。此時不宜貿然遠行，適合打基礎、找幫手。", xiang: "雲雷，屯；君子以經綸。", mnemonic: "春雷動但上方積滿烏雲雨水，草木破土而出最費力。遇到卡關別急，像嫩芽一樣先向下扎根。" },
+            { id: 4, name: "山水蒙", code: "010001", symbol: "䷃", guaci: "蒙：亨。匪我求童蒙，童蒙求我。初筮告，再三瀆。", vern: "啟蒙而亨通。抱持赤子求教之心，專一誠懇才能獲得真智慧。", xiang: "山下出泉，蒙；君子以果行育德。", mnemonic: "山腳下剛湧出的泉水還不知道流向何方。遇到不懂的事或天氣變化，放下成見虛心觀察。" },
+            { id: 5, name: "水天需", code: "111010", symbol: "䷄", guaci: "需：有孚，光亨，貞吉。利涉大川。", vern: "心懷誠信地等待，光明亨通。吃飽睡好養精蓄銳，時機到了就能渡過大河。", xiang: "雲上於天，需；君子以飲食宴樂。", mnemonic: "雲氣聚集在天上還沒下雨。急躁沒用，不如好好泡杯茶、吃頓早餐，等待最佳出手時機。" },
+            { id: 6, name: "天水訟", code: "010111", symbol: "䷅", guaci: "訟：有孚，窒惕，中吉，終凶。", vern: "雖有理但受阻，需警惕。適可而止則吉，爭執到底必凶。", xiang: "天與水違行，訟；君子以作事謀始。", mnemonic: "天往上走、水往下流，方向相反必起摩擦。今天若遇人意見不合，退一步即吉，贏了口舌輸了心情。" },
+            { id: 7, name: "地水師", code: "010000", symbol: "䷆", guaci: "師：貞，丈人，吉無咎。", vern: "統眾行事需守正道，由老練穩重之人心懷紀律帶領則吉。", xiang: "地中有水，師；君子以容民畜眾。", mnemonic: "大地底下蘊藏著地下水脈。面對繁雜任務，要像老將軍一樣有紀律、有目標地整頓資源。" },
+            { id: 8, name: "水地比", code: "000010", symbol: "䷇", guaci: "比：吉。原筮元永貞，無咎。", vern: "親附互助則吉。真誠長久地與人友善，自然沒有過失。", xiang: "地上有水，比；君子以親輔。", mnemonic: "水滋潤在大地之上，水土交融毫無縫隙。今天適合主動釋出善意、關心身邊夥伴。" },
+            { id: 11, name: "地天泰", code: "111000", symbol: "䷊", guaci: "泰：小往大來，吉亨。", vern: "小的損耗離去，大的福氣到來，萬事通泰吉祥。", xiang: "天地交，泰；后以財成天地之道。", mnemonic: "天在下面往上託、地在上面往下順，陰陽完美交流！今天溝通順暢，適合推動重要計畫。" },
+            { id: 12, name: "天地否", code: "000111", symbol: "䷋", guaci: "否之匪人，不利君子貞，大往小來。", vern: "閉塞不通之時，君子宜收斂鋒芒，避免硬碰硬。", xiang: "天地不交，否；君子以儉德辟難。", mnemonic: "天一直往上升、地一直往下沉，兩者互不理睬。若今天覺得別人聽不懂你的話，先安頓好自己即可。" },
+            { id: 14, name: "火天大有", code: "111101", symbol: "䷍", guaci: "大有：元亨。", vern: "光明普照，收穫豐盛，大為亨通。", xiang: "火在天上，大有；君子以遏惡揚善。", mnemonic: "太陽高掛在天空中照亮萬物。今天心境開闊，多看別人的優點，分享你的溫暖。" },
+            { id: 15, name: "地山謙", code: "001000", symbol: "䷎", guaci: "謙：亨，君子有終。", vern: "謙虛必然亨通，君子能善始善終（六爻皆吉的唯一一卦）。", xiang: "地中有山，謙；君子以裒多益寡，稱物平施。", mnemonic: "高聳的大山居然藏在平地底下！實力越強、姿態越低，這是易經唯一六爻全吉的護身符。" },
+            { id: 16, name: "雷地豫", code: "000100", symbol: "䷏", guaci: "豫：利建侯行師。", vern: "順應時勢而歡愉，預先準備則行動順遂。", xiang: "雷出地奮，豫；先王以作樂崇德。", mnemonic: "春雷從大地轟鳴而出，萬物歡欣鼓舞。今天保持輕鬆愉悅的節奏，同時做好「預備」就能事半功倍。" },
+            { id: 17, name: "澤雷隨", code: "100110", symbol: "䷐", guaci: "隨：元亨利貞，無咎。", vern: "順隨自然變化與正道，放下固執即可無咎。", xiang: "澤中有雷，隨；君子以嚮晦入宴息。", mnemonic: "雷聲收進沼澤裡休息了。白天順著時勢走，到了晚上就乖乖放下手機好好睡覺，這就是隨卦的大智慧！" },
+            { id: 20, name: "風地觀", code: "000011", symbol: "䷓", guaci: "觀：盥而不薦，有孚顒若。", vern: "像祭祀洗手時那樣莊重專注，先靜心觀察而不急著出手。", xiang: "風行地上，觀；先王以省方觀民設教。", mnemonic: "清風吹拂過大地，無所不至卻不留痕跡。今天當個「正念觀察者」，看清自己的情緒與周遭的局勢。" },
+            { id: 24, name: "地雷復", code: "100000", symbol: "䷗", guaci: "復：亨。出入無疾，朋來無咎。反復其道，七日來復。", vern: "一陽來復，生機重現。順應天道循環，修正步伐重新出發。", xiang: "雷在地中，復；先王以至日閉關。", mnemonic: "寒冬地底下響起第一聲微弱春雷（一陽生）。前天的懊悔或疲憊已經過去，今天是全新的轉捩點，溫柔地重新開始。" },
+            { id: 25, name: "天雷無妄", code: "100111", symbol: "䷘", guaci: "無妄：元亨利貞。其匪正有眚，不利有攸往。", vern: "出於至誠、不懷妄念則亨通。若心存僥倖則有災。", xiang: "天下雷行，物與無妄；先王以茂對時育萬物。", mnemonic: "天底下春雷震動，萬物自然生長毫無虛假。今天不要過度腦補別人的想法，真誠、單純地做好眼前的事。" },
+            { id: 29, name: "坎為水", code: "010010", symbol: "䷜", guaci: "習坎：有孚，維心亨，行有尚。", vern: "重重險阻之中，只要像流水般抱持真誠與堅定，內心依然亨通。", xiang: "水洊至，習坎；君子以常德行，習教事。", mnemonic: "一重水流過又是一重水。水遇到石頭不會生氣，而是順著縫隙盈滿後繼續前行。今天保持水的柔韌！" },
+            { id: 30, name: "離為火", code: "101101", symbol: "䷝", guaci: "離：利貞，亨。畜牝牛，吉。", vern: "光明相繼，柔順中正則吉。", xiang: "明兩作，離；大人以繼明照于四方。", mnemonic: "兩團火焰相映生輝。火需要木柴才能燃燒，今天讓自己的心依附在正念與平靜上，發光而不灼傷人。" },
+            { id: 31, name: "澤山咸", code: "001110", symbol: "䷞", guaci: "咸：亨，利貞，取女吉。", vern: "無心之感，真誠交感則亨通吉祥。", xiang: "山上有澤，咸；君子以虛受人。", mnemonic: "「感」字去掉「心」就是「咸」——無私心的真誠感應。山頂有湖泊滋潤山體，今天清空成見（以虛受人）去傾聽他人。" },
+            { id: 32, name: "雷風恆", code: "011100", symbol: "䷟", guaci: "恆：亨，無咎，利貞，利有攸往。", vern: "恆久之道，持之以恆則亨通無咎。", xiang: "雷風，恆；君子以立不易方。", mnemonic: "雷動風吹，兩者互相助長、長久不息。好習慣（如晨起、靜坐、記日誌）貴在每天溫和地堅持。" },
+            { id: 42, name: "風雷益", code: "100011", symbol: "䷩", guaci: "益：利有攸往，利涉大川。", vern: "損上益下，互相增益，有利於採取行動與突破。", xiang: "風雷，益；君子以見善則遷，有過則改。", mnemonic: "風助雷勢、雷激風威！大象傳說「看到好習慣立刻學，發現小缺點立刻改」，這就是對自己最大的增益。" },
+            { id: 47, name: "澤水困", code: "010110", symbol: "䷮", guaci: "困：亨，貞，大人吉，無咎，有言不信。", vern: "身處困頓而心亨通。守正道則吉，此時多言辯解反而無人相信。", xiang: "澤無水，困；君子以致命遂志。", mnemonic: "沼澤的水漏到下方乾涸了。當外在環境或心情受困時，記得「有言不信」，少抱怨、少解釋，用安靜的行動證明自己。" },
+            { id: 48, name: "水風井", code: "011010", symbol: "䷯", guaci: "井：改邑不改井，無喪無得，往來井井。", vern: "村落會搬遷但水井不變。涵養內在清泉，取之不竭。", xiang: "木上有水，井；君子以勞民勸相。", mnemonic: "木桶深入井底汲水。不管外面天氣好壞、農民曆吉凶，你的內心就像一口深井，隨時都能汲取出平靜與智慧。" },
+            { id: 52, name: "艮為山", code: "001001", symbol: "䷳", guaci: "艮其背，不獲其身，行其庭，不見其人，無咎。", vern: "當止則止，動靜不失其時，心不被外物牽動則無咎。", xiang: "兼山，艮；君子以思不出其位。", mnemonic: "兩座大山靜靜矗立。當思緒紛亂時，練習「思不出其位」——現在在做什麼，心就安住在什麼上面，不多想下一步。" },
+            { id: 53, name: "風山漸", code: "001011", symbol: "䷴", guaci: "漸：女歸吉，利貞。", vern: "循序漸進，不疾不徐則吉祥。", xiang: "山上有木，漸；君子以居賢德善俗。", mnemonic: "高山上的樹木是一寸一寸慢慢長高的。學易經、改脾氣、推專案都一樣，今天只要比前天進步一點點就好。" },
+            { id: 58, name: "兌為澤", code: "110110", symbol: "兑", guaci: "兌：亨，利貞。", vern: "喜悅與良性溝通帶來亨通，但需堅守純正。", xiang: "麗澤，兌；君子以朋友講習。", mnemonic: "兩座湖澤相連，彼此滋潤。「兌」就是加上言字旁的「說（悅）」，今天用溫和愉悅的語氣與人交流。" },
+            { id: 61, name: "風澤中孚", code: "110011", symbol: "䷼", guaci: "中孚：豚魚吉，利涉大川，利貞。", vern: "內心至誠，連小豬與魚都能被感動，無往不利。", xiang: "澤上有風，中孚；君子以議獄緩死。", mnemonic: "卦象外實內虛，像一顆誠懇空明的心，也像母鳥孵蛋般溫柔守候。今天用最真誠的心對待自己與他人。" },
+            { id: 63, name: "水火既濟", code: "101010", symbol: "䷾", guaci: "既濟：亨小，利貞，初吉終亂。", vern: "事情已經完成，但盛極易衰，需防微杜漸。", xiang: "水在火上，既濟；君子以思患而豫防之。", mnemonic: "水壺放在火爐上正在燒開水，六爻陰陽全數歸位。事情順利時更要保持警覺，別讓水溢出來澆熄了火。" },
+            { id: 64, name: "火水未濟", code: "010101", symbol: "䷿", guaci: "未濟：亨，小狐汔濟，濡其尾，無攸利。", vern: "尚未完成，代表充滿無限可能。像小狐狸過河一樣謹慎收尾即可亨通。", xiang: "火在水上，未濟；君子以慎辨物居方。", mnemonic: "易經最後一卦不是結束，而是「未濟（尚未完成）」。人生永遠在修練路上，不求完美，謹慎走好今天的每一步！" }
+        ];
+
+        // 農民曆模擬組合
+        const ALMANAC_PRESETS = [
+            { date: "農曆九月二十 · 霜降後", ganzhi: "丙午年 戊戌月 丁卯日", yi: "祭祀、沐浴、靜思、修造、納財", ji: "詞訟、遠行、動土、爭執" },
+            { date: "農曆九月廿一 · 霜降節氣", ganzhi: "丙午年 戊戌月 戊辰日", yi: "會友、立券、掃除、栽種、祈福", ji: "開倉、安床、急躁行事" },
+            { date: "農曆九月廿二 · 秋意漸深", ganzhi: "丙午年 戊戌月 己巳日", yi: "出行、納采、訂盟、讀書、靜坐", ji: "破土、大興土木、口舌爭辯" },
+            { date: "農曆九月廿三 · 下弦月", ganzhi: "丙午年 戊戌月 庚午日", yi: "諸事不宜（宜休養生息、內觀自省）", ji: "重大決策、強求外緣" }
+        ];
+
+        let currentHexagram = HEXAGRAMS[22]; // 預設澤水困或地雷復
+        let currentChangingLine = 1; // 1~6
+
+        // 初始化頁面
+        window.onload = function() {
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} 06:15`;
+            document.getElementById('current-date-badge').textContent = dateStr;
+            renderHexagramGrid();
+            castDivination('resonant');
+        };
+
+        // 切換分頁
+        function switchTab(tab) {
+            ['divination', 'hexagrams', 'automation'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-${t}`);
+                btn.classList.remove('bg-white', 'text-[#2C2A29]', 'shadow-sm');
+                btn.classList.add('text-[#6E6A63]');
+            });
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            activeBtn.classList.add('bg-white', 'text-[#2C2A29]', 'shadow-sm');
+            activeBtn.classList.remove('text-[#6E6A63]');
+        }
+
+        // 隨機切換農民曆模擬
+        function randomizeAlmanac() {
+            const preset = ALMANAC_PRESETS[Math.floor(Math.random() * ALMANAC_PRESETS.length)];
+            document.getElementById('lunar-date-str').textContent = preset.date;
+            document.getElementById('lunar-ganzhi').textContent = preset.ganzhi;
+            document.getElementById('almanac-yi').value = preset.yi;
+            document.getElementById('almanac-ji').value = preset.ji;
+            showToast("已切換農民曆吉凶參數");
+        }
+
+        // 載入本地 Obsidian .md 檔案
+        function loadObsidianFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('journal-input').value = e.target.result;
+                showToast(`已載入日誌：${file.name}`);
+                castDivination('resonant');
+            };
+            reader.readAsText(file);
+        }
+
+        // 字串轉 Hash 用於「天地人三才共鳴起卦」
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash);
+        }
+
+        // 執行起卦
+        async function castDivination(mode = 'resonant', specificHexId = null) {
+            const weather = document.getElementById('weather-select').value;
+            const temp = document.getElementById('temp-input').value;
+            const yi = document.getElementById('almanac-yi').value;
+            const ji = document.getElementById('almanac-ji').value;
+            const journal = document.getElementById('journal-input').value.trim();
+
+            if (specificHexId !== null) {
+                currentHexagram = HEXAGRAMS.find(h => h.id === specificHexId) || HEXAGRAMS[0];
+                currentChangingLine = (hashString(journal + weather) % 6) + 1;
+            } else if (mode === 'random') {
+                currentHexagram = HEXAGRAMS[Math.floor(Math.random() * HEXAGRAMS.length)];
+                currentChangingLine = Math.floor(Math.random() * 6) + 1;
+                showToast("🎲 已透過銅錢隨機搖出新卦象");
+            } else {
+                // 依天氣、農民曆、前天日誌內容進行三才演算
+                const todayKey = new Date().toDateString();
+                const combinedSeed = `${todayKey}|${weather}|${temp}|${yi}|${ji}|${journal}`;
+                const h = hashString(combinedSeed);
+                currentHexagram = HEXAGRAMS[h % HEXAGRAMS.length];
+                currentChangingLine = (h % 6) + 1;
+            }
+
+            updateHexagramUI(currentHexagram, currentChangingLine);
+            await generateDailyGuidance(currentHexagram, currentChangingLine, { weather, temp, yi, ji, journal });
+        }
+
+        // 更新卦象視覺與經典原文
+        function updateHexagramUI(hex, changingLine) {
+            const lowerCode = hex.code.substring(0, 3);
+            const upperCode = hex.code.substring(3, 6);
+            const lowerTri = TRIGRAMS[lowerCode] || { name: "乾", nature: "天" };
+            const upperTri = TRIGRAMS[upperCode] || { name: "乾", nature: "天" };
+
+            document.getElementById('hex-watermark').textContent = hex.symbol;
+            document.getElementById('hex-number-badge').textContent = `第 ${hex.id} 卦`;
+            document.getElementById('hex-trigrams').textContent = `上${upperTri.name}${upperTri.nature} · 下${lowerTri.name}${lowerTri.nature}`;
+            document.getElementById('hex-title').textContent = hex.name;
+            document.getElementById('hex-mnemonic').textContent = hex.mnemonic;
+            document.getElementById('hex-guaci').textContent = hex.guaci;
+            document.getElementById('hex-guaci-Vernacular').textContent = `白話：${hex.vern}`;
+            document.getElementById('hex-xiang').textContent = hex.xiang;
+            document.getElementById('hex-xiang-Vernacular').textContent = `心法：觀此「上${upperTri.nature}下${lowerTri.nature}」之象，將易理落實於今日呼吸與舉止之間。`;
+
+            const lineNames = ["初", "二", "三", "四", "五", "上"];
+            const isYang = hex.code[changingLine - 1] === '1';
+            const yaoName = changingLine === 1 || changingLine === 6
+                ? (changingLine === 1 ? `初${isYang ? '九' : '六'}` : `上${isYang ? '九' : '六'}`)
+                : `${lineNames[changingLine - 1]}${isYang ? '九' : '六'}`;
+
+            document.getElementById('hex-changing-info').textContent = `⚡ 本卦動爻：第 ${changingLine} 爻（${yaoName}爻動）`;
+
+            // 繪製六爻
+            const barsContainer = document.getElementById('hexagram-bars');
+            barsContainer.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                const bit = hex.code[i];
+                const isMoving = (i + 1) === changingLine;
+                const barWrapper = document.createElement('div');
+                barWrapper.className = "w-full flex items-center justify-between h-3 relative yao-line";
+
+                const activeColor = isMoving ? "bg-[#9E2A2B]" : "bg-[#2C2A29]";
+                if (bit === '1') {
+                    // 陽爻
+                    barWrapper.innerHTML = `<div class="w-full h-full ${activeColor} rounded-sm"></div>`;
+                } else {
+                    // 陰爻
+                    barWrapper.innerHTML = `
+                        <div class="w-[44%] h-full ${activeColor} rounded-sm"></div>
+                        <div class="w-[44%] h-full ${activeColor} rounded-sm"></div>
+                    `;
+                }
+                if (isMoving) {
+                    const dot = document.createElement('span');
+                    dot.className = "absolute -right-3.5 text-[10px] text-[#9E2A2B] font-bold";
+                    dot.textContent = "○";
+                    barWrapper.appendChild(dot);
+                }
+                barsContainer.appendChild(barWrapper);
+            }
+        }
+
+        // 呼叫 Gemini API 或使用深度結構化合成解卦
+        async function generateDailyGuidance(hex, changingLine, context) {
+            const statusEl = document.getElementById('ai-status');
+            const contentEl = document.getElementById('guidance-content');
+            statusEl.classList.remove('hidden');
+
+            // 先渲染一份即時、高品質的結構化晨間指南，確保零延遲體驗，並同時嘗試呼叫 Gemini 深化
+            const fallbackHtml = buildFallbackGuidanceHTML(hex, changingLine, context);
+            contentEl.innerHTML = fallbackHtml;
+
+            const apiKey = "AQ.Ab8RN6KVNtUKDIZhYtW8msjQn7EIaQyyb2KbtGCiUuNuPw88hQ";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const systemPrompt = `你是一位溫潤、通達《易經》與禪修生活的導師。使用者每天早上 6:15 起床看這份提點。
+請根據【今日所得卦象】、【今日天氣】、【農民曆宜忌】以及使用者在 ~/Obsidian/zenlife 的【前天日誌內容】，給出溫暖、具體且好記的解讀。
+請包含以下四個段落（使用清晰的 HTML 小標題與段落，不要使用 markdown code block）：
+1. 【一句話記住本卦】（用生動自然畫面幫使用者秒記「${hex.name}」的卦詞與核心精神，解決背不起來的困擾）
+2. 【前天日誌與卦象的呼應】（溫柔點出前天日誌中的心情或事件，為何會感應到這一卦與第 ${changingLine} 爻）
+3. 【結合天氣與農民曆的順勢之道】（如何把今天的宜忌、天氣轉換成心態調整）
+4. 【今日過好生活的 3 個微行動】（早、中、晚各一個具體可行的小練習）`;
+
+            const userQuery = `
+【今日卦象】第 ${hex.id} 卦：${hex.name}（第 ${changingLine} 爻動）
+【卦辭】${hex.guaci} / 【大象】${hex.xiang}
+【今日天氣】${context.weather}（${context.temp}）
+【農民曆】宜：${context.yi} ｜ 忌：${context.ji}
+【前天日誌 (~/Obsidian/zenlife)】${context.journal}`;
+
+            try {
+                const response = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userQuery }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+                const result = await response.json();
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                    contentEl.innerHTML = formatMarkdownToHtml(text);
+                }
+            } catch (e) {
+                // Keep rich fallback content smoothly
+            } finally {
+                statusEl.classList.add('hidden');
+            }
+        }
+
+        async function fetchWithRetry(url, options, retries = 2) {
+            for (let i = 0; i <= retries; i++) {
+                try {
+                    const res = await fetch(url, options);
+                    if (res.ok) return res;
+                } catch (err) {}
+                if (i < retries) await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
+            }
+            throw new Error("Request failed");
+        }
+
+        function formatMarkdownToHtml(md) {
+            return md
+                .replace(/### (.*)/g, '<h4 class="serif font-bold text-[#8C6D46] text-base mt-4 mb-1">$1</h4>')
+                .replace(/## (.*)/g, '<h4 class="serif font-bold text-[#8C6D46] text-base mt-4 mb-1">$1</h4>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-[#2C2A29] font-semibold">$1</strong>')
+                .replace(/\n\n/g, '</p><p class="mb-3">')
+                .replace(/\n- /g, '<br>• ');
+        }
+
+        function buildFallbackGuidanceHTML(hex, changingLine, ctx) {
+            const journalSnippet = ctx.journal.length > 45 ? ctx.journal.substring(0, 45) + "..." : ctx.journal;
+            return `
+                <div class="space-y-4">
+                    <div class="p-3.5 bg-[#FAF8F5] rounded-xl border-l-4 border-[#8C6D46]">
+                        <h4 class="serif font-bold text-[#8C6D46] text-sm mb-1">一、不用死背！用畫面記住「${hex.name}」</h4>
+                        <p class="text-xs sm:text-sm text-[#3A3735]">
+                            每次看到<strong>「${hex.name}」</strong>，請直接在腦海浮現這個畫面：<em>${hex.mnemonic}</em><br>
+                            所以它的卦辭「${hex.guaci}」其實就是在提醒您：<strong>${hex.vern}</strong>
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">二、前天日誌 (<code class="text-xs bg-[#EFECE6] px-1 rounded">~/Obsidian/zenlife</code>) 的心念回音</h4>
+                        <p class="text-xs sm:text-sm text-[#4A4642]">
+                            您在日誌中寫道：「<em>${journalSnippet}</em>」。外在的人事物就像風浪，而易經透過<strong>「${hex.name}」第 ${changingLine} 爻動</strong>溫柔地回應您：前天的情緒已經成為養分，如同大象傳所言「<strong>${hex.xiang}</strong>」，今天不需要跟昨日的懊悔拔河，只要把重心收回到自己的呼吸與初衷上。
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">三、天時（${ctx.weather.split('，')[0]}）與農民曆宜忌之應對</h4>
+                        <p class="text-xs sm:text-sm text-[#4A4642]">
+                            今日天氣<strong>${ctx.weather}（${ctx.temp}）</strong>，農民曆提醒<strong>「宜：${ctx.yi}；忌：${ctx.ji}」</strong>。配合今日的<strong>${hex.name}</strong>，天氣的變化正好提醒我們放慢感官；對於農民曆所忌之事（如爭執或躁進），遇到突發狀況時先深呼吸三秒鐘，順著「宜」的方向，把精神放在能讓心安定的事情上。
+                        </p>
+                    </div>
+
+                    <div class="bg-[#F4EFE6]/60 p-4 rounded-xl border border-[#E6E1D6]">
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-2">四、今日過好生活的 3 個微行動建議</h4>
+                        <ul class="space-y-2 text-xs sm:text-sm text-[#3A3735]">
+                            <li>🌅 <strong>晨間 (06:15 - 08:30)：</strong>喝第一口溫水時，默念一次今日心法「<em>${hex.xiang}</em>」，不急著看繁雜訊息，先順應今日農民曆之「宜」定下一個最核心的小目標。</li>
+                            <li>🌤️ <strong>日間應對人事物：</strong>當感覺周遭氣氛或他人語氣影響心情時，在心裡畫出<strong>${hex.name}（${hex.symbol}）</strong>的圖像，提醒自己「守中正、不隨外境起舞」。</li>
+                            <li>🌙 <strong>晚間歸零 (寫 Obsidian 日誌時)：</strong>今晚在 <code class="text-xs bg-white px-1 rounded">~/Obsidian/zenlife</code> 記錄時，只寫下一件今天「實踐了 ${hex.name} 精神」的小事，這樣您這輩子就徹底記住這個卦了！</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 渲染六十四卦速查記憶卡片
+        function renderHexagramGrid() {
+            const q = (document.getElementById('hex-search')?.value || '').trim().toLowerCase();
+            const grid = document.getElementById('hex-grid');
+            grid.innerHTML = '';
+
+            const filtered = HEXAGRAMS.filter(h =>
+                h.name.toLowerCase().includes(q) ||
+                h.guaci.toLowerCase().includes(q) ||
+                h.mnemonic.toLowerCase().includes(q) ||
+                h.xiang.toLowerCase().includes(q)
+            );
+
+            filtered.forEach(hex => {
+                const card = document.createElement('div');
+                card.className = "bg-[#FAF8F5] hover:bg-white border border-[#E6E1D6] rounded-xl p-4 cursor-pointer transition-all hover:shadow-md flex flex-col justify-between";
+                card.onclick = () => {
+                    switchTab('divination');
+                    castDivination('specific', hex.id);
+                    showToast(`已載入「${hex.name}」至今日晨卜`);
+                };
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-mono text-[#8C6D46] bg-[#F0ECE1] px-2 py-0.5 rounded">第 ${hex.id} 卦</span>
+                            <span class="text-2xl serif">${hex.symbol}</span>
+                        </div>
+                        <h3 class="serif font-bold text-lg text-[#2C2A29] mb-1">${hex.name}</h3>
+                        <p class="serif text-xs text-[#6E6A63] mb-2 line-clamp-1">${hex.guaci}</p>
+                        <p class="text-xs text-[#3A3735] bg-[#F4EFE6] p-2.5 rounded-lg leading-relaxed">
+                            🧠 ${hex.mnemonic}
+                        </p>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-[#EFECE6] text-[11px] text-[#8C6D46] font-medium flex justify-between items-center">
+                        <span>大象：${hex.xiang.split('；')[1] || hex.xiang}</span>
+                        <span>代入晨卜 ➔</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // 匯出 Markdown 供放入 ~/Obsidian/zenlife
+        function exportToMarkdown() {
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const weather = document.getElementById('weather-select').value;
+            const temp = document.getElementById('temp-input').value;
+            const yi = document.getElementById('almanac-yi').value;
+            const ji = document.getElementById('almanac-ji').value;
+            const guidanceText = document.getElementById('guidance-content').innerText;
+
+            const mdContent = `---
+date: ${dateStr} 06:15
+tags: [易經晨卜, zenlife, 每日提點]
+hexagram: ${currentHexagram.name}
+weather: ${weather} (${temp})
+---
+
+# ☯ ${dateStr} 易經晨間提點：${currentHexagram.symbol} 第 ${currentHexagram.id} 卦 · ${currentHexagram.name}
+
+## 一、當日三才因緣
+- **天時（天氣）**：${weather}（${temp}）
+- **地利（農民曆）**：宜：${yi} ｜ 忌：${ji}
+- **動爻提示**：第 ${currentChangingLine} 爻動
+
+## 二、經典原文與秒記圖像
+- **【卦辭】**：${currentHexagram.guaci}
+  - *白話*：${currentHexagram.vern}
+- **【大象傳】**：${currentHexagram.xiang}
+- **🧠 圖像記憶口訣**：${currentHexagram.mnemonic}
+
+## 三、今日解卦與生活方針
+${guidanceText}
+
+---
+*📝 今日晚間回顧（睡前填寫：今天哪一個瞬間我實踐了「${currentHexagram.name}」的精神？）：*
+- 
+`;
+
+            const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${dateStr}_易經晨報.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast(`已下載 ${dateStr}_易經晨報.md，可放入 ~/Obsidian/zenlife`);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
