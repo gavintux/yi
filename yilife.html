@@ -85,57 +85,84 @@
 
     <!-- Google Docs / Drive Folder 設定彈窗 -->
     <div id="gdoc-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-[#FAF8F5] border border-[#DED8CE] rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-[#FAF8F5] border border-[#DED8CE] rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-[#E6E1D6] pb-3">
                 <h3 class="serif text-lg font-bold text-[#2C2A29] flex items-center gap-2">
-                    <span>📄</span> 自動寫入 Google Docs 雲端資料夾設定
+                    <span>📄</span> 寫入 Google Drive 資料夾 (`1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb`) 診斷與設定
                 </h3>
                 <button onclick="toggleGDocModal()" class="text-[#7A756E] hover:text-[#2C2A29] text-lg font-bold">✕</button>
             </div>
-            <div class="text-xs text-[#5A554E] space-y-2 leading-relaxed">
-                <p>
-                    目標雲端硬碟資料夾：
-                    <a href="https://drive.google.com/drive/folders/1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb?usp=sharing" target="_blank" class="text-[#8C6D46] font-semibold underline">
-                        打開您的易經晨報 Google Drive 資料夾 ↗
-                    </a>
-                </p>
-                <p>
-                    為了讓 <code class="bg-[#EAE5DB] px-1 rounded">yilife.html</code> 與每日 06:15 Python 腳本能直接把晨間提點寫成<strong>原生 Google Docs 文件</strong>並放進該資料夾（而且不需在 GitHub 暴露 OAuth 憑證），最安全簡單的方式是使用您的 Google 帳號建立一個 <strong>Google Apps Script 接收端 (Webhook)</strong>：
-                </p>
+
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 space-y-1.5 leading-relaxed">
+                <div class="font-bold">💡 為什麼剛剛按了沒出現在雲端資料夾？請檢查這 3 個關鍵步驟：</div>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>您必須先在 <a href="https://script.google.com" target="_blank" class="underline font-bold">script.google.com</a> 貼上下方腳本，並先按一次頂端的 <strong>「▶ 執行 (Run) — 選擇 testAuth 函式」</strong>，跳出視窗時點選「審查權限 ➔ 進階 ➔ 前往專案（不安全）➔ 允許」，Google 才會允許腳本在您的資料夾建立 Google Docs。</li>
+                    <li>點擊右上角「部署 ➔ 新增部署作業」，類型選「網頁應用程式」，<strong>「誰可以存取 (Who has access)」一定要選「所有人 (Anyone)」</strong>（若選僅限自己，從 `gavintux.github.io` 傳過去會被擋下）。</li>
+                    <li>每次修改腳本後，必須選「管理部署作業 ➔ 編輯 ➔ 版本選：<strong>新版本 (New version)</strong>」才會生效。</li>
+                </ol>
             </div>
 
             <div class="bg-[#2C2A29] text-[#F7F5F0] p-3.5 rounded-xl text-[11px] font-mono space-y-2">
                 <div class="flex justify-between items-center text-[#D0C9BC] border-b border-white/10 pb-1.5">
-                    <span>前往 script.google.com 新增專案，貼上這段程式碼並部署為「網頁應用程式」：</span>
-                    <button onclick="copyGasScript()" class="bg-[#8C6D46] text-white px-2 py-0.5 rounded text-[10px] hover:opacity-90">複製腳本</button>
+                    <span>升級版 Google Apps Script（自動排版 Google Docs + 內建權限測試函式）：</span>
+                    <button onclick="copyGasScript()" class="bg-[#8C6D46] text-white px-2.5 py-1 rounded text-[11px] hover:opacity-90 font-sans">📋 複製完整腳本</button>
                 </div>
-                <pre id="gas-code-block" class="overflow-x-auto leading-relaxed">function doPost(e) {
-  var data = JSON.parse(e.postData.contents);
-  var folderId = data.folderId || "1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb";
-  var folder = DriveApp.getFolderById(folderId);
-  var doc = DocumentApp.create(data.title);
-  doc.getBody().setText(data.content);
+                <pre id="gas-code-block" class="overflow-x-auto leading-relaxed max-h-48">const FOLDER_ID = "1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb";
+
+// 步驟1：貼上後請先在上方選「testAuth」並按「執行」以完成 Google 授權，同時會在資料夾產生一篇測試文件！
+function testAuth() {
+  var folder = DriveApp.getFolderById(FOLDER_ID);
+  var doc = DocumentApp.create("易經晨報_連線授權成功測試");
+  doc.getBody().appendParagraph("恭喜！您的 Google Drive 資料夾連線與 Google Docs 寫入權限已成功打通。");
   doc.saveAndClose();
-  var file = DriveApp.getFileById(doc.getId());
-  file.moveTo(folder);
-  return ContentService.createTextOutput(JSON.stringify({
-    status: "ok", url: doc.getUrl()
-  })).setMimeType(ContentService.MimeType.JSON);
+  DriveApp.getFileById(doc.getId()).moveTo(folder);
+  Logger.log("測試成功：" + doc.getUrl());
+}
+
+function doPost(e) {
+  try {
+    var raw = e.postData ? e.postData.contents : "{}";
+    var data = JSON.parse(raw);
+    var folderId = data.folderId || FOLDER_ID;
+    var folder = DriveApp.getFolderById(folderId);
+    var doc = DocumentApp.create(data.title || "易經晨間提點");
+    var body = doc.getBody();
+    body.setText(data.content || "");
+    doc.saveAndClose();
+    var file = DriveApp.getFileById(doc.getId());
+    file.moveTo(folder);
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "ok",
+      url: doc.getUrl(),
+      name: doc.getName()
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "error",
+      message: err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
 }</pre>
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-[#7A756E] mb-1">貼上部署後的 Google Apps Script 網址 (Web App URL)：</label>
-                <input type="text" id="gas-webhook-input" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full bg-white border border-[#DED8CE] rounded-xl px-3.5 py-2.5 text-xs font-mono focus:outline-none focus:border-[#8C6D46]">
+                <label class="block text-xs font-semibold text-[#7A756E] mb-1">貼上部署後的網頁應用程式網址 (`https://script.google.com/macros/s/.../exec`)：</label>
+                <div class="flex gap-2">
+                    <input type="text" id="gas-webhook-input" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="flex-1 bg-white border border-[#DED8CE] rounded-xl px-3.5 py-2.5 text-xs font-mono focus:outline-none focus:border-[#8C6D46]">
+                    <button onclick="testGasConnection()" id="btn-test-gas" class="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-medium whitespace-nowrap">
+                        ⚡ 儲存並立即測試寫入
+                    </button>
+                </div>
+                <p id="gas-test-result" class="text-xs mt-2 hidden p-2.5 rounded-lg"></p>
             </div>
 
-            <div class="flex justify-between items-center pt-2">
-                <a href="https://drive.google.com/drive/folders/1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb?usp=sharing" target="_blank" class="text-xs text-[#8C6D46] hover:underline flex items-center gap-1">
-                    📂 查看雲端資料夾 (1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb)
+            <div class="flex justify-between items-center pt-2 border-t border-[#E6E1D6]">
+                <a href="https://drive.google.com/drive/u/0/folders/1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb" target="_blank" class="text-xs text-[#8C6D46] font-semibold hover:underline flex items-center gap-1">
+                    📂 開啟目標雲端資料夾 (`1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb`) ↗
                 </a>
                 <div class="flex gap-2">
                     <button onclick="toggleGDocModal()" class="px-4 py-2 rounded-xl border border-[#DED8CE] text-xs text-[#7A756E]">關閉</button>
-                    <button onclick="saveGasWebhook()" class="px-5 py-2 rounded-xl bg-[#2C2A29] text-[#F7F5F0] text-xs font-medium hover:bg-[#403D3B]">儲存網址</button>
+                    <button onclick="saveGasWebhook()" class="px-5 py-2 rounded-xl bg-[#2C2A29] text-[#F7F5F0] text-xs font-medium hover:bg-[#403D3B]">儲存設定</button>
                 </div>
             </div>
         </div>
@@ -264,7 +291,7 @@
                             <button onclick="saveToGoogleDocs()" id="btn-save-gdoc" class="w-2/3 bg-[#8C6D46] hover:bg-[#765B39] text-white text-xs font-medium py-2.5 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5">
                                 <span>📄</span> 寫入 Google Docs 雲端資料夾
                             </button>
-                            <a href="https://drive.google.com/drive/folders/1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb?usp=sharing" target="_blank" class="w-1/3 bg-[#FAF8F5] hover:bg-white border border-[#DED8CE] text-[#5A554E] text-xs font-medium py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1">
+                            <a href="https://drive.google.com/drive/u/0/folders/1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb" target="_blank" class="w-1/3 bg-[#FAF8F5] hover:bg-white border border-[#DED8CE] text-[#5A554E] text-xs font-medium py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1">
                                 📂 開啟雲端夾
                             </a>
                         </div>
@@ -501,12 +528,13 @@ fetch("https://yi-proxy.您的帳號.workers.dev")</pre>
             const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} 06:15`;
             document.getElementById('current-date-badge').textContent = dateStr;
             try {
-                const savedKey = window.sessionStorage ? sessionStorage.getItem('zenlife_gemini_key') : '';
+                const store = window.localStorage || window.sessionStorage;
+                const savedKey = store ? store.getItem('zenlife_gemini_key') : '';
                 if (savedKey) {
                     runtimeApiKey = savedKey;
                     updateApiKeyBadge();
                 }
-                const savedGas = window.sessionStorage ? sessionStorage.getItem('zenlife_gas_url') : '';
+                const savedGas = store ? store.getItem('zenlife_gas_url') : '';
                 if (savedGas) {
                     runtimeGasUrl = savedGas;
                     updateGDocBadge();
@@ -522,6 +550,75 @@ fetch("https://yi-proxy.您的帳號.workers.dev")</pre>
             modal.classList.toggle('hidden');
             if (!modal.classList.contains('hidden')) {
                 document.getElementById('gas-webhook-input').value = runtimeGasUrl;
+            }
+        }
+
+        function saveGasWebhook() {
+            const val = document.getElementById('gas-webhook-input').value.trim();
+            runtimeGasUrl = val;
+            try {
+                const store = window.localStorage || window.sessionStorage;
+                if (store) {
+                    if (val) store.setItem('zenlife_gas_url', val);
+                    else store.removeItem('zenlife_gas_url');
+                }
+            } catch (e) {}
+            updateGDocBadge();
+            toggleGDocModal();
+            showToast(val ? "✅ 已永久儲存 Google Docs 雲端寫入網址" : "已清除 Google Docs Webhook 設定");
+        }
+
+        // 測試寫入並顯示明確診斷訊息
+        async function testGasConnection() {
+            const val = document.getElementById('gas-webhook-input').value.trim();
+            const resBox = document.getElementById('gas-test-result');
+            const btn = document.getElementById('btn-test-gas');
+            resBox.classList.remove('hidden');
+
+            if (!val || !val.startsWith('https://script.google.com/macros/s/')) {
+                resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
+                resBox.textContent = "❌ 網址格式不正確！請確認是 https://script.google.com/macros/s/.../exec 開頭的網頁應用程式網址。";
+                return;
+            }
+
+            runtimeGasUrl = val;
+            try {
+                const store = window.localStorage || window.sessionStorage;
+                if (store) store.setItem('zenlife_gas_url', val);
+            } catch (e) {}
+            updateGDocBadge();
+
+            btn.disabled = true;
+            btn.textContent = "⏳ 正在寫入雲端...";
+            resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-amber-100 text-amber-900";
+            resBox.textContent = "正在把今日晨報傳送至 Google Drive 資料夾 (1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb)...";
+
+            const { title, content } = buildReportDocumentObject();
+            try {
+                const resp = await fetch(runtimeGasUrl, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        folderId: TARGET_GDRIVE_FOLDER_ID,
+                        title: title,
+                        content: content
+                    })
+                });
+                const data = await resp.json();
+                if (data.status === 'ok') {
+                    resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-emerald-100 text-emerald-900";
+                    resBox.innerHTML = `✅ <strong>寫入成功！</strong>已建立 Google Docs：<a href="${data.url}" target="_blank" class="underline font-bold">${data.name || title} ↗</a>`;
+                } else {
+                    resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
+                    resBox.textContent = `❌ Google Apps Script 回傳錯誤：${data.message}（請確認已在編輯器中執行過 testAuth 並允許授權，且您對該資料夾有編輯權限）`;
+                }
+            } catch (err) {
+                resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-amber-100 text-amber-900";
+                resBox.innerHTML = `⚠️ 請求已發送，但瀏覽器無法讀取回傳值（若資料夾仍無檔案，通常是部署時「誰可以存取」沒選「所有人 Anyone」，或尚未在 Apps Script 按過「執行 testAuth」授權）。`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "⚡ 儲存並立即測試寫入";
             }
         }
 
@@ -933,7 +1030,7 @@ ${guidanceText}
             document.body.removeChild(temp);
 
             if (!runtimeGasUrl) {
-                showToast("📋 已複製今日提點內容！請設定 Google Apps Script 網址以啟用全自動雲端寫入");
+                showToast("📋 已複製內容！請先完成 1 分鐘 Google Apps Script 授權設定才能寫入私人雲端資料夾");
                 toggleGDocModal();
                 return;
             }
@@ -943,9 +1040,9 @@ ${guidanceText}
             btn.disabled = true;
 
             try {
-                await fetch(runtimeGasUrl, {
+                const resp = await fetch(runtimeGasUrl, {
                     method: 'POST',
-                    mode: 'no-cors',
+                    redirect: 'follow',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({
                         folderId: TARGET_GDRIVE_FOLDER_ID,
@@ -953,9 +1050,19 @@ ${guidanceText}
                         content: content
                     })
                 });
-                showToast(`✅ 已成功將「${title}」寫入您的 Google Drive 資料夾！`);
+                const resData = await resp.json();
+                if (resData && resData.status === 'ok') {
+                    showToast(`✅ 已成功存入雲端資料夾：${title}`);
+                    if (resData.url) {
+                        window.open(resData.url, '_blank');
+                    }
+                } else {
+                    showToast(`⚠️ 雲端回傳錯誤：${resData.message || '請檢查授權'}`);
+                    toggleGDocModal();
+                }
             } catch (e) {
-                showToast(`⚠️ 雲端連線異常，已將內容複製至剪貼簿`);
+                showToast(`⚠️ 無法確認寫入狀態，請在彈窗點擊「⚡ 儲存並立即測試寫入」檢查授權`);
+                toggleGDocModal();
             } finally {
                 btn.innerHTML = origText;
                 btn.disabled = false;
