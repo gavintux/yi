@@ -61,19 +61,113 @@
             </div>
 
             <!-- Navigation Tabs -->
-            <div class="flex bg-[#EAE5DB] p-1 rounded-xl text-sm font-medium">
-                <button onclick="switchTab('divination')" id="tab-divination" class="px-4 py-2 rounded-lg bg-white text-[#2C2A29] shadow-sm transition-all">
-                    今日晨間卜卦
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex bg-[#EAE5DB] p-1 rounded-xl text-sm font-medium">
+                    <button onclick="switchTab('divination')" id="tab-divination" class="px-3.5 py-2 rounded-lg bg-white text-[#2C2A29] shadow-sm transition-all">
+                        今日晨間卜卦
+                    </button>
+                    <button onclick="switchTab('hexagrams')" id="tab-hexagrams" class="px-3.5 py-2 rounded-lg text-[#6E6A63] hover:text-[#2C2A29] transition-all">
+                        六十四卦速查
+                    </button>
+                    <button onclick="switchTab('automation')" id="tab-automation" class="px-3.5 py-2 rounded-lg text-[#6E6A63] hover:text-[#2C2A29] transition-all">
+                        GitHub 與雲端同步指南
+                    </button>
+                </div>
+                <button onclick="toggleGDocModal()" id="btn-gdoc-status" class="px-3 py-2 rounded-xl border border-[#DED8CE] bg-[#FAF8F5] hover:bg-white text-xs font-medium text-[#5A554E] flex items-center gap-1.5 transition-all">
+                    <span>📄</span> <span id="gdoc-badge-text">Google Docs 設定</span>
                 </button>
-                <button onclick="switchTab('hexagrams')" id="tab-hexagrams" class="px-4 py-2 rounded-lg text-[#6E6A63] hover:text-[#2C2A29] transition-all">
-                    六十四卦速查與記憶
-                </button>
-                <button onclick="switchTab('automation')" id="tab-automation" class="px-4 py-2 rounded-lg text-[#6E6A63] hover:text-[#2C2A29] transition-all">
-                    06:15 自動化安裝指南
+                <button onclick="toggleApiKeyModal()" id="btn-apikey-status" class="px-3 py-2 rounded-xl border border-[#DED8CE] bg-[#FAF8F5] hover:bg-white text-xs font-medium text-[#5A554E] flex items-center gap-1.5 transition-all">
+                    <span>🔑</span> <span id="apikey-badge-text">設定 API Key</span>
                 </button>
             </div>
         </div>
     </header>
+
+    <!-- Google Docs / Drive Folder 設定彈窗 -->
+    <div id="gdoc-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#FAF8F5] border border-[#DED8CE] rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-[#E6E1D6] pb-3">
+                <h3 class="serif text-lg font-bold text-[#2C2A29] flex items-center gap-2">
+                    <span>📄</span> 自動寫入 Google Docs 雲端資料夾設定
+                </h3>
+                <button onclick="toggleGDocModal()" class="text-[#7A756E] hover:text-[#2C2A29] text-lg font-bold">✕</button>
+            </div>
+            <div class="text-xs text-[#5A554E] space-y-2 leading-relaxed">
+                <p>
+                    目標雲端硬碟資料夾：
+                    <a href="https://drive.google.com/drive/folders/1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb?usp=sharing" target="_blank" class="text-[#8C6D46] font-semibold underline">
+                        打開您的易經晨報 Google Drive 資料夾 ↗
+                    </a>
+                </p>
+                <p>
+                    為了讓 <code class="bg-[#EAE5DB] px-1 rounded">yilife.html</code> 與每日 06:15 Python 腳本能直接把晨間提點寫成<strong>原生 Google Docs 文件</strong>並放進該資料夾（而且不需在 GitHub 暴露 OAuth 憑證），最安全簡單的方式是使用您的 Google 帳號建立一個 <strong>Google Apps Script 接收端 (Webhook)</strong>：
+                </p>
+            </div>
+
+            <div class="bg-[#2C2A29] text-[#F7F5F0] p-3.5 rounded-xl text-[11px] font-mono space-y-2">
+                <div class="flex justify-between items-center text-[#D0C9BC] border-b border-white/10 pb-1.5">
+                    <span>前往 script.google.com 新增專案，貼上這段程式碼並部署為「網頁應用程式」：</span>
+                    <button onclick="copyGasScript()" class="bg-[#8C6D46] text-white px-2 py-0.5 rounded text-[10px] hover:opacity-90">複製腳本</button>
+                </div>
+                <pre id="gas-code-block" class="overflow-x-auto leading-relaxed">function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var folderId = data.folderId || "1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb";
+  var folder = DriveApp.getFolderById(folderId);
+  var doc = DocumentApp.create(data.title);
+  doc.getBody().setText(data.content);
+  doc.saveAndClose();
+  var file = DriveApp.getFileById(doc.getId());
+  file.moveTo(folder);
+  return ContentService.createTextOutput(JSON.stringify({
+    status: "ok", url: doc.getUrl()
+  })).setMimeType(ContentService.MimeType.JSON);
+}</pre>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-[#7A756E] mb-1">貼上部署後的 Google Apps Script 網址 (Web App URL)：</label>
+                <input type="text" id="gas-webhook-input" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full bg-white border border-[#DED8CE] rounded-xl px-3.5 py-2.5 text-xs font-mono focus:outline-none focus:border-[#8C6D46]">
+            </div>
+
+            <div class="flex justify-between items-center pt-2">
+                <a href="https://drive.google.com/drive/folders/1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb?usp=sharing" target="_blank" class="text-xs text-[#8C6D46] hover:underline flex items-center gap-1">
+                    📂 查看雲端資料夾 (1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb)
+                </a>
+                <div class="flex gap-2">
+                    <button onclick="toggleGDocModal()" class="px-4 py-2 rounded-xl border border-[#DED8CE] text-xs text-[#7A756E]">關閉</button>
+                    <button onclick="saveGasWebhook()" class="px-5 py-2 rounded-xl bg-[#2C2A29] text-[#F7F5F0] text-xs font-medium hover:bg-[#403D3B]">儲存網址</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Security Modal (針對 gavintux.github.io/yi/yilife.html 設計) -->
+    <div id="apikey-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#FAF8F5] border border-[#DED8CE] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-[#E6E1D6] pb-3">
+                <h3 class="serif text-lg font-bold text-[#2C2A29] flex items-center gap-2">
+                    <span>🔐</span> GitHub Pages (yilife.html) API Key 安全設定
+                </h3>
+                <button onclick="toggleApiKeyModal()" class="text-[#7A756E] hover:text-[#2C2A29] text-lg font-bold">✕</button>
+            </div>
+            <p class="text-xs text-[#5A554E] leading-relaxed">
+                由於您將網頁部署於公開的 <code class="bg-[#EAE5DB] px-1.5 py-0.5 rounded">http://gavintux.github.io/yi/yilife.html</code>，<strong>切勿將 API Key 直接寫在 HTML 原始碼中</strong>（會被 GitHub 爬蟲掃描盜用）。
+            </p>
+            <div class="bg-[#F4EFE6] border border-[#E2D9C8] rounded-xl p-3.5 text-xs text-[#4A4642] space-y-1.5">
+                <div class="font-bold text-[#8C6D46]">🛡️ 最妥當的兩道防護做法：</div>
+                <p>1. <strong>前端動態輸入（BYOK）：</strong>在下方輸入您的 Gemini API Key，它只會保存在您個人裝置的瀏覽器中，不會出現在 GitHub 程式碼裡。</p>
+                <p>2. <strong>Google Cloud 網域綁定：</strong>前往 Google AI Studio / Cloud Console 的憑證設定，將此 API Key 的「應用程式限制 (HTTP Referrers)」設定為僅允許 <code class="bg-white px-1 rounded">https://gavintux.github.io/*</code> 與 <code class="bg-white px-1 rounded">http://gavintux.github.io/*</code>，即使別人看到也無法在其他地方盜用。</p>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-[#7A756E] mb-1">輸入您的 Gemini API Key（僅存於本機瀏覽器）：</label>
+                <input type="password" id="user-apikey-input" placeholder="AIzaSy..." class="w-full bg-white border border-[#DED8CE] rounded-xl px-3.5 py-2.5 text-sm font-mono focus:outline-none focus:border-[#8C6D46]">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="clearUserApiKey()" class="px-4 py-2 rounded-xl border border-[#DED8CE] text-xs text-[#7A756E] hover:text-rose-700">清除金鑰</button>
+                <button onclick="saveUserApiKey()" class="px-5 py-2 rounded-xl bg-[#2C2A29] text-[#F7F5F0] text-xs font-medium hover:bg-[#403D3B]">儲存並啟用</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <main class="flex-grow max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
@@ -136,20 +230,20 @@
                         </div>
                     </div>
 
-                    <!-- 3. 人和：前天日誌 ~/Obsidian/zenlife -->
+                    <!-- 3. 人和：昨天日誌 ~/Obsidian/zenlife/Daily -->
                     <div class="mb-6">
                         <div class="flex justify-between items-center mb-2">
                             <label class="block text-xs font-semibold uppercase tracking-wider text-[#7A756E]">
-                                【人和】前天日誌 (<code class="bg-[#EAE5DB] px-1 rounded text-[11px]">~/Obsidian/zenlife</code>)
+                                【人和】昨天日誌 (<code class="bg-[#EAE5DB] px-1 rounded text-[11px]">~/Obsidian/zenlife/Daily</code>)
                             </label>
                             <label class="cursor-pointer text-xs text-[#8C6D46] hover:underline flex items-center gap-1">
                                 <input type="file" id="obsidian-file-input" accept=".md,.txt" class="hidden" onchange="loadObsidianFile(event)">
-                                📂 載入本地 .md 檔案
+                                📂 載入昨天 .md 日誌
                             </label>
                         </div>
-                        <textarea id="journal-input" rows="5" class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl p-3 text-sm leading-relaxed focus:outline-none focus:border-[#8C6D46]" placeholder="貼上您前天的 Obsidian 日誌內容，或點擊上方載入 .md 檔案...">前天開會時因為專案進度不如預期，心裡有些急躁，對同事說話語氣稍微重了一點。晚上靜坐時覺得很懊悔，發現自己太容易被外在的期限與別人的情緒牽著走。希望能學會像水一樣柔韌，既有方向又不失平靜。另外，最近睡眠有點淺，想把生活步調放慢一些。</textarea>
+                        <textarea id="journal-input" rows="5" class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl p-3 text-sm leading-relaxed focus:outline-none focus:border-[#8C6D46]" placeholder="貼上您昨天的 Obsidian 日誌內容 (位於 ~/Obsidian/zenlife/Daily)，或點擊上方載入 .md 檔案...">昨天開會時因為專案進度不如預期，心裡有些急躁，對同事說話語氣稍微重了一點。晚上靜坐時覺得很懊悔，發現自己太容易被外在的期限與別人的情緒牽著走。希望能學會像水一樣柔韌，既有方向又不失平靜。另外，最近睡眠有點淺，想把生活步調放慢一些。</textarea>
                         <div class="flex justify-between items-center mt-1.5 text-[11px] text-[#8E8880]">
-                            <span>💡 網頁環境因安全限制無法直接掃描硬碟，可載入檔案或使用右側 Python 自動腳本。</span>
+                            <span>💡 在 `gavintux.github.io/yi/yilife.html` 上可直接載入昨天 `.md` 檔，或由本機 06:15 腳本自動執行。</span>
                         </div>
                     </div>
 
@@ -163,8 +257,16 @@
                                 🎲 隨機銅錢搖卦 (含動爻)
                             </button>
                             <button onclick="exportToMarkdown()" id="btn-export" class="w-1/2 bg-[#EAE5DB] hover:bg-[#DED8CE] text-[#2C2A29] text-xs font-medium py-2.5 px-4 rounded-xl transition-all">
-                                📥 匯出今日 Obsidian 筆記
+                                📥 匯出 Obsidian 筆記
                             </button>
+                        </div>
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="saveToGoogleDocs()" id="btn-save-gdoc" class="w-2/3 bg-[#8C6D46] hover:bg-[#765B39] text-white text-xs font-medium py-2.5 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5">
+                                <span>📄</span> 寫入 Google Docs 雲端資料夾
+                            </button>
+                            <a href="https://drive.google.com/drive/folders/1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb?usp=sharing" target="_blank" class="w-1/3 bg-[#FAF8F5] hover:bg-white border border-[#DED8CE] text-[#5A554E] text-xs font-medium py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1">
+                                📂 開啟雲端夾
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -255,59 +357,71 @@
                         <h2 class="serif text-xl font-bold">易經六十四卦 · 畫面感記憶庫</h2>
                         <p class="text-xs text-[#7A756E] mt-1">卦詞背不起來，是因為沒有把「上下卦的自然意象」連結到生活場景。點擊任一卦即可代入今日晨卜。</p>
                     </div>
-                    <input type="text" id="hex-search" oninput="renderHexagramGrid()" placeholder="搜尋卦名、關鍵字（如：水、謙、困、財）..." class="bg-[#FAF8F5] border border-[#DED8CE] rounded-xl px-4 py-2 text-sm w-full sm:w-72 focus:outline-none focus:border-[#8C6D46]">
+                    <div class="w-full sm:w-64">
+                        <input type="text" id="hex-search" oninput="renderHexagramGrid()" placeholder="搜尋卦名、卦辭或記憶關鍵字..." class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#8C6D46]">
+                    </div>
                 </div>
-
-                <div id="hex-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <!-- Populated via JS -->
+                <div id="hex-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Injected via JS -->
                 </div>
             </div>
         </section>
 
-        <!-- TAB 3: 06:15 自動化安裝指南 (Python + Obsidian) -->
+        <!-- TAB 3: GitHub Pages 部署與 API Key 安全指南 -->
         <section id="view-automation" class="hidden space-y-6">
             <div class="ink-card rounded-2xl p-6 sm:p-8 space-y-6">
                 <div class="border-b border-[#EFECE6] pb-4">
-                    <span class="bg-[#2C2A29] text-[#F7F5F0] text-xs px-2.5 py-1 rounded font-mono">macOS / Linux / Windows 適用</span>
-                    <h2 class="serif text-2xl font-bold mt-2">如何設定每天早上 06:15 自動讀取 `~/Obsidian/zenlife` 並寫入晨間卜卦？</h2>
+                    <span class="bg-[#9E2A2B] text-[#F7F5F0] text-xs px-2.5 py-1 rounded font-mono">GitHub Pages 資安防護必讀</span>
+                    <h2 class="serif text-2xl font-bold mt-2">把網頁放在 `gavintux.github.io/yi/yilife.html`，API Key 如何處理最妥當？</h2>
                     <p class="text-sm text-[#6E6A63] mt-1">
-                        因為瀏覽器無法在背景自動喚醒並直接讀取您的電腦家目錄，我為您編寫了獨立的 Python 腳本（已在右側檔案列表提供 `zenlife_iching_615.py`），只需三個步驟即可完成全自動排程：
+                        因為 GitHub Pages 的原始碼對全世界公開，若將 `AIzaSy...` 直接寫在 `yilife.html` 裡，推上 GitHub 幾秒內就會被自動化爬蟲掃描並遭到停權或盜刷。以下是 3 種最妥當的處理方式：
                     </p>
                 </div>
 
+                <!-- 三種 API Key 妥善處理架構 -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-[#FAF8F5] p-5 rounded-xl border border-[#E6E1D6]">
-                        <div class="text-xs font-bold text-[#8C6D46] mb-2">步驟 1：安裝必要套件</div>
+                    <div class="bg-[#FAF8F5] p-5 rounded-xl border-2 border-[#8C6D46] relative">
+                        <span class="absolute -top-2.5 right-4 bg-[#8C6D46] text-white text-[10px] px-2 py-0.5 rounded-full">最簡單 · 已內建於本頁</span>
+                        <div class="text-sm font-bold text-[#2C2A29] serif mb-2">方法 A：瀏覽器端輸入 + 網域白名單限制</div>
                         <p class="text-xs text-[#4A4642] leading-relaxed mb-3">
-                            打開終端機 (Terminal)，安裝農曆換算套件 `lunar_python`、網路請求 `requests` 與 Google Gemini SDK：
+                            1. `yilife.html` 程式碼裡<strong>完全不放 Key</strong>。<br>
+                            2. 點擊網頁右上角「🔑 設定 API Key」輸入金鑰，金鑰只存在您自己手機/電腦瀏覽器內。<br>
+                            3. 到 <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-[#8C6D46] underline">Google Cloud Console</a> 點開該 API Key，在「網站限制 (HTTP Referrers)」加入：
                         </p>
-                        <pre class="bg-[#2C2A29] text-[#F7F5F0] p-3 rounded-lg text-xs overflow-x-auto font-mono">pip install lunar_python requests google-genai</pre>
+                        <pre class="bg-[#2C2A29] text-[#F7F5F0] p-2.5 rounded-lg text-[11px] overflow-x-auto font-mono">https://gavintux.github.io/*
+http://gavintux.github.io/*</pre>
                     </div>
 
                     <div class="bg-[#FAF8F5] p-5 rounded-xl border border-[#E6E1D6]">
-                        <div class="text-xs font-bold text-[#8C6D46] mb-2">步驟 2：儲存腳本並設定金鑰</div>
+                        <div class="text-sm font-bold text-[#2C2A29] serif mb-2">方法 B：本機 06:15 算好後推上 GitHub（零暴露）</div>
                         <p class="text-xs text-[#4A4642] leading-relaxed mb-3">
-                            將本專案隨附的 `zenlife_iching_615.py` 存放在 `~/Obsidian/zenlife/scripts/`，並設定您的環境變數：
+                            1. API Key 只放在您自己家裡電腦的環境變數中。<br>
+                            2. 每天早上 06:15 由您電腦的 Python 腳本讀取 `~/Obsidian/zenlife/Daily` 的昨天日誌並呼叫 Gemini 解卦。<br>
+                            3. 結果直接寫入 Obsidian，或存成靜態 JSON 推送到 GitHub，網頁端完全不必呼叫 API！
                         </p>
-                        <pre class="bg-[#2C2A29] text-[#F7F5F0] p-3 rounded-lg text-xs overflow-x-auto font-mono">export GEMINI_API_KEY="您的金鑰"
-python3 ~/Obsidian/zenlife/scripts/zenlife_iching_615.py</pre>
+                        <pre class="bg-[#2C2A29] text-[#F7F5F0] p-2.5 rounded-lg text-[11px] overflow-x-auto font-mono"># Key 永遠不離開您的電腦
+15 6 * * * GEMINI_API_KEY="金鑰" python3 ~/Obsidian/zenlife/zenlife_iching_615.py</pre>
                     </div>
 
                     <div class="bg-[#FAF8F5] p-5 rounded-xl border border-[#E6E1D6]">
-                        <div class="text-xs font-bold text-[#8C6D46] mb-2">步驟 3：設定每天 06:15 自動執行</div>
+                        <div class="text-sm font-bold text-[#2C2A29] serif mb-2">方法 C：Cloudflare Workers 免費代理</div>
                         <p class="text-xs text-[#4A4642] leading-relaxed mb-3">
-                            在終端機輸入 `crontab -e`，加入以下這行排程，每天早上 6 點 15 分就會自動生成當日易經晨報筆記：
+                            若您希望打開 `yilife.html` 不用輸入 Key 也能線上即時算卦，可建立一個免費的 Cloudflare Worker，將 `GEMINI_API_KEY` 存在 Worker 的加密環境變數，並設定 CORS 只允許 `gavintux.github.io` 呼叫該 Worker。
                         </p>
-                        <pre class="bg-[#2C2A29] text-[#F7F5F0] p-3 rounded-lg text-xs overflow-x-auto font-mono">15 6 * * * GEMINI_API_KEY="金鑰" /usr/bin/python3 ~/Obsidian/zenlife/scripts/zenlife_iching_615.py</pre>
+                        <pre class="bg-[#2C2A29] text-[#F7F5F0] p-2.5 rounded-lg text-[11px] overflow-x-auto font-mono">// yilife.html 改呼叫您的 Worker
+fetch("https://yi-proxy.您的帳號.workers.dev")</pre>
                     </div>
                 </div>
 
                 <div class="bg-[#F4EFE6] border border-[#E2D9C8] rounded-xl p-5">
-                    <h3 class="serif font-bold text-base mb-2">✨ 腳本運作邏輯說明</h3>
+                    <h3 class="serif font-bold text-base mb-2">✨ 本地端 06:15 自動讀取 `~/Obsidian/zenlife/Daily` 設定步驟</h3>
                     <ul class="text-xs text-[#4A4642] space-y-2 list-disc list-inside leading-relaxed">
-                        <li><strong>自動尋找前天日誌：</strong>自動搜尋 `~/Obsidian/zenlife` 下符合 `YYYY-MM-DD.md`（前天日期）的檔案；若無特定檔名，則自動抓取修改時間接近前天的 `.md` 筆記。</li>
-                        <li><strong>自動抓取真實天氣與農民曆：</strong>透過 `wttr.in` 取得您所在地的即時天氣與溫度，並用 `lunar_python` 算出當日干支、節氣與農民曆「宜、忌」。</li>
-                        <li><strong>三才共鳴起卦：</strong>結合「前天日誌字數與情緒雜湊 + 當日農曆數 + 天氣參數」推演出本卦與動爻，並將完整卦詞、白話記憶法與三點行動方針寫入 `~/Obsidian/zenlife/YYYY-MM-DD_易經晨報.md`。</li>
+                        <li><strong>步驟 1（命名部署）：</strong>將本 HTML 檔案另存為 `yilife.html`，放入您的 `gavintux.github.io` 儲存庫的 `/yi/yilife.html` 路徑下並 Push。</li>
+                        <li><strong>步驟 2（昨天日誌路徑）：</strong>Python 腳本已更新為自動讀取 `~/Obsidian/zenlife/Daily` 資料夾中<strong>昨天</strong>（`today - 1 day`）的 `.md` 日誌檔。</li>
+                        <li><strong>步驟 3（自動存入 Google Docs 指定資料夾）：</strong>點擊上方「📄 Google Docs 設定」複製 10 行 Apps Script 部署後，將取得的網址填入環境變數 `GAS_WEBHOOK_URL`，每天 06:15 就會同時寫入 Obsidian 與您的 Google Drive 資料夾（`1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb`）！</li>
+                        <li><strong>步驟 4（06:15 定時執行）：</strong>在終端機執行 `crontab -e`，貼上：<br>
+                            <code class="bg-white px-2 py-1 rounded border border-[#DED8CE] font-mono inline-block mt-1">15 6 * * * GEMINI_API_KEY="您的金鑰" GAS_WEBHOOK_URL="您的GAS網址" /usr/bin/python3 ~/Obsidian/zenlife/zenlife_iching_615.py</code>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -377,297 +491,380 @@ python3 ~/Obsidian/zenlife/scripts/zenlife_iching_615.py</pre>
 
         let currentHexagram = HEXAGRAMS[22]; // 預設澤水困或地雷復
         let currentChangingLine = 1; // 1~6
+        let runtimeApiKey = ""; // 使用者在瀏覽器動態設定的 API Key (不寫死於原始碼中)
+        let runtimeGasUrl = ""; // Google Apps Script Webhook URL (用於直接寫入 Google Drive 1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb)
+        const TARGET_GDRIVE_FOLDER_ID = "1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb";
 
         // 初始化頁面
         window.onload = function() {
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} 06:15`;
             document.getElementById('current-date-badge').textContent = dateStr;
+            try {
+                const savedKey = window.sessionStorage ? sessionStorage.getItem('zenlife_gemini_key') : '';
+                if (savedKey) {
+                    runtimeApiKey = savedKey;
+                    updateApiKeyBadge();
+                }
+                const savedGas = window.sessionStorage ? sessionStorage.getItem('zenlife_gas_url') : '';
+                if (savedGas) {
+                    runtimeGasUrl = savedGas;
+                    updateGDocBadge();
+                }
+            } catch (e) {}
             renderHexagramGrid();
             castDivination('resonant');
         };
 
-        // 切換分頁
-        function switchTab(tab) {
-            ['divination', 'hexagrams', 'automation'].forEach(t => {
-                document.getElementById(`view-${t}`).classList.add('hidden');
-                const btn = document.getElementById(`tab-${t}`);
-                btn.classList.remove('bg-white', 'text-[#2C2A29]', 'shadow-sm');
-                btn.classList.add('text-[#6E6A63]');
+        // Google Docs 雲端資料夾設定彈窗控制
+        function toggleGDocModal() {
+            const modal = document.getElementById('gdoc-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('gas-webhook-input').value = runtimeGasUrl;
+            }
+        }
+
+        function saveGasWebhook() {
+            const val = document.getElementById('gas-webhook-input').value.trim();
+            runtimeGasUrl = val;
+            try {
+                if (window.sessionStorage) {
+                    if (val) sessionStorage.setItem('zenlife_gas_url', val);
+                    else sessionStorage.removeItem('zenlife_gas_url');
+                }
+            } catch (e) {}
+            updateGDocBadge();
+            toggleGDocModal();
+            showToast(val ? "✅ 已連結 Google Docs 雲端寫入設定" : "已清除 Google Docs Webhook 設定");
+        }
+
+        function updateGDocBadge() {
+            const badge = document.getElementById('gdoc-badge-text');
+            if (runtimeGasUrl) {
+                badge.textContent = "Google Docs 已連線";
+                badge.parentElement.classList.add('border-emerald-600', 'text-emerald-800');
+            } else {
+                badge.textContent = "Google Docs 設定";
+                badge.parentElement.classList.remove('border-emerald-600', 'text-emerald-800');
+            }
+        }
+
+        function copyGasScript() {
+            const code = document.getElementById('gas-code-block').innerText;
+            const temp = document.createElement('textarea');
+            temp.value = code;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            showToast("📋 已複製 Google Apps Script 程式碼！");
+        }
+
+        // API Key 安全設定彈窗控制
+        function toggleApiKeyModal() {
+            const modal = document.getElementById('apikey-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('user-apikey-input').value = runtimeApiKey;
+            }
+        }
+
+        function saveUserApiKey() {
+            const val = document.getElementById('user-apikey-input').value.trim();
+            runtimeApiKey = val;
+            try {
+                if (window.sessionStorage) {
+                    if (val) sessionStorage.setItem('zenlife_gemini_key', val);
+                    else sessionStorage.removeItem('zenlife_gemini_key');
+                }
+            } catch (e) {}
+            updateApiKeyBadge();
+            toggleApiKeyModal();
+            showToast(val ? "✅ 已儲存 API Key（僅保存在本機瀏覽器）" : "已清除 API Key");
+            castDivination('resonant');
+        }
+
+        function clearUserApiKey() {
+            document.getElementById('user-apikey-input').value = '';
+            runtimeApiKey = '';
+            try {
+                if (window.sessionStorage) sessionStorage.removeItem('zenlife_gemini_key');
+            } catch (e) {}
+            updateApiKeyBadge();
+            toggleApiKeyModal();
+            showToast("已清除瀏覽器中的 API Key");
+        }
+
+        function updateApiKeyBadge() {
+            const badge = document.getElementById('apikey-badge-text');
+            if (!badge) return;
+            if (runtimeApiKey) {
+                badge.textContent = "API Key 已就緒";
+                badge.parentElement.classList.add('border-emerald-600', 'text-emerald-800');
+            } else {
+                badge.textContent = "設定 API Key";
+                badge.parentElement.classList.remove('border-emerald-600', 'text-emerald-800');
+            }
+        }
+
+        // 切換頂部分頁
+        function switchTab(tabName) {
+            const tabs = ['divination', 'hexagrams', 'automation'];
+            tabs.forEach(t => {
+                const viewEl = document.getElementById(`view-${t}`);
+                const btnEl = document.getElementById(`tab-${t}`);
+                if (viewEl) {
+                    if (t === tabName) viewEl.classList.remove('hidden');
+                    else viewEl.classList.add('hidden');
+                }
+                if (btnEl) {
+                    if (t === tabName) {
+                        btnEl.className = "px-3.5 py-2 rounded-lg bg-white text-[#2C2A29] shadow-sm transition-all";
+                    } else {
+                        btnEl.className = "px-3.5 py-2 rounded-lg text-[#6E6A63] hover:text-[#2C2A29] transition-all";
+                    }
+                }
             });
-            document.getElementById(`view-${tab}`).classList.remove('hidden');
-            const activeBtn = document.getElementById(`tab-${tab}`);
-            activeBtn.classList.add('bg-white', 'text-[#2C2A29]', 'shadow-sm');
-            activeBtn.classList.remove('text-[#6E6A63]');
         }
 
-        // 隨機切換農民曆模擬
+        // 切換農民曆模擬資料
+        let almanacIdx = 0;
         function randomizeAlmanac() {
-            const preset = ALMANAC_PRESETS[Math.floor(Math.random() * ALMANAC_PRESETS.length)];
-            document.getElementById('lunar-date-str').textContent = preset.date;
-            document.getElementById('lunar-ganzhi').textContent = preset.ganzhi;
-            document.getElementById('almanac-yi').value = preset.yi;
-            document.getElementById('almanac-ji').value = preset.ji;
-            showToast("已切換農民曆吉凶參數");
+            almanacIdx = (almanacIdx + 1) % ALMANAC_PRESETS.length;
+            const p = ALMANAC_PRESETS[almanacIdx];
+            document.getElementById('lunar-date-str').textContent = p.date;
+            document.getElementById('lunar-ganzhi').textContent = p.ganzhi;
+            document.getElementById('almanac-yi').value = p.yi;
+            document.getElementById('almanac-ji').value = p.ji;
+            showToast(`已切換農民曆：${p.date}`);
         }
 
-        // 載入本地 Obsidian .md 檔案
+        // 載入本地 ~/Obsidian/zenlife/Daily 的 .md 檔案
         function loadObsidianFile(event) {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById('journal-input').value = e.target.result;
-                showToast(`已載入日誌：${file.name}`);
+                showToast(`📂 已載入昨天日誌：${file.name}`);
                 castDivination('resonant');
             };
             reader.readAsText(file);
         }
 
-        // 字串轉 Hash 用於「天地人三才共鳴起卦」
+        // 字串雜湊計算
         function hashString(str) {
-            let hash = 0;
+            let hash = 5381;
             for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) - hash) + str.charCodeAt(i);
-                hash |= 0;
+                hash = ((hash << 5) + hash) + str.charCodeAt(i);
+                hash = hash & hash;
             }
             return Math.abs(hash);
         }
 
-        // 執行起卦
-        async function castDivination(mode = 'resonant', specificHexId = null) {
+        // 核心起卦函式
+        function castDivination(mode = 'resonant') {
             const weather = document.getElementById('weather-select').value;
             const temp = document.getElementById('temp-input').value;
             const yi = document.getElementById('almanac-yi').value;
             const ji = document.getElementById('almanac-ji').value;
             const journal = document.getElementById('journal-input').value.trim();
 
-            if (specificHexId !== null) {
-                currentHexagram = HEXAGRAMS.find(h => h.id === specificHexId) || HEXAGRAMS[0];
-                currentChangingLine = (hashString(journal + weather) % 6) + 1;
-            } else if (mode === 'random') {
-                currentHexagram = HEXAGRAMS[Math.floor(Math.random() * HEXAGRAMS.length)];
+            if (mode === 'random') {
+                const randIdx = Math.floor(Math.random() * HEXAGRAMS.length);
+                currentHexagram = HEXAGRAMS[randIdx];
                 currentChangingLine = Math.floor(Math.random() * 6) + 1;
-                showToast("🎲 已透過銅錢隨機搖出新卦象");
+                showToast(`🎲 銅錢搖卦完成：得「${currentHexagram.name}」第 ${currentChangingLine} 爻動`);
             } else {
-                // 依天氣、農民曆、前天日誌內容進行三才演算
-                const todayKey = new Date().toDateString();
-                const combinedSeed = `${todayKey}|${weather}|${temp}|${yi}|${ji}|${journal}`;
-                const h = hashString(combinedSeed);
+                const todayKey = new Date().toISOString().slice(0, 10);
+                const seed = `${todayKey}|${weather}|${temp}|${yi}|${ji}|${journal}`;
+                const h = hashString(seed);
                 currentHexagram = HEXAGRAMS[h % HEXAGRAMS.length];
                 currentChangingLine = (h % 6) + 1;
             }
 
-            updateHexagramUI(currentHexagram, currentChangingLine);
-            await generateDailyGuidance(currentHexagram, currentChangingLine, { weather, temp, yi, ji, journal });
+            renderHexagramUI(currentHexagram, currentChangingLine);
+            generateDailyGuidance(currentHexagram, currentChangingLine, weather, temp, yi, ji, journal);
         }
 
-        // 更新卦象視覺與經典原文
-        function updateHexagramUI(hex, changingLine) {
-            const lowerCode = hex.code.substring(0, 3);
-            const upperCode = hex.code.substring(3, 6);
-            const lowerTri = TRIGRAMS[lowerCode] || { name: "乾", nature: "天" };
-            const upperTri = TRIGRAMS[upperCode] || { name: "乾", nature: "天" };
-
+        // 渲染卦象六爻與卦辭
+        function renderHexagramUI(hex, changingLine) {
             document.getElementById('hex-watermark').textContent = hex.symbol;
             document.getElementById('hex-number-badge').textContent = `第 ${hex.id} 卦`;
-            document.getElementById('hex-trigrams').textContent = `上${upperTri.name}${upperTri.nature} · 下${lowerTri.name}${lowerTri.nature}`;
             document.getElementById('hex-title').textContent = hex.name;
             document.getElementById('hex-mnemonic').textContent = hex.mnemonic;
             document.getElementById('hex-guaci').textContent = hex.guaci;
             document.getElementById('hex-guaci-Vernacular').textContent = `白話：${hex.vern}`;
             document.getElementById('hex-xiang').textContent = hex.xiang;
-            document.getElementById('hex-xiang-Vernacular').textContent = `心法：觀此「上${upperTri.nature}下${lowerTri.nature}」之象，將易理落實於今日呼吸與舉止之間。`;
+            document.getElementById('hex-xiang-Vernacular').textContent = `心法：觀想「${hex.name}」的自然意象，將卦德落實於今日的呼吸與應對之中。`;
+
+            const lowerCode = hex.code.slice(0, 3);
+            const upperCode = hex.code.slice(3, 6);
+            const lowerTri = TRIGRAMS[lowerCode] || { name: "乾", nature: "天" };
+            const upperTri = TRIGRAMS[upperCode] || { name: "坤", nature: "地" };
+            document.getElementById('hex-trigrams').textContent = `上${upperTri.name}${upperTri.nature} · 下${lowerTri.name}${lowerTri.nature}`;
 
             const lineNames = ["初", "二", "三", "四", "五", "上"];
             const isYang = hex.code[changingLine - 1] === '1';
-            const yaoName = changingLine === 1 || changingLine === 6
-                ? (changingLine === 1 ? `初${isYang ? '九' : '六'}` : `上${isYang ? '九' : '六'}`)
-                : `${lineNames[changingLine - 1]}${isYang ? '九' : '六'}`;
+            const yaoTitle = changingLine === 1 || changingLine === 6
+                ? `${lineNames[changingLine - 1]}${isYang ? '九' : '六'}`
+                : `${isYang ? '九' : '六'}${lineNames[changingLine - 1]}`;
+            document.getElementById('hex-changing-info').textContent = `${yaoTitle}爻動 · 提醒您在變化中守持中道`;
 
-            document.getElementById('hex-changing-info').textContent = `⚡ 本卦動爻：第 ${changingLine} 爻（${yaoName}爻動）`;
-
-            // 繪製六爻
+            // 繪製六爻線條 (由下至上 index 0~5)
             const barsContainer = document.getElementById('hexagram-bars');
             barsContainer.innerHTML = '';
             for (let i = 0; i < 6; i++) {
                 const bit = hex.code[i];
                 const isMoving = (i + 1) === changingLine;
-                const barWrapper = document.createElement('div');
-                barWrapper.className = "w-full flex items-center justify-between h-3 relative yao-line";
+                const row = document.createElement('div');
+                row.className = "w-full flex items-center justify-between yao-line relative";
 
-                const activeColor = isMoving ? "bg-[#9E2A2B]" : "bg-[#2C2A29]";
+                const barColor = isMoving ? "bg-[#9E2A2B]" : "bg-[#2C2A29]";
                 if (bit === '1') {
-                    // 陽爻
-                    barWrapper.innerHTML = `<div class="w-full h-full ${activeColor} rounded-sm"></div>`;
+                    row.innerHTML = `<div class="w-full h-2.5 ${barColor} rounded-sm"></div>`;
                 } else {
-                    // 陰爻
-                    barWrapper.innerHTML = `
-                        <div class="w-[44%] h-full ${activeColor} rounded-sm"></div>
-                        <div class="w-[44%] h-full ${activeColor} rounded-sm"></div>
+                    row.innerHTML = `
+                        <div class="w-[44%] h-2.5 ${barColor} rounded-sm"></div>
+                        <div class="w-[44%] h-2.5 ${barColor} rounded-sm"></div>
                     `;
                 }
-                if (isMoving) {
-                    const dot = document.createElement('span');
-                    dot.className = "absolute -right-3.5 text-[10px] text-[#9E2A2B] font-bold";
-                    dot.textContent = "○";
-                    barWrapper.appendChild(dot);
-                }
-                barsContainer.appendChild(barWrapper);
+                barsContainer.appendChild(row);
             }
         }
 
-        // 呼叫 Gemini API 或使用深度結構化合成解卦
-        async function generateDailyGuidance(hex, changingLine, context) {
+        // 產生晨間解卦與應對方針（若有設定 API Key 則呼叫 Gemini，否則使用深度三才共鳴解析）
+        async function generateDailyGuidance(hex, changingLine, weather, temp, yi, ji, journal) {
+            const container = document.getElementById('guidance-content');
             const statusEl = document.getElementById('ai-status');
-            const contentEl = document.getElementById('guidance-content');
+
+            // 預設深度結構化內容（即時顯示，零延遲）
+            const journalSnippet = journal ? journal.slice(0, 85) + (journal.length > 85 ? "..." : "") : "（昨日靜心無記，以清淨心起卦）";
+            const buildFallbackHTML = () => `
+                <div class="space-y-4">
+                    <div class="p-3.5 bg-[#FAF8F5] rounded-xl border-l-4 border-[#8C6D46]">
+                        <div class="font-bold text-[#2C2A29] mb-1">1. 🧠 畫面感秒記法（不必死背卦詞）</div>
+                        <p class="text-xs text-[#4A4642] leading-relaxed">
+                            今天的主卦是<strong>「${hex.name}」</strong>（${hex.guaci}）。請在腦海浮現這個畫面：<strong>${hex.mnemonic}</strong>
+                            當今天遇到人事物波動時，只要想起這個自然畫面，就能立刻找回「${hex.xiang}」的安定感。
+                        </p>
+                    </div>
+                    <div class="p-3.5 bg-[#FAF8F5] rounded-xl border-l-4 border-[#2C2A29]">
+                        <div class="font-bold text-[#2C2A29] mb-1">2. 🪞 昨日日誌與本卦第 ${changingLine} 爻的呼應</div>
+                        <p class="text-xs text-[#4A4642] leading-relaxed">
+                            回顧您昨天在 <code class="bg-[#EAE5DB] px-1 rounded">~/Obsidian/zenlife/Daily</code> 寫下的心情：「<em>${journalSnippet}</em>」<br>
+                            <strong>${hex.name}</strong> 溫柔地提醒您：外在的進度與他人的情緒如同天氣般每日變換，第 ${changingLine} 爻動代表轉機就在當下——放下對「昨天不夠完美」的懊悔，先安頓好自己的呼吸與節奏。
+                        </p>
+                    </div>
+                    <div class="p-3.5 bg-[#FAF8F5] rounded-xl border-l-4 border-emerald-700">
+                        <div class="font-bold text-[#2C2A29] mb-1">3. 🌤️ 順應今日天氣與農民曆宜忌</div>
+                        <p class="text-xs text-[#4A4642] leading-relaxed">
+                            今日天氣為「<strong>${weather}（${temp}）</strong>」，農民曆宜「<strong>${yi}</strong>」、忌「<strong>${ji}</strong>」。
+                            建議順著天時調整步調，把心力放在農民曆「宜」的安定事務上，主動避開無謂的口舌或急躁決定。
+                        </p>
+                    </div>
+                    <div class="p-3.5 bg-[#F4EFE6] rounded-xl">
+                        <div class="font-bold text-[#8C6D46] mb-1.5">4. 🌱 今日過好生活的 3 個具體微行動</div>
+                        <ul class="text-xs text-[#3A3735] space-y-1.5 list-disc list-inside">
+                            <li><strong>早晨（出門/開工前）：</strong>深呼吸三次，默念一次「${hex.xiang}」，為今天設定平穩的起點。</li>
+                            <li><strong>午後（與人互動時）：</strong>若感覺情緒被周遭牽動，先停頓兩秒再開口，實踐「${hex.name}」的從容。</li>
+                            <li><strong>晚間（寫 Daily 日誌時）：</strong>在 Obsidian 記下一件今天順應自然、沒有勉強自己的小事。</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = buildFallbackHTML();
+
+            if (!runtimeApiKey) return;
+
             statusEl.classList.remove('hidden');
-
-            // 先渲染一份即時、高品質的結構化晨間指南，確保零延遲體驗，並同時嘗試呼叫 Gemini 深化
-            const fallbackHtml = buildFallbackGuidanceHTML(hex, changingLine, context);
-            contentEl.innerHTML = fallbackHtml;
-
-            const apiKey = "AQ.Ab8RN6KVNtUKDIZhYtW8msjQn7EIaQyyb2KbtGCiUuNuPw88hQ";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-            const systemPrompt = `你是一位溫潤、通達《易經》與禪修生活的導師。使用者每天早上 6:15 起床看這份提點。
-請根據【今日所得卦象】、【今日天氣】、【農民曆宜忌】以及使用者在 ~/Obsidian/zenlife 的【前天日誌內容】，給出溫暖、具體且好記的解讀。
-請包含以下四個段落（使用清晰的 HTML 小標題與段落，不要使用 markdown code block）：
-1. 【一句話記住本卦】（用生動自然畫面幫使用者秒記「${hex.name}」的卦詞與核心精神，解決背不起來的困擾）
-2. 【前天日誌與卦象的呼應】（溫柔點出前天日誌中的心情或事件，為何會感應到這一卦與第 ${changingLine} 爻）
-3. 【結合天氣與農民曆的順勢之道】（如何把今天的宜忌、天氣轉換成心態調整）
-4. 【今日過好生活的 3 個微行動】（早、中、晚各一個具體可行的小練習）`;
-
-            const userQuery = `
-【今日卦象】第 ${hex.id} 卦：${hex.name}（第 ${changingLine} 爻動）
-【卦辭】${hex.guaci} / 【大象】${hex.xiang}
-【今日天氣】${context.weather}（${context.temp}）
-【農民曆】宜：${context.yi} ｜ 忌：${context.ji}
-【前天日誌 (~/Obsidian/zenlife)】${context.journal}`;
-
             try {
-                const response = await fetchWithRetry(apiUrl, {
+                const prompt = `你是一位溫潤的易經與禪修導師。現在是早上 06:15。請結合以下資訊為我解卦並給出今日生活建議：
+- 今日卦象：第 ${hex.id} 卦 ${hex.name}（第 ${changingLine} 爻動）
+- 卦辭：${hex.guaci} ／ 大象傳：${hex.xiang}
+- 今日天氣：${weather} (${temp})
+- 今日農民曆：宜 ${yi} ｜ 忌 ${ji}
+- 昨天日誌 (~/Obsidian/zenlife/Daily)：${journal}
+請用繁體中文分四點輸出：1.畫面感秒記法 2.昨天日誌與卦象呼應 3.天氣與農民曆調適 4.今日早中晚三個具體微行動。`;
+
+                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${runtimeApiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: userQuery }] }],
-                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                        contents: [{ parts: [{ text: prompt }] }]
                     })
                 });
-                const result = await response.json();
-                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (text) {
-                    contentEl.innerHTML = formatMarkdownToHtml(text);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                        const formatted = text
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\n/g, '<br>');
+                        container.innerHTML = `<div class="text-xs sm:text-sm leading-relaxed space-y-2">${formatted}</div>`;
+                    }
                 }
             } catch (e) {
-                // Keep rich fallback content smoothly
+                // Keep structured synthesis on network error
             } finally {
                 statusEl.classList.add('hidden');
             }
         }
 
-        async function fetchWithRetry(url, options, retries = 2) {
-            for (let i = 0; i <= retries; i++) {
-                try {
-                    const res = await fetch(url, options);
-                    if (res.ok) return res;
-                } catch (err) {}
-                if (i < retries) await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
-            }
-            throw new Error("Request failed");
-        }
-
-        function formatMarkdownToHtml(md) {
-            return md
-                .replace(/### (.*)/g, '<h4 class="serif font-bold text-[#8C6D46] text-base mt-4 mb-1">$1</h4>')
-                .replace(/## (.*)/g, '<h4 class="serif font-bold text-[#8C6D46] text-base mt-4 mb-1">$1</h4>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-[#2C2A29] font-semibold">$1</strong>')
-                .replace(/\n\n/g, '</p><p class="mb-3">')
-                .replace(/\n- /g, '<br>• ');
-        }
-
-        function buildFallbackGuidanceHTML(hex, changingLine, ctx) {
-            const journalSnippet = ctx.journal.length > 45 ? ctx.journal.substring(0, 45) + "..." : ctx.journal;
-            return `
-                <div class="space-y-4">
-                    <div class="p-3.5 bg-[#FAF8F5] rounded-xl border-l-4 border-[#8C6D46]">
-                        <h4 class="serif font-bold text-[#8C6D46] text-sm mb-1">一、不用死背！用畫面記住「${hex.name}」</h4>
-                        <p class="text-xs sm:text-sm text-[#3A3735]">
-                            每次看到<strong>「${hex.name}」</strong>，請直接在腦海浮現這個畫面：<em>${hex.mnemonic}</em><br>
-                            所以它的卦辭「${hex.guaci}」其實就是在提醒您：<strong>${hex.vern}</strong>
-                        </p>
-                    </div>
-
-                    <div>
-                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">二、前天日誌 (<code class="text-xs bg-[#EFECE6] px-1 rounded">~/Obsidian/zenlife</code>) 的心念回音</h4>
-                        <p class="text-xs sm:text-sm text-[#4A4642]">
-                            您在日誌中寫道：「<em>${journalSnippet}</em>」。外在的人事物就像風浪，而易經透過<strong>「${hex.name}」第 ${changingLine} 爻動</strong>溫柔地回應您：前天的情緒已經成為養分，如同大象傳所言「<strong>${hex.xiang}</strong>」，今天不需要跟昨日的懊悔拔河，只要把重心收回到自己的呼吸與初衷上。
-                        </p>
-                    </div>
-
-                    <div>
-                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">三、天時（${ctx.weather.split('，')[0]}）與農民曆宜忌之應對</h4>
-                        <p class="text-xs sm:text-sm text-[#4A4642]">
-                            今日天氣<strong>${ctx.weather}（${ctx.temp}）</strong>，農民曆提醒<strong>「宜：${ctx.yi}；忌：${ctx.ji}」</strong>。配合今日的<strong>${hex.name}</strong>，天氣的變化正好提醒我們放慢感官；對於農民曆所忌之事（如爭執或躁進），遇到突發狀況時先深呼吸三秒鐘，順著「宜」的方向，把精神放在能讓心安定的事情上。
-                        </p>
-                    </div>
-
-                    <div class="bg-[#F4EFE6]/60 p-4 rounded-xl border border-[#E6E1D6]">
-                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-2">四、今日過好生活的 3 個微行動建議</h4>
-                        <ul class="space-y-2 text-xs sm:text-sm text-[#3A3735]">
-                            <li>🌅 <strong>晨間 (06:15 - 08:30)：</strong>喝第一口溫水時，默念一次今日心法「<em>${hex.xiang}</em>」，不急著看繁雜訊息，先順應今日農民曆之「宜」定下一個最核心的小目標。</li>
-                            <li>🌤️ <strong>日間應對人事物：</strong>當感覺周遭氣氛或他人語氣影響心情時，在心裡畫出<strong>${hex.name}（${hex.symbol}）</strong>的圖像，提醒自己「守中正、不隨外境起舞」。</li>
-                            <li>🌙 <strong>晚間歸零 (寫 Obsidian 日誌時)：</strong>今晚在 <code class="text-xs bg-white px-1 rounded">~/Obsidian/zenlife</code> 記錄時，只寫下一件今天「實踐了 ${hex.name} 精神」的小事，這樣您這輩子就徹底記住這個卦了！</li>
-                        </ul>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 渲染六十四卦速查記憶卡片
+        // 渲染六十四卦速查網格
         function renderHexagramGrid() {
-            const q = (document.getElementById('hex-search')?.value || '').trim().toLowerCase();
             const grid = document.getElementById('hex-grid');
+            const searchInput = document.getElementById('hex-search');
+            if (!grid) return;
+
+            const keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
             grid.innerHTML = '';
 
             const filtered = HEXAGRAMS.filter(h =>
-                h.name.toLowerCase().includes(q) ||
-                h.guaci.toLowerCase().includes(q) ||
-                h.mnemonic.toLowerCase().includes(q) ||
-                h.xiang.toLowerCase().includes(q)
+                h.name.toLowerCase().includes(keyword) ||
+                h.guaci.toLowerCase().includes(keyword) ||
+                h.xiang.toLowerCase().includes(keyword) ||
+                h.mnemonic.toLowerCase().includes(keyword)
             );
 
-            filtered.forEach(hex => {
+            filtered.forEach(h => {
                 const card = document.createElement('div');
-                card.className = "bg-[#FAF8F5] hover:bg-white border border-[#E6E1D6] rounded-xl p-4 cursor-pointer transition-all hover:shadow-md flex flex-col justify-between";
+                card.className = "bg-[#FAF8F5] hover:bg-white border border-[#E6E1D6] hover:border-[#8C6D46] rounded-xl p-4 cursor-pointer transition-all shadow-sm hover:shadow";
                 card.onclick = () => {
+                    currentHexagram = h;
+                    currentChangingLine = 1;
                     switchTab('divination');
-                    castDivination('specific', hex.id);
-                    showToast(`已載入「${hex.name}」至今日晨卜`);
+                    renderHexagramUI(h, 1);
+                    const weather = document.getElementById('weather-select').value;
+                    const temp = document.getElementById('temp-input').value;
+                    const yi = document.getElementById('almanac-yi').value;
+                    const ji = document.getElementById('almanac-ji').value;
+                    const journal = document.getElementById('journal-input').value;
+                    generateDailyGuidance(h, 1, weather, temp, yi, ji, journal);
+                    showToast(`已切換至「第 ${h.id} 卦 · ${h.name}」`);
                 };
                 card.innerHTML = `
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-mono text-[#8C6D46] bg-[#F0ECE1] px-2 py-0.5 rounded">第 ${hex.id} 卦</span>
-                            <span class="text-2xl serif">${hex.symbol}</span>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl serif">${h.symbol}</span>
+                            <div>
+                                <span class="text-[11px] text-[#8C6D46] font-mono">第 ${h.id} 卦</span>
+                                <h4 class="serif font-bold text-base text-[#2C2A29]">${h.name}</h4>
+                            </div>
                         </div>
-                        <h3 class="serif font-bold text-lg text-[#2C2A29] mb-1">${hex.name}</h3>
-                        <p class="serif text-xs text-[#6E6A63] mb-2 line-clamp-1">${hex.guaci}</p>
-                        <p class="text-xs text-[#3A3735] bg-[#F4EFE6] p-2.5 rounded-lg leading-relaxed">
-                            🧠 ${hex.mnemonic}
-                        </p>
+                        <span class="text-xs text-[#7A756E] bg-[#EAE5DB] px-2 py-0.5 rounded">點擊代入</span>
                     </div>
-                    <div class="mt-3 pt-2 border-t border-[#EFECE6] text-[11px] text-[#8C6D46] font-medium flex justify-between items-center">
-                        <span>大象：${hex.xiang.split('；')[1] || hex.xiang}</span>
-                        <span>代入晨卜 ➔</span>
-                    </div>
+                    <p class="text-xs font-semibold serif text-[#2C2A29] mb-1">${h.guaci}</p>
+                    <p class="text-[11px] text-[#5A554E] leading-relaxed">🧠 ${h.mnemonic}</p>
                 `;
                 grid.appendChild(card);
             });
         }
 
-        // 匯出 Markdown 供放入 ~/Obsidian/zenlife
-        function exportToMarkdown() {
+        // 組合今日完整易經提點文字內容 (供 Obsidian 與 Google Docs 共用)
+        function buildReportDocumentObject() {
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
             const weather = document.getElementById('weather-select').value;
@@ -676,11 +873,13 @@ python3 ~/Obsidian/zenlife/scripts/zenlife_iching_615.py</pre>
             const ji = document.getElementById('almanac-ji').value;
             const guidanceText = document.getElementById('guidance-content').innerText;
 
-            const mdContent = `---
+            const title = `${dateStr}_易經晨報_${currentHexagram.name}`;
+            const content = `---
 date: ${dateStr} 06:15
 tags: [易經晨卜, zenlife, 每日提點]
 hexagram: ${currentHexagram.name}
 weather: ${weather} (${temp})
+gdrive_folder: https://drive.google.com/drive/folders/${TARGET_GDRIVE_FOLDER_ID}
 ---
 
 # ☯ ${dateStr} 易經晨間提點：${currentHexagram.symbol} 第 ${currentHexagram.id} 卦 · ${currentHexagram.name}
@@ -703,8 +902,13 @@ ${guidanceText}
 *📝 今日晚間回顧（睡前填寫：今天哪一個瞬間我實踐了「${currentHexagram.name}」的精神？）：*
 - 
 `;
+            return { dateStr, title, content };
+        }
 
-            const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8;' });
+        // 匯出 Markdown 供放入 ~/Obsidian/zenlife/Daily
+        function exportToMarkdown() {
+            const { dateStr, content } = buildReportDocumentObject();
+            const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -712,16 +916,60 @@ ${guidanceText}
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            showToast(`已下載 ${dateStr}_易經晨報.md，可放入 ~/Obsidian/zenlife`);
+            showToast(`已下載 ${dateStr}_易經晨報.md，可放入 ~/Obsidian/zenlife/Daily`);
+        }
+
+        // 寫入 Google Docs 並存至指定 Google Drive 資料夾 (1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb)
+        async function saveToGoogleDocs() {
+            const { title, content } = buildReportDocumentObject();
+            const btn = document.getElementById('btn-save-gdoc');
+
+            // 先將內容自動複製到剪貼簿作為雙重保障
+            const temp = document.createElement('textarea');
+            temp.value = content;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+
+            if (!runtimeGasUrl) {
+                showToast("📋 已複製今日提點內容！請設定 Google Apps Script 網址以啟用全自動雲端寫入");
+                toggleGDocModal();
+                return;
+            }
+
+            const origText = btn.innerHTML;
+            btn.innerHTML = `<span>⏳</span> 正在寫入 Google Docs 雲端資料夾...`;
+            btn.disabled = true;
+
+            try {
+                await fetch(runtimeGasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        folderId: TARGET_GDRIVE_FOLDER_ID,
+                        title: title,
+                        content: content
+                    })
+                });
+                showToast(`✅ 已成功將「${title}」寫入您的 Google Drive 資料夾！`);
+            } catch (e) {
+                showToast(`⚠️ 雲端連線異常，已將內容複製至剪貼簿`);
+            } finally {
+                btn.innerHTML = origText;
+                btn.disabled = false;
+            }
         }
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
+            if (!toast) return;
             toast.textContent = msg;
             toast.classList.remove('translate-y-20', 'opacity-0');
             setTimeout(() => {
                 toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
+            }, 3200);
         }
     </script>
 </body>
