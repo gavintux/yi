@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>禪生活 · 易經晨間提點 (ZenLife I-Ching)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入真實農民曆計算庫 (lunar-javascript) 與 Markdown 解析器 (marked) -->
+    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.6.12/lunar.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -31,6 +34,33 @@
             color: #9E2A2B;
             font-family: 'Noto Serif TC', serif;
         }
+        /* Markdown 解析預覽樣式 */
+        .md-preview h1, .md-preview h2, .md-preview h3 {
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 700;
+            color: #2C2A29;
+            margin-top: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .md-preview h1 { font-size: 1rem; border-bottom: 1px solid #E6E1D6; padding-bottom: 2px; }
+        .md-preview h2 { font-size: 0.92rem; }
+        .md-preview h3 { font-size: 0.85rem; }
+        .md-preview ul { list-style-type: disc; padding-left: 1.25rem; margin: 0.25rem 0; }
+        .md-preview ol { list-style-type: decimal; padding-left: 1.25rem; margin: 0.25rem 0; }
+        .md-preview blockquote {
+            border-left: 3px solid #8C6D46;
+            padding-left: 0.6rem;
+            color: #6E6A63;
+            margin: 0.35rem 0;
+            font-style: italic;
+        }
+        .md-preview p { margin-bottom: 0.4rem; }
+        .md-preview code {
+            background: #EAE5DB;
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
@@ -56,7 +86,7 @@
                 </div>
                 <div>
                     <h1 class="serif text-xl sm:text-2xl font-bold tracking-wider text-[#2C2A29]">禪生活 · 易經晨間提點</h1>
-                    <p class="text-xs text-[#7A756E]">每日 06:15 結合節氣農民曆、天氣與 Obsidian 日誌之起卦指南</p>
+                    <p class="text-xs text-[#7A756E]">每日 06:15 實據「天時天氣 · 地利農民曆 · 人和昨日日誌」三才上卦與白話解卦</p>
                 </div>
             </div>
 
@@ -97,7 +127,7 @@
                 <div class="font-bold">💡 為什麼剛剛按了沒出現在雲端資料夾？請檢查這 3 個關鍵步驟：</div>
                 <ol class="list-decimal list-inside space-y-1">
                     <li>您必須先在 <a href="https://script.google.com" target="_blank" class="underline font-bold">script.google.com</a> 貼上下方腳本，並先按一次頂端的 <strong>「▶ 執行 (Run) — 選擇 testAuth 函式」</strong>，跳出視窗時點選「審查權限 ➔ 進階 ➔ 前往專案（不安全）➔ 允許」，Google 才會允許腳本在您的資料夾建立 Google Docs。</li>
-                    <li>點擊右上角「部署 ➔ 新增部署作業」，類型選「網頁應用程式」，<strong>「誰可以存取 (Who has access)」一定要選「所有人 (Anyone)」</strong>（若選僅限自己，從 `gavintux.github.io` 傳過去會被擋下）。</li>
+                    <li>點擊右上角「部署 ➔ 新增部署作業」，類型選「網頁應用程式」，<strong>「誰可以存取 (Who has access)」一定要選「所有人 (Anyone)」</strong>。</li>
                     <li>每次修改腳本後，必須選「管理部署作業 ➔ 編輯 ➔ 版本選：<strong>新版本 (New version)</strong>」才會生效。</li>
                 </ol>
             </div>
@@ -109,7 +139,6 @@
                 </div>
                 <pre id="gas-code-block" class="overflow-x-auto leading-relaxed max-h-48">const FOLDER_ID = "1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb";
 
-// 步驟1：貼上後請先在上方選「testAuth」並按「執行」以完成 Google 授權，同時會在資料夾產生一篇測試文件！
 function testAuth() {
   var folder = DriveApp.getFolderById(FOLDER_ID);
   var doc = DocumentApp.create("易經晨報_連線授權成功測試");
@@ -167,7 +196,7 @@ function doPost(e) {
         </div>
     </div>
 
-    <!-- API Key & Cloudflare Worker Security Modal (針對 gavintux.github.io/yi/yilife.html 設計) -->
+    <!-- API Key & Cloudflare Worker Security Modal -->
     <div id="apikey-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-[#FAF8F5] border border-[#DED8CE] rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-[#E6E1D6] pb-3">
@@ -177,18 +206,8 @@ function doPost(e) {
                 <button onclick="toggleApiKeyModal()" class="text-[#7A756E] hover:text-[#2C2A29] text-lg font-bold">✕</button>
             </div>
             <p class="text-xs text-[#5A554E] leading-relaxed">
-                將 <code class="bg-[#EAE5DB] px-1.5 py-0.5 rounded">GEMINI_API_KEY</code> 存放在 Cloudflare Worker 的加密環境變數中，並限制只有 <code class="bg-[#EAE5DB] px-1.5 py-0.5 rounded">gavintux.github.io</code> 可以呼叫。如此一來，公開的 <code class="bg-[#EAE5DB] px-1.5 py-0.5 rounded">yilife.html</code> <strong>完全不會出現 API Key</strong>，且您打開網頁就能直接即時算卦！
+                將 <code class="bg-[#EAE5DB] px-1.5 py-0.5 rounded">GEMINI_API_KEY</code> 存放在 Cloudflare Worker 的加密環境變數中，前端 <code class="bg-[#EAE5DB] px-1.5 py-0.5 rounded">yilife.html</code> 完全不需暴露金鑰。
             </p>
-            <div class="bg-[#F4EFE6] border border-[#E2D9C8] rounded-xl p-3.5 text-xs text-[#4A4642] space-y-1.5">
-                <div class="font-bold text-[#8C6D46]">🚀 新版 Cloudflare 介面部署步驟（3 分鐘完成）：</div>
-                <ol class="list-decimal list-inside space-y-1">
-                    <li>在「建立新項目」畫面中，點選第 3 個選項：<strong>「🌐 從 Hello World 開始!」</strong>。</li>
-                    <li>名稱取名為 <code class="bg-white px-1 rounded">yi-proxy</code>，點擊右下角<strong>「部署 (Deploy)」</strong>。</li>
-                    <li>在完成畫面點選右上角<strong>「編輯程式碼 (Edit code)」</strong>，將 <strong>`worker.js`</strong> 的內容全部貼上覆蓋，再按右上角「部署 (Deploy)」。</li>
-                    <li>回到該 Worker 的「設定 (Settings) ➔ 變數與機密 (Variables and Secrets)」，點選「新增 (Add)」：類型選<strong>「機密 (Secret)」</strong>、名稱填 <code class="bg-white px-1 rounded font-mono">GEMINI_API_KEY</code>、值填您的 Gemini API Key。</li>
-                    <li>將您的 Worker 網址貼在下方測試連線，或寫入本檔案的 <code class="bg-white px-1 rounded font-mono">DEFAULT_WORKER_URL</code> 常數中。</li>
-                </ol>
-            </div>
             <div>
                 <label class="block text-xs font-semibold text-[#7A756E] mb-1">1. Cloudflare Worker 代理網址（已預設為您的 `yi.gavintux.workers.dev`）：</label>
                 <div class="flex gap-2">
@@ -222,26 +241,24 @@ function doPost(e) {
                     <div class="flex items-center justify-between mb-4 border-b border-[#EFECE6] pb-3">
                         <h2 class="serif text-lg font-bold flex items-center gap-2">
                             <span class="w-2 h-5 bg-[#8C6D46] rounded-full inline-block"></span>
-                            當日因緣參數 (三才應感)
+                            當日三才實據參數 (上卦之源)
                         </h2>
                         <span id="current-date-badge" class="text-xs bg-[#F0ECE1] text-[#6E6A63] px-2.5 py-1 rounded-md font-mono">06:15 AM</span>
                     </div>
 
                     <!-- 1. 天時：天氣 -->
                     <div class="mb-5">
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-[#7A756E] mb-2">
-                            【天時】今日天氣與氣溫
-                        </label>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-[#7A756E]">
+                                【天時】今日即時天氣與氣溫 <span id="weather-loc-badge" class="text-[11px] text-[#8C6D46] font-normal ml-1">(自動定位中...)</span>
+                            </label>
+                            <button onclick="fetchRealTimeWeather(true)" class="text-xs text-[#8C6D46] hover:underline flex items-center gap-1">
+                                🔄 重新抓取即時天氣
+                            </button>
+                        </div>
                         <div class="grid grid-cols-2 gap-3">
-                            <select id="weather-select" class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#8C6D46]">
-                                <option value="微雨綿綿，空氣濕潤微涼">🌧️ 微雨綿綿 (濕潤微涼)</option>
-                                <option value="晴朗無雲，晨光溫暖和煦">☀️ 晴朗無雲 (晨光和煦)</option>
-                                <option value="多雲時陰，微風輕拂">⛅ 多雲時陰 (微風輕拂)</option>
-                                <option value="雷雨交加，氣壓偏低">⛈️ 雷雨交加 (氣壓偏低)</option>
-                                <option value="濃霧籠罩，能見度低而靜謐">🌫️ 晨霧籠罩 (靜謐微寒)</option>
-                                <option value="東北季風強勁，陰雨濕冷">🌬️ 季風強勁 (陰雨濕冷)</option>
-                            </select>
-                            <input type="text" id="temp-input" value="21°C 舒適偏涼" class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#8C6D46]" placeholder="氣溫感受">
+                            <input type="text" id="weather-select" value="" class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#8C6D46]" placeholder="沒原始內容">
+                            <input type="text" id="temp-input" value="" class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#8C6D46]" placeholder="沒原始內容">
                         </div>
                     </div>
 
@@ -249,49 +266,73 @@ function doPost(e) {
                     <div class="mb-5">
                         <div class="flex justify-between items-center mb-2">
                             <label class="block text-xs font-semibold uppercase tracking-wider text-[#7A756E]">
-                                【地利】今日農民曆宜忌
+                                【地利】今日農民曆宜忌 <span class="text-[11px] text-emerald-700 font-normal">(依今日曆法推算)</span>
                             </label>
-                            <button onclick="randomizeAlmanac()" class="text-xs text-[#8C6D46] hover:underline">換一組農民曆模擬</button>
+                            <button onclick="computeTodayAlmanac(true)" class="text-xs text-[#8C6D46] hover:underline">📅 校正為今日農民曆</button>
                         </div>
                         <div class="bg-[#FAF8F5] border border-[#DED8CE] rounded-xl p-3.5 space-y-2">
                             <div class="flex items-center justify-between text-xs text-[#7A756E]">
-                                <span id="lunar-date-str" class="font-semibold text-[#2C2A29] serif text-sm">農曆九月二十 · 霜降後</span>
-                                <span id="lunar-ganzhi" class="font-mono">丙午年 戊戌月 丁卯日</span>
+                                <span id="lunar-date-str" class="font-semibold text-[#2C2A29] serif text-sm">沒原始內容</span>
+                                <span id="lunar-ganzhi" class="font-mono">沒原始內容</span>
                             </div>
                             <div class="grid grid-cols-2 gap-2 pt-1">
                                 <div>
                                     <span class="inline-block text-xs bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-medium mb-1">宜</span>
-                                    <input type="text" id="almanac-yi" value="祭祀、沐浴、靜思、修造、納財" class="w-full bg-white border border-[#E6E1D6] rounded-lg px-2.5 py-1.5 text-xs">
+                                    <input type="text" id="almanac-yi" value="" placeholder="沒原始內容" class="w-full bg-white border border-[#E6E1D6] rounded-lg px-2.5 py-1.5 text-xs">
                                 </div>
                                 <div>
                                     <span class="inline-block text-xs bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded font-medium mb-1">忌</span>
-                                    <input type="text" id="almanac-ji" value="詞訟、遠行、動土、爭執" class="w-full bg-white border border-[#E6E1D6] rounded-lg px-2.5 py-1.5 text-xs">
+                                    <input type="text" id="almanac-ji" value="" placeholder="沒原始內容" class="w-full bg-white border border-[#E6E1D6] rounded-lg px-2.5 py-1.5 text-xs">
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- 3. 人和：昨天日誌 ~/Obsidian/zenlife/Daily -->
-                    <div class="mb-6">
-                        <div class="flex justify-between items-center mb-2">
+                    <div class="mb-5">
+                        <div class="flex flex-wrap justify-between items-center gap-1 mb-2">
                             <label class="block text-xs font-semibold uppercase tracking-wider text-[#7A756E]">
-                                【人和】昨天日誌 (<code class="bg-[#EAE5DB] px-1 rounded text-[11px]">~/Obsidian/zenlife/Daily</code>)
+                                【人和】昨天日誌 (<code id="yesterday-filename-hint" class="bg-[#EAE5DB] px-1 rounded text-[11px]">~/Obsidian/zenlife/Daily</code>)
                             </label>
-                            <label class="cursor-pointer text-xs text-[#8C6D46] hover:underline flex items-center gap-1">
-                                <input type="file" id="obsidian-file-input" accept=".md,.txt" class="hidden" onchange="loadObsidianFile(event)">
-                                📂 載入昨天 .md 日誌
-                            </label>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="pickObsidianDailyFolder()" class="text-xs bg-[#EAE5DB] hover:bg-[#DED8CE] text-[#2C2A29] px-2 py-1 rounded-lg font-medium transition-all" title="選擇 ~/Obsidian/zenlife/Daily 資料夾，自動抓取昨天的 .md 檔">
+                                    📁 連結 Daily 資料夾自動抓昨天
+                                </button>
+                                <label class="cursor-pointer text-xs text-[#8C6D46] hover:underline flex items-center gap-1">
+                                    <input type="file" id="obsidian-file-input" accept=".md,.markdown,.txt" class="hidden" onchange="loadObsidianFile(event)">
+                                    📄 單檔載入
+                                </label>
+                            </div>
                         </div>
-                        <textarea id="journal-input" rows="5" class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl p-3 text-sm leading-relaxed focus:outline-none focus:border-[#8C6D46]" placeholder="貼上您昨天的 Obsidian 日誌內容 (位於 ~/Obsidian/zenlife/Daily)，或點擊上方載入 .md 檔案...">昨天開會時因為專案進度不如預期，心裡有些急躁，對同事說話語氣稍微重了一點。晚上靜坐時覺得很懊悔，發現自己太容易被外在的期限與別人的情緒牽著走。希望能學會像水一樣柔韌，既有方向又不失平靜。另外，最近睡眠有點淺，想把生活步調放慢一些。</textarea>
+
+                        <!-- Markdown 檔案屬性與預覽切換列 -->
+                        <div id="md-meta-bar" class="hidden mb-2 px-3 py-1.5 bg-[#F0ECE1] border border-[#DED8CE] rounded-lg flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#5A554E]">
+                            <div id="md-frontmatter-badges" class="flex flex-wrap items-center gap-1.5"></div>
+                            <button type="button" onclick="toggleJournalEditMode()" id="btn-toggle-md-view" class="text-[#8C6D46] font-semibold hover:underline ml-auto">
+                                ✏️ 切換編輯原始碼
+                            </button>
+                        </div>
+
+                        <!-- Markdown 解析後的預覽區塊 -->
+                        <div id="journal-md-preview" class="hidden w-full bg-white border border-[#DED8CE] rounded-xl p-3.5 text-xs leading-relaxed max-h-52 overflow-y-auto md-preview"></div>
+
+                        <!-- 原始純文字 / Markdown 編輯框 -->
+                        <textarea id="journal-input" oninput="syncMarkdownPreviewFromInput()" rows="5" class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl p-3 text-sm leading-relaxed focus:outline-none focus:border-[#8C6D46]" placeholder="沒有昨天日誌"></textarea>
                         <div class="flex justify-between items-center mt-1.5 text-[11px] text-[#8E8880]">
-                            <span>💡 在 `yi.gavintux.workers.dev/yilife.html` 上可直接載入昨天 `.md` 檔，或由本機 06:15 腳本自動執行。</span>
+                            <span id="journal-status-hint">💡 嚴格依據實際匯入之昨日日誌起卦解卦；無檔案顯示「沒有昨天日誌」，無內容顯示「沒有容」。</span>
                         </div>
+                    </div>
+
+                    <!-- 上卦數理推演明細 (透明呈現如何由三才資料上卦) -->
+                    <div id="casting-formula-box" class="mb-5 bg-[#F4EFE6] border border-[#E2D9C8] rounded-xl p-3 text-[11px] text-[#4A4642] space-y-1">
+                        <div class="font-bold text-[#8C6D46] serif">📐 命理師三才上卦數理根據：</div>
+                        <div id="casting-formula-detail" class="leading-relaxed font-mono">計算中...</div>
                     </div>
 
                     <!-- Action Buttons -->
                     <div class="space-y-3">
                         <button onclick="castDivination('resonant')" id="btn-cast" class="w-full bg-[#2C2A29] hover:bg-[#403D3B] text-[#F7F5F0] font-medium py-3.5 px-6 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 serif text-base tracking-widest">
-                            <span>☯</span> 依天地人三才 · 誠心起卦
+                            <span>☯</span> 依三才實際資料 · 排盤上卦並解卦
                         </button>
                         <div class="flex gap-2">
                             <button onclick="castDivination('random')" class="w-1/2 bg-[#EAE5DB] hover:bg-[#DED8CE] text-[#2C2A29] text-xs font-medium py-2.5 px-4 rounded-xl transition-all">
@@ -335,40 +376,35 @@ function doPost(e) {
                                     <span id="hex-trigrams" class="text-xs text-[#7A756E] tracking-widest">上兌澤 · 下坎水</span>
                                 </div>
                                 <h2 id="hex-title" class="serif text-3xl sm:text-4xl font-bold text-[#2C2A29] tracking-wide mt-1">澤水困</h2>
-                                <p id="hex-changing-info" class="text-xs text-[#9E2A2B] font-medium mt-1.5">初六爻動 ➔ 變卦：兌為澤</p>
+                                <p id="hex-changing-info" class="text-xs text-[#9E2A2B] font-medium mt-1.5">初六爻動 ➔ 之卦：兌為澤</p>
                             </div>
                         </div>
 
-                        <!-- Memory Mnemonic Box (解決記不住卦詞的痛點) -->
+                        <!-- Memory Mnemonic Box -->
                         <div class="bg-[#F4EFE6] border border-[#E2D9C8] rounded-xl p-4 sm:max-w-xs">
                             <div class="text-xs font-bold text-[#8C6D46] flex items-center gap-1.5 mb-1">
-                                <span>🧠</span> 圖像記憶法（秒記卦詞）
+                                <span>🧠</span> 上下卦象白話秒記法
                             </div>
-                            <p id="hex-mnemonic" class="text-xs text-[#4A4642] leading-relaxed">
-                                澤中之水往下漏乾了，魚兒缺水受困。但君子即使身處困境，內心依然亨通，懂得「少說多做」（尚口乃窮）。
-                            </p>
+                            <p id="hex-mnemonic" class="text-xs text-[#4A4642] leading-relaxed"></p>
                         </div>
                     </div>
 
-                    <!-- Classical Texts (Gua Ci, Tuan, Xiang) -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+                    <!-- Classical Texts (Gua Ci, Xiang, Moving Line) -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
                         <div class="bg-[#FAF8F5] p-4 rounded-xl border border-[#EFECE6]">
-                            <div class="text-xs text-[#8C6D46] font-bold mb-1 serif">【卦辭原文】</div>
-                            <p id="hex-guaci" class="serif text-base font-semibold text-[#2C2A29] leading-relaxed">
-                                困：亨，貞，大人吉，無咎，有言不信。
-                            </p>
-                            <p id="hex-guaci-Vernacular" class="text-xs text-[#6E6A63] mt-2 leading-relaxed">
-                                白話：處於困境時仍可亨通。堅守正道，心胸寬廣的大人吉祥無災。此時急著辯解，別人反而不會相信。
-                            </p>
+                            <div class="text-xs text-[#8C6D46] font-bold mb-1 serif">【本卦卦辭】</div>
+                            <p id="hex-guaci" class="serif text-sm font-semibold text-[#2C2A29] leading-relaxed"></p>
+                            <p id="hex-guaci-Vernacular" class="text-xs text-[#6E6A63] mt-2 leading-relaxed"></p>
                         </div>
                         <div class="bg-[#FAF8F5] p-4 rounded-xl border border-[#EFECE6]">
                             <div class="text-xs text-[#8C6D46] font-bold mb-1 serif">【大象傳心法】</div>
-                            <p id="hex-xiang" class="serif text-base font-semibold text-[#2C2A29] leading-relaxed">
-                                澤無水，困；君子以致命遂志。
-                            </p>
-                            <p id="hex-xiang-Vernacular" class="text-xs text-[#6E6A63] mt-2 leading-relaxed">
-                                白話：沼澤裡沒有水就是困卦。君子觀察到此現象，會放下外在得失，專注完成內心真正的志向。
-                            </p>
+                            <p id="hex-xiang" class="serif text-sm font-semibold text-[#2C2A29] leading-relaxed"></p>
+                            <p id="hex-xiang-Vernacular" class="text-xs text-[#6E6A63] mt-2 leading-relaxed"></p>
+                        </div>
+                        <div class="bg-[#FAF8F5] p-4 rounded-xl border border-[#9E2A2B]/30">
+                            <div class="text-xs text-[#9E2A2B] font-bold mb-1 serif">【動爻辭與之卦】</div>
+                            <p id="hex-yaoci" class="serif text-sm font-semibold text-[#2C2A29] leading-relaxed"></p>
+                            <p id="hex-zhigua-desc" class="text-xs text-[#6E6A63] mt-2 leading-relaxed"></p>
                         </div>
                     </div>
 
@@ -378,11 +414,11 @@ function doPost(e) {
                             <h3 class="serif text-lg font-bold text-[#2C2A29] flex items-center gap-2">
                                 <span>🍵</span> 晨間 06:15 專屬解卦與今日應對方針
                             </h3>
-                            <span id="ai-status" class="text-xs text-[#8C6D46] hidden animate-pulse">正在參透天地人三才並撰寫提點...</span>
+                            <span id="ai-status" class="text-xs text-[#8C6D46] hidden animate-pulse">命理師正依據您的實際三才資料排盤解卦中...</span>
                         </div>
 
                         <div id="guidance-content" class="bg-white border border-[#E6E1D6] rounded-xl p-5 space-y-4 text-sm leading-relaxed text-[#3A3735]">
-                            <!-- Filled dynamically by Gemini API or fallback rich synthesis -->
+                            <!-- Filled dynamically by Gemini API or fallback strict synthesis -->
                         </div>
                     </div>
                 </div>
@@ -395,11 +431,11 @@ function doPost(e) {
             <div class="ink-card rounded-2xl p-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div>
-                        <h2 class="serif text-xl font-bold">易經六十四卦 · 畫面感記憶庫</h2>
-                        <p class="text-xs text-[#7A756E] mt-1">卦詞背不起來，是因為沒有把「上下卦的自然意象」連結到生活場景。點擊任一卦即可代入今日晨卜。</p>
+                        <h2 class="serif text-xl font-bold">易經六十四卦完整全庫 · 上下卦畫面記憶</h2>
+                        <p class="text-xs text-[#7A756E] mt-1">將「上卦（外境天時）」與「下卦（內心人和）」組合出具體自然畫面，輕鬆記住全部六十四卦。</p>
                     </div>
                     <div class="w-full sm:w-64">
-                        <input type="text" id="hex-search" oninput="renderHexagramGrid()" placeholder="搜尋卦名、卦辭或記憶關鍵字..." class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#8C6D46]">
+                        <input type="text" id="hex-search" oninput="renderHexagramGrid()" placeholder="搜尋全部64卦名、卦辭或象辭..." class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#8C6D46]">
                     </div>
                 </div>
                 <div id="hex-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -412,56 +448,19 @@ function doPost(e) {
         <section id="view-automation" class="hidden space-y-6">
             <div class="ink-card rounded-2xl p-6 sm:p-8 space-y-6">
                 <div class="border-b border-[#EFECE6] pb-4">
-                    <span class="bg-[#9E2A2B] text-[#F7F5F0] text-xs px-2.5 py-1 rounded font-mono">GitHub Pages 資安防護必讀</span>
-                    <h2 class="serif text-2xl font-bold mt-2">把網頁放在 `gavintux.github.io/yi/yilife.html`，API Key 如何處理最妥當？</h2>
+                    <span class="bg-[#9E2A2B] text-[#F7F5F0] text-xs px-2.5 py-1 rounded font-mono">GitHub Pages 與 Cloudflare Worker 指南</span>
+                    <h2 class="serif text-2xl font-bold mt-2">三才實據上卦與 06:15 自動化排程說明</h2>
                     <p class="text-sm text-[#6E6A63] mt-1">
-                        因為 GitHub Pages 的原始碼對全世界公開，若將 `AIzaSy...` 直接寫在 `yilife.html` 裡，推上 GitHub 幾秒內就會被自動化爬蟲掃描並遭到停權或盜刷。以下是 3 種最妥當的處理方式：
+                        本系統嚴格採用「天時（即時天氣）、地利（當日農民曆）、人和（昨日 Obsidian 日誌）」起卦與解卦，絕不虛構不存在之日誌情節。
                     </p>
-                </div>
-
-                <!-- 三種 API Key 妥善處理架構 -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-[#FAF8F5] p-5 rounded-xl border-2 border-[#8C6D46] relative">
-                        <span class="absolute -top-2.5 right-4 bg-[#8C6D46] text-white text-[10px] px-2 py-0.5 rounded-full">最簡單 · 已內建於本頁</span>
-                        <div class="text-sm font-bold text-[#2C2A29] serif mb-2">方法 A：瀏覽器端輸入 + 網域白名單限制</div>
-                        <p class="text-xs text-[#4A4642] leading-relaxed mb-3">
-                            1. `yilife.html` 程式碼裡<strong>完全不放 Key</strong>。<br>
-                            2. 點擊網頁右上角「🔑 設定 API Key」輸入金鑰，金鑰只存在您自己手機/電腦瀏覽器內。<br>
-                            3. 到 <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-[#8C6D46] underline">Google Cloud Console</a> 點開該 API Key，在「網站限制 (HTTP Referrers)」加入：
-                        </p>
-                        <pre class="bg-[#2C2A29] text-[#F7F5F0] p-2.5 rounded-lg text-[11px] overflow-x-auto font-mono">https://gavintux.github.io/*
-http://gavintux.github.io/*</pre>
-                    </div>
-
-                    <div class="bg-[#FAF8F5] p-5 rounded-xl border border-[#E6E1D6]">
-                        <div class="text-sm font-bold text-[#2C2A29] serif mb-2">方法 B：本機 06:15 算好後推上 GitHub（零暴露）</div>
-                        <p class="text-xs text-[#4A4642] leading-relaxed mb-3">
-                            1. API Key 只放在您自己家裡電腦的環境變數中。<br>
-                            2. 每天早上 06:15 由您電腦的 Python 腳本讀取 `~/Obsidian/zenlife/Daily` 的昨天日誌並呼叫 Gemini 解卦。<br>
-                            3. 結果直接寫入 Obsidian，或存成靜態 JSON 推送到 GitHub，網頁端完全不必呼叫 API！
-                        </p>
-                        <pre class="bg-[#2C2A29] text-[#F7F5F0] p-2.5 rounded-lg text-[11px] overflow-x-auto font-mono"># Key 永遠不離開您的電腦
-15 6 * * * GEMINI_API_KEY="金鑰" python3 ~/Obsidian/zenlife/zenlife_iching_615.py</pre>
-                    </div>
-
-                    <div class="bg-[#FAF8F5] p-5 rounded-xl border border-[#E6E1D6]">
-                        <div class="text-sm font-bold text-[#2C2A29] serif mb-2">方法 C：Cloudflare Workers 免費代理</div>
-                        <p class="text-xs text-[#4A4642] leading-relaxed mb-3">
-                            若您希望打開 `yilife.html` 不用輸入 Key 也能線上即時算卦，可建立一個免費的 Cloudflare Worker，將 `GEMINI_API_KEY` 存在 Worker 的加密環境變數，並設定 CORS 只允許 `gavintux.github.io` 呼叫該 Worker。
-                        </p>
-                        <pre class="bg-[#2C2A29] text-[#F7F5F0] p-2.5 rounded-lg text-[11px] overflow-x-auto font-mono">// yilife.html 改呼叫您的 Worker
-fetch("https://yi-proxy.您的帳號.workers.dev")</pre>
-                    </div>
                 </div>
 
                 <div class="bg-[#F4EFE6] border border-[#E2D9C8] rounded-xl p-5">
                     <h3 class="serif font-bold text-base mb-2">✨ 本地端 06:15 自動讀取 `~/Obsidian/zenlife/Daily` 設定步驟</h3>
                     <ul class="text-xs text-[#4A4642] space-y-2 list-disc list-inside leading-relaxed">
-                        <li><strong>步驟 1（命名部署）：</strong>將本 HTML 檔案另存為 `yilife.html`，放入您的 `gavintux.github.io` 儲存庫的 `/yi/yilife.html` 路徑下並 Push。</li>
-                        <li><strong>步驟 2（昨天日誌路徑）：</strong>Python 腳本已更新為自動讀取 `~/Obsidian/zenlife/Daily` 資料夾中<strong>昨天</strong>（`today - 1 day`）的 `.md` 日誌檔。</li>
-                        <li><strong>步驟 3（自動存入 Google Docs 指定資料夾）：</strong>點擊上方「📄 Google Docs 設定」複製 10 行 Apps Script 部署後，將取得的網址填入環境變數 `GAS_WEBHOOK_URL`，每天 06:15 就會同時寫入 Obsidian 與您的 Google Drive 資料夾（`1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb`）！</li>
-                        <li><strong>步驟 4（06:15 定時執行）：</strong>在終端機執行 `crontab -e`，貼上：<br>
-                            <code class="bg-white px-2 py-1 rounded border border-[#DED8CE] font-mono inline-block mt-1">15 6 * * * GEMINI_API_KEY="您的金鑰" GAS_WEBHOOK_URL="您的GAS網址" /usr/bin/python3 ~/Obsidian/zenlife/zenlife_iching_615.py</code>
+                        <li><strong>步驟 1（昨天日誌路徑）：</strong>自動讀取 `~/Obsidian/zenlife/Daily` 資料夾中<strong>昨天</strong>（`today - 1 day`）的 `.md` 日誌檔。若無檔案則標示 `沒有昨天日誌`；若檔案無內容則標示 `沒有容`。</li>
+                        <li><strong>步驟 2（06:15 定時執行）：</strong>在終端機執行 `crontab -e`，貼上：<br>
+                            <code class="bg-white px-2 py-1 rounded border border-[#DED8CE] font-mono inline-block mt-1">15 6 * * * GAS_WEBHOOK_URL="您的GAS網址" /usr/bin/python3 ~/Obsidian/zenlife/zenlife_iching_615.py</code>
                         </li>
                     </ul>
                 </div>
@@ -476,100 +475,546 @@ fetch("https://yi-proxy.您的帳號.workers.dev")</pre>
     </div>
 
     <script>
-        // --- 完整精選與六十四卦核心資料庫 (含上下卦、卦辭、大象、圖像記憶口訣) ---
-        // Binary representation: bottom line to top line (e.g. "111111" = 乾)
-        const TRIGRAMS = {
-            "111": { name: "乾", nature: "天", attr: "剛健創造" },
-            "000": { name: "坤", nature: "地", attr: "柔順包容" },
-            "100": { name: "震", nature: "雷", attr: "奮起行動" },
-            "010": { name: "坎", nature: "水", attr: "險陷智慧" },
-            "001": { name: "艮", nature: "山", attr: "靜止沉穩" },
-            "011": { name: "巽", nature: "風", attr: "謙遜滲透" },
-            "101": { name: "離", nature: "火", attr: "光明附著" },
-            "110": { name: "兌", nature: "澤", attr: "喜悅溝通" }
+        // --- 先天八卦序號與二進位對應 (1:乾, 2:兌, 3:離, 4:震, 5:巽, 6:坎, 7:艮, 8:坤) ---
+        // Binary: 初爻(左1) -> 二爻(中) -> 三爻(右3)
+        const BAGUA_BY_NUM = {
+            1: { num: 1, code: "111", name: "乾", nature: "天", attr: "剛健開創", image: "晴空健行之天" },
+            2: { num: 2, code: "110", name: "兌", nature: "澤", attr: "喜悅溝通", image: "溫潤欣悅之湖澤" },
+            3: { num: 3, code: "101", name: "離", nature: "火", attr: "光明依附", image: "溫暖照耀之陽光烈火" },
+            4: { num: 4, code: "100", name: "震", nature: "雷", attr: "奮起行動", image: "破土驚動之春雷" },
+            5: { num: 5, code: "011", name: "巽", nature: "風", attr: "謙遜滲透", image: "無孔不入之微風與樹木" },
+            6: { num: 6, code: "010", name: "坎", nature: "水", attr: "險陷柔韌", image: "蜿蜒流淌之溪水雨露" },
+            7: { num: 7, code: "001", name: "艮", nature: "山", attr: "靜止沉穩", image: "安靜厚重之高山" },
+            8: { num: 8, code: "000", name: "坤", nature: "地", attr: "柔順包容", image: "承載萬物之大地" }
         };
 
-        const HEXAGRAMS = [
-            { id: 1, name: "乾為天", code: "111111", symbol: "䷀", guaci: "乾：元，亨，利，貞。", vern: "開創、亨通、適宜、堅守正道。", xiang: "天行健，君子以自強不息。", mnemonic: "上下皆天，雙龍御空。想像太陽日復一日運轉從不停歇，提醒自己充滿幹勁但切勿驕傲（亢龍有悔）。" },
-            { id: 2, name: "坤為地", code: "000000", symbol: "䷁", guaci: "坤：元亨，利牝馬之貞。先迷後得主。", vern: "大地的順從帶來亨通，像母馬般溫順堅韌，不搶先領頭反而能找到方向。", xiang: "地勢坤，君子以厚德載物。", mnemonic: "大地承受萬物而不爭功。想像自己是一片肥沃土壤，今天不強出頭，先傾聽、接納身邊的人事物。" },
-            { id: 3, name: "水雷屯", code: "100010", symbol: "䷂", guaci: "屯：元亨，利貞。勿用有攸往，利建侯。", vern: "萬物初生雖有困難但終會亨通。此時不宜貿然遠行，適合打基礎、找幫手。", xiang: "雲雷，屯；君子以經綸。", mnemonic: "春雷動但上方積滿烏雲雨水，草木破土而出最費力。遇到卡關別急，像嫩芽一樣先向下扎根。" },
-            { id: 4, name: "山水蒙", code: "010001", symbol: "䷃", guaci: "蒙：亨。匪我求童蒙，童蒙求我。初筮告，再三瀆。", vern: "啟蒙而亨通。抱持赤子求教之心，專一誠懇才能獲得真智慧。", xiang: "山下出泉，蒙；君子以果行育德。", mnemonic: "山腳下剛湧出的泉水還不知道流向何方。遇到不懂的事或天氣變化，放下成見虛心觀察。" },
-            { id: 5, name: "水天需", code: "111010", symbol: "䷄", guaci: "需：有孚，光亨，貞吉。利涉大川。", vern: "心懷誠信地等待，光明亨通。吃飽睡好養精蓄銳，時機到了就能渡過大河。", xiang: "雲上於天，需；君子以飲食宴樂。", mnemonic: "雲氣聚集在天上還沒下雨。急躁沒用，不如好好泡杯茶、吃頓早餐，等待最佳出手時機。" },
-            { id: 6, name: "天水訟", code: "010111", symbol: "䷅", guaci: "訟：有孚，窒惕，中吉，終凶。", vern: "雖有理但受阻，需警惕。適可而止則吉，爭執到底必凶。", xiang: "天與水違行，訟；君子以作事謀始。", mnemonic: "天往上走、水往下流，方向相反必起摩擦。今天若遇人意見不合，退一步即吉，贏了口舌輸了心情。" },
-            { id: 7, name: "地水師", code: "010000", symbol: "䷆", guaci: "師：貞，丈人，吉無咎。", vern: "統眾行事需守正道，由老練穩重之人心懷紀律帶領則吉。", xiang: "地中有水，師；君子以容民畜眾。", mnemonic: "大地底下蘊藏著地下水脈。面對繁雜任務，要像老將軍一樣有紀律、有目標地整頓資源。" },
-            { id: 8, name: "水地比", code: "000010", symbol: "䷇", guaci: "比：吉。原筮元永貞，無咎。", vern: "親附互助則吉。真誠長久地與人友善，自然沒有過失。", xiang: "地上有水，比；君子以親輔。", mnemonic: "水滋潤在大地之上，水土交融毫無縫隙。今天適合主動釋出善意、關心身邊夥伴。" },
-            { id: 11, name: "地天泰", code: "111000", symbol: "䷊", guaci: "泰：小往大來，吉亨。", vern: "小的損耗離去，大的福氣到來，萬事通泰吉祥。", xiang: "天地交，泰；后以財成天地之道。", mnemonic: "天在下面往上託、地在上面往下順，陰陽完美交流！今天溝通順暢，適合推動重要計畫。" },
-            { id: 12, name: "天地否", code: "000111", symbol: "䷋", guaci: "否之匪人，不利君子貞，大往小來。", vern: "閉塞不通之時，君子宜收斂鋒芒，避免硬碰硬。", xiang: "天地不交，否；君子以儉德辟難。", mnemonic: "天一直往上升、地一直往下沉，兩者互不理睬。若今天覺得別人聽不懂你的話，先安頓好自己即可。" },
-            { id: 14, name: "火天大有", code: "111101", symbol: "䷍", guaci: "大有：元亨。", vern: "光明普照，收穫豐盛，大為亨通。", xiang: "火在天上，大有；君子以遏惡揚善。", mnemonic: "太陽高掛在天空中照亮萬物。今天心境開闊，多看別人的優點，分享你的溫暖。" },
-            { id: 15, name: "地山謙", code: "001000", symbol: "䷎", guaci: "謙：亨，君子有終。", vern: "謙虛必然亨通，君子能善始善終（六爻皆吉的唯一一卦）。", xiang: "地中有山，謙；君子以裒多益寡，稱物平施。", mnemonic: "高聳的大山居然藏在平地底下！實力越強、姿態越低，這是易經唯一六爻全吉的護身符。" },
-            { id: 16, name: "雷地豫", code: "000100", symbol: "䷏", guaci: "豫：利建侯行師。", vern: "順應時勢而歡愉，預先準備則行動順遂。", xiang: "雷出地奮，豫；先王以作樂崇德。", mnemonic: "春雷從大地轟鳴而出，萬物歡欣鼓舞。今天保持輕鬆愉悅的節奏，同時做好「預備」就能事半功倍。" },
-            { id: 17, name: "澤雷隨", code: "100110", symbol: "䷐", guaci: "隨：元亨利貞，無咎。", vern: "順隨自然變化與正道，放下固執即可無咎。", xiang: "澤中有雷，隨；君子以嚮晦入宴息。", mnemonic: "雷聲收進沼澤裡休息了。白天順著時勢走，到了晚上就乖乖放下手機好好睡覺，這就是隨卦的大智慧！" },
-            { id: 20, name: "風地觀", code: "000011", symbol: "䷓", guaci: "觀：盥而不薦，有孚顒若。", vern: "像祭祀洗手時那樣莊重專注，先靜心觀察而不急著出手。", xiang: "風行地上，觀；先王以省方觀民設教。", mnemonic: "清風吹拂過大地，無所不至卻不留痕跡。今天當個「正念觀察者」，看清自己的情緒與周遭的局勢。" },
-            { id: 24, name: "地雷復", code: "100000", symbol: "䷗", guaci: "復：亨。出入無疾，朋來無咎。反復其道，七日來復。", vern: "一陽來復，生機重現。順應天道循環，修正步伐重新出發。", xiang: "雷在地中，復；先王以至日閉關。", mnemonic: "寒冬地底下響起第一聲微弱春雷（一陽生）。前天的懊悔或疲憊已經過去，今天是全新的轉捩點，溫柔地重新開始。" },
-            { id: 25, name: "天雷無妄", code: "100111", symbol: "䷘", guaci: "無妄：元亨利貞。其匪正有眚，不利有攸往。", vern: "出於至誠、不懷妄念則亨通。若心存僥倖則有災。", xiang: "天下雷行，物與無妄；先王以茂對時育萬物。", mnemonic: "天底下春雷震動，萬物自然生長毫無虛假。今天不要過度腦補別人的想法，真誠、單純地做好眼前的事。" },
-            { id: 29, name: "坎為水", code: "010010", symbol: "䷜", guaci: "習坎：有孚，維心亨，行有尚。", vern: "重重險阻之中，只要像流水般抱持真誠與堅定，內心依然亨通。", xiang: "水洊至，習坎；君子以常德行，習教事。", mnemonic: "一重水流過又是一重水。水遇到石頭不會生氣，而是順著縫隙盈滿後繼續前行。今天保持水的柔韌！" },
-            { id: 30, name: "離為火", code: "101101", symbol: "䷝", guaci: "離：利貞，亨。畜牝牛，吉。", vern: "光明相繼，柔順中正則吉。", xiang: "明兩作，離；大人以繼明照于四方。", mnemonic: "兩團火焰相映生輝。火需要木柴才能燃燒，今天讓自己的心依附在正念與平靜上，發光而不灼傷人。" },
-            { id: 31, name: "澤山咸", code: "001110", symbol: "䷞", guaci: "咸：亨，利貞，取女吉。", vern: "無心之感，真誠交感則亨通吉祥。", xiang: "山上有澤，咸；君子以虛受人。", mnemonic: "「感」字去掉「心」就是「咸」——無私心的真誠感應。山頂有湖泊滋潤山體，今天清空成見（以虛受人）去傾聽他人。" },
-            { id: 32, name: "雷風恆", code: "011100", symbol: "䷟", guaci: "恆：亨，無咎，利貞，利有攸往。", vern: "恆久之道，持之以恆則亨通無咎。", xiang: "雷風，恆；君子以立不易方。", mnemonic: "雷動風吹，兩者互相助長、長久不息。好習慣（如晨起、靜坐、記日誌）貴在每天溫和地堅持。" },
-            { id: 42, name: "風雷益", code: "100011", symbol: "䷩", guaci: "益：利有攸往，利涉大川。", vern: "損上益下，互相增益，有利於採取行動與突破。", xiang: "風雷，益；君子以見善則遷，有過則改。", mnemonic: "風助雷勢、雷激風威！大象傳說「看到好習慣立刻學，發現小缺點立刻改」，這就是對自己最大的增益。" },
-            { id: 47, name: "澤水困", code: "010110", symbol: "䷮", guaci: "困：亨，貞，大人吉，無咎，有言不信。", vern: "身處困頓而心亨通。守正道則吉，此時多言辯解反而無人相信。", xiang: "澤無水，困；君子以致命遂志。", mnemonic: "沼澤的水漏到下方乾涸了。當外在環境或心情受困時，記得「有言不信」，少抱怨、少解釋，用安靜的行動證明自己。" },
-            { id: 48, name: "水風井", code: "011010", symbol: "䷯", guaci: "井：改邑不改井，無喪無得，往來井井。", vern: "村落會搬遷但水井不變。涵養內在清泉，取之不竭。", xiang: "木上有水，井；君子以勞民勸相。", mnemonic: "木桶深入井底汲水。不管外面天氣好壞、農民曆吉凶，你的內心就像一口深井，隨時都能汲取出平靜與智慧。" },
-            { id: 52, name: "艮為山", code: "001001", symbol: "䷳", guaci: "艮其背，不獲其身，行其庭，不見其人，無咎。", vern: "當止則止，動靜不失其時，心不被外物牽動則無咎。", xiang: "兼山，艮；君子以思不出其位。", mnemonic: "兩座大山靜靜矗立。當思緒紛亂時，練習「思不出其位」——現在在做什麼，心就安住在什麼上面，不多想下一步。" },
-            { id: 53, name: "風山漸", code: "001011", symbol: "䷴", guaci: "漸：女歸吉，利貞。", vern: "循序漸進，不疾不徐則吉祥。", xiang: "山上有木，漸；君子以居賢德善俗。", mnemonic: "高山上的樹木是一寸一寸慢慢長高的。學易經、改脾氣、推專案都一樣，今天只要比前天進步一點點就好。" },
-            { id: 58, name: "兌為澤", code: "110110", symbol: "兑", guaci: "兌：亨，利貞。", vern: "喜悅與良性溝通帶來亨通，但需堅守純正。", xiang: "麗澤，兌；君子以朋友講習。", mnemonic: "兩座湖澤相連，彼此滋潤。「兌」就是加上言字旁的「說（悅）」，今天用溫和愉悅的語氣與人交流。" },
-            { id: 61, name: "風澤中孚", code: "110011", symbol: "䷼", guaci: "中孚：豚魚吉，利涉大川，利貞。", vern: "內心至誠，連小豬與魚都能被感動，無往不利。", xiang: "澤上有風，中孚；君子以議獄緩死。", mnemonic: "卦象外實內虛，像一顆誠懇空明的心，也像母鳥孵蛋般溫柔守候。今天用最真誠的心對待自己與他人。" },
-            { id: 63, name: "水火既濟", code: "101010", symbol: "䷾", guaci: "既濟：亨小，利貞，初吉終亂。", vern: "事情已經完成，但盛極易衰，需防微杜漸。", xiang: "水在火上，既濟；君子以思患而豫防之。", mnemonic: "水壺放在火爐上正在燒開水，六爻陰陽全數歸位。事情順利時更要保持警覺，別讓水溢出來澆熄了火。" },
-            { id: 64, name: "火水未濟", code: "010101", symbol: "䷿", guaci: "未濟：亨，小狐汔濟，濡其尾，無攸利。", vern: "尚未完成，代表充滿無限可能。像小狐狸過河一樣謹慎收尾即可亨通。", xiang: "火在水上，未濟；君子以慎辨物居方。", mnemonic: "易經最後一卦不是結束，而是「未濟（尚未完成）」。人生永遠在修練路上，不求完美，謹慎走好今天的每一步！" }
+        const TRIGRAMS = {
+            "111": BAGUA_BY_NUM[1],
+            "110": BAGUA_BY_NUM[2],
+            "101": BAGUA_BY_NUM[3],
+            "100": BAGUA_BY_NUM[4],
+            "011": BAGUA_BY_NUM[5],
+            "010": BAGUA_BY_NUM[6],
+            "001": BAGUA_BY_NUM[7],
+            "000": BAGUA_BY_NUM[8]
+        };
+
+        // --- 完整易經六十四卦全庫 (含卦辭、象辭、六爻爻辭、初爻至上爻二進位碼) ---
+        const RAW_64_HEXAGRAMS = [
+            [1, "乾為天", "111111", "元，亨，利，貞。", "天行健，君子以自強不息。", ["初九：潛龍勿用。", "九二：見龍在田，利見大人。", "九三：君子終日乾乾，夕惕若，厲無咎。", "九四：或躍在淵，無咎。", "九五：飛龍在天，利見大人。", "上九：亢龍有悔。"]],
+            [2, "坤為地", "000000", "元，亨，利牝馬之貞。君子有攸往，先迷後得主，利。", "地勢坤，君子以厚德載物。", ["初六：履霜，堅冰至。", "六二：直，方，大，不習無不利。", "六三：含章可貞。或從王事，無成有終。", "六四：括囊，無咎無譽。", "六五：黃裳，元吉。", "上六：龍戰于野，其血玄黃。"]],
+            [3, "水雷屯", "100010", "元，亨，利，貞。勿用有攸往，利建侯。", "雲雷，屯。君子以經綸。", ["初九：磐桓，利居貞，利建侯。", "六二：屯如邅如，乘馬班如。匪寇婚媾。", "六三：即鹿無虞，惟入于林中，君子幾不如舍。", "六四：乘馬班如，求婚媾，往吉，無不利。", "九五：屯其膏，小貞吉，大貞凶。", "上六：乘馬班如，泣血漣如。"]],
+            [4, "山水蒙", "010001", "亨。匪我求童蒙，童蒙求我。初筮告，再三瀆，瀆則不告。利貞。", "山下出泉，蒙。君子以果行育德。", ["初六：發蒙，利用刑人，用說桎梏。", "九二：包蒙吉，納婦吉，子克家。", "六三：勿用取女，見金夫，不有躬。", "六四：困蒙，吝。", "六五：童蒙，吉。", "上九：擊蒙，不利為寇，利禦寇。"]],
+            [5, "水天需", "111010", "有孚，光亨，貞吉。利涉大川。", "雲上於天，需。君子以飲食宴樂。", ["初九：需于郊，利用恆，無咎。", "九二：需于沙，小有言，終吉。", "九三：需于泥，致寇至。", "六四：需于血，出自穴。", "九五：需于酒食，貞吉。", "上六：入于穴，有不速之客三人來，敬之終吉。"]],
+            [6, "天水訟", "010111", "有孚，窒惕，中吉，終凶。利見大人，不利涉大川。", "天與水違行，訟。君子以作事謀始。", ["初六：不永所事，小有言，終吉。", "九二：不克訟，歸而逋，其邑人三百戶，無眚。", "六三：食舊德，貞厲，終吉。", "九四：不克訟，復即命，渝安貞，吉。", "九五：訟，元吉。", "上九：或錫之鞶帶，終朝三褫之。"]],
+            [7, "地水師", "010000", "貞，丈人吉，無咎。", "地中有水，師。君子以容民畜眾。", ["初六：師出以律，否臧凶。", "九二：在師中，吉，無咎，王三錫命。", "六三：師或輿尸，凶。", "六四：師左次，無咎。", "六五：田有禽，利執言，無咎。", "上六：大君有命，開國承家，小人勿用。"]],
+            [8, "水地比", "000010", "吉。原筮，元永貞，無咎。不寧方來，後夫凶。", "地上有水，比。先王以建萬國，親諸侯。", ["初六：有孚比之，無咎。有孚盈缶，終來有他，吉。", "六二：比之自內，貞吉。", "六三：比之匪人。", "六四：外比之，貞吉。", "九五：顯比，王用三驅，失前禽，吉。", "上六：比之無首，凶。"]],
+            [9, "風天小畜", "111011", "亨。密雲不雨，自我西郊。", "風行天上，小畜。君子以懿文德。", ["初九：復自道，何其咎，吉。", "九二：牽復，吉。", "九三：輿說輻，夫妻反目。", "六四：有孚，血去惕出，無咎。", "九五：有孚攣如，富以其鄰。", "上九：既雨既處，尚德載，婦貞厲。"]],
+            [10, "天澤履", "110111", "履虎尾，不咥人，亨。", "上天下澤，履。君子以辨上下，定民志。", ["初九：素履，往無咎。", "九二：履道坦坦，幽人貞吉。", "六三：眇能視，跛能履，履虎尾，咥人，凶。", "九四：履虎尾，愬愬，終吉。", "九五：夬履，貞厲。", "上九：視履考祥，其旋元吉。"]],
+            [11, "地天泰", "111000", "小往大來，吉，亨。", "天地交，泰。后以財成天地之道，輔相天地之宜。", ["初九：拔茅茹，以其彙，征吉。", "九二：包荒，用馮河，不遐遺，朋亡。", "九三：無平不陂，無往不復，艱貞無咎。", "六四：翩翩不富，以其鄰，不戒以孚。", "六五：帝乙歸妹，以祉元吉。", "上六：城復于隍，勿用師。"]],
+            [12, "天地否", "000111", "否之匪人，不利君子貞，大往小來。", "天地不交，否。君子以儉德辟難，不可榮以祿。", ["初六：拔茅茹，以其彙，貞吉，亨。", "六二：包承，小人吉，大人否亨。", "六三：包羞。", "九四：有命無咎，疇離祉。", "九五：休否，大人吉。其亡其亡，系于苞桑。", "上九：傾否，先否後喜。"]],
+            [13, "天火同人", "101111", "同人于野，亨。利涉大川，利君子貞。", "天與火，同人。君子以類族辨物。", ["初九：同人于門，無咎。", "六二：同人于宗，吝。", "九三：伏戎于莽，升其高陵，三歲不興。", "九四：乘其墉，弗克攻，吉。", "九五：同人，先號啕而後笑，大師克相遇。", "上九：同人于郊，無悔。"]],
+            [14, "火天大有", "111101", "元亨。", "火在天上，大有。君子以遏惡揚善，順天休命。", ["初九：無交害，匪咎，艱則無咎。", "九二：大車以載，有攸往，無咎。", "九三：公用亨于天子，小人弗克。", "九四：匪其彭，無咎。", "六五：厥孚交如，威如，吉。", "上九：自天祐之，吉無不利。"]],
+            [15, "地山謙", "001000", "亨，君子有終。", "地中有山，謙。君子以裒多益寡，稱物平施。", ["初六：謙謙君子，用涉大川，吉。", "六二：鳴謙，貞吉。", "九三：勞謙君子，有終，吉。", "六四：無不利，撝謙。", "六五：不富以其鄰，利用侵伐，無不利。", "上六：鳴謙，利用行師，征邑國。"]],
+            [16, "雷地豫", "000100", "利建侯行師。", "雷出地奮，豫。先王以作樂崇德。", ["初六：鳴豫，凶。", "六二：介于石，不終日，貞吉。", "六三：盱豫，悔。遲有悔。", "九四：由豫，大有得。勿疑，朋盍簪。", "六五：貞疾，恆不死。", "上六：冥豫，成有渝，無咎。"]],
+            [17, "澤雷隨", "100110", "元亨利貞，無咎。", "澤中有雷，隨。君子以嚮晦入宴息。", ["初九：官有渝，貞吉。出門交有功。", "六二：係小子，失丈夫。", "六三：係丈夫，失小子。隨有求得，利居貞。", "九四：隨有獲，貞凶。有孚在道，以明，何咎。", "九五：孚于嘉，吉。", "上六：拘係之，乃從維之。"]],
+            [18, "山風蠱", "011001", "元亨，利涉大川。先甲三日，後甲三日。", "山下有風，蠱。君子以振民育德。", ["初六：幹父之蠱，有子，考無咎，厲終吉。", "九二：幹母之蠱，不可貞。", "九三：幹父之蠱，小有悔，無大咎。", "六四：裕父之蠱，往見吝。", "六五：幹父之蠱，用譽。", "上九：不事王侯，高尚其事。"]],
+            [19, "地澤臨", "110000", "元亨利貞。至于八月有凶。", "澤上有地，臨。君子以教思無窮，容保民無疆。", ["初九：咸臨，貞吉。", "九二：咸臨，吉無不利。", "六三：甘臨，無攸利。既憂之，無咎。", "六四：至臨，無咎。", "六五：知臨，大君之宜，吉。", "上六：敦臨，吉無咎。"]],
+            [20, "風地觀", "000011", "盥而不薦，有孚顒若。", "風行地上，觀。先王以省方觀民設教。", ["初六：童觀，小人無咎，君子吝。", "六二：闚觀，利女貞。", "六三：觀我生，進退。", "六四：觀國之光，利用賓于王。", "九五：觀我生，君子無咎。", "上九：觀其生，君子無咎。"]],
+            [21, "火雷噬嗑", "100101", "亨。利用獄。", "雷電，噬嗑。先王以明罰敕法。", ["初九：履校滅趾，無咎。", "六二：噬膚滅鼻，無咎。", "六三：噬臘肉，遇毒。小吝，無咎。", "九四：噬乾胏，得金矢，利艱貞，吉。", "六五：噬乾肉，得黃金，貞厲，無咎。", "上九：何校滅耳，凶。"]],
+            [22, "山火賁", "101001", "亨。小利有攸往。", "山下有火，賁。君子以明庶政，無敢折獄。", ["初九：賁其趾，舍車而徒。", "六二：賁其須。", "九三：賁如濡如，永貞吉。", "六四：賁如皤如，白馬翰如，匪寇婚媾。", "六五：賁于丘園，束帛戔戔，吝，終吉。", "上九：白賁，無咎。"]],
+            [23, "山地剝", "000001", "不利有攸往。", "山附于地，剝。上以厚下安宅。", ["初六：剝床以足，蔑貞凶。", "六二：剝床以辨，蔑貞凶。", "六三：剝之，無咎。", "六四：剝床以膚，凶。", "六五：貫魚，以宮人寵，無不利。", "上九：碩果不食，君子得輿，小人剝廬。"]],
+            [24, "地雷復", "100000", "亨。出入無疾，朋來無咎。反復其道，七日來復，利有攸往。", "雷在地中，復。先王以至日閉關。", ["初九：不遠復，無祗悔，元吉。", "六二：休復，吉。", "六三：頻復，厲無咎。", "六四：中行獨復。", "六五：敦復，無悔。", "上六：迷復，凶，有災眚。"]],
+            [25, "天雷無妄", "100111", "元亨利貞。其匪正有眚，不利有攸往。", "天下雷行，物與無妄。先王以茂對時育萬物。", ["初九：無妄，往吉。", "六二：不耕穫，不菑畬，則利有攸往。", "六三：無妄之災，或繫之牛，行人之得。", "九四：可貞，無咎。", "九五：無妄之疾，勿藥有喜。", "上九：無妄，行有眚，無攸利。"]],
+            [26, "山天大畜", "111001", "利貞。不家食吉，利涉大川。", "天在山中，大畜。君子以多識前言往行，以畜其德。", ["初九：有厲，利已。", "九二：輿說輻。", "九三：良馬逐，利艱貞。日閑輿衛，利有攸往。", "六四：童牛之牿，元吉。", "六五：豶豕之牙，吉。", "上九：何天之衢，亨。"]],
+            [27, "山雷頤", "100001", "貞吉。觀頤，自求口實。", "山下有雷，頤。君子以慎言語，節飲食。", ["初九：舍爾靈龜，觀我朵頤，凶。", "六二：顛頤，拂經，于丘頤，征凶。", "六三：拂頤，貞凶，十年勿用。", "六四：顛頤，吉。虎視眈眈，其欲逐逐，無咎。", "六五：拂經，居貞吉，不可涉大川。", "上九：由頤，厲吉，利涉大川。"]],
+            [28, "澤風大過", "011110", "棟橈，利有攸往，亨。", "澤滅木，大過。君子以獨立不懼，遯世無悶。", ["初六：藉用白茅，無咎。", "九二：枯楊生稊，老夫得其女妻，無不利。", "九三：棟橈，凶。", "九四：棟隆，吉。有他吝。", "九五：枯楊生華，老婦得其士夫，無咎無譽。", "上六：過涉滅頂，凶，無咎。"]],
+            [29, "坎為水", "010010", "習坎，有孚，維心亨，行有尚。", "水洊至，習坎。君子以常德行，習教事。", ["初六：習坎，入于坎窞，凶。", "九二：坎有險，求小得。", "六三：來之坎坎，險且枕，入于坎窞，勿用。", "六四：樽酒簋貳，用缶，納約自牖，終無咎。", "九五：坎不盈，祇既平，無咎。", "上六：係用徽纆，置于叢棘，三歲不得，凶。"]],
+            [30, "離為火", "101101", "利貞，亨。畜牝牛，吉。", "明兩作，離。大人以繼明照于四方。", ["初九：履錯然，敬之無咎。", "六二：黃離，元吉。", "九三：日昃之離，不鼓缶而歌，則大耋之嗟，凶。", "九四：突如其來如，焚如，死如，棄如。", "六五：出涕沱若，戚嗟若，吉。", "上九：王用出征，有嘉折首，無咎。"]],
+            [31, "澤山咸", "001110", "亨，利貞。取女吉。", "山上有澤，咸。君子以虛受人。", ["初六：咸其拇。", "六二：咸其腓，凶，居吉。", "九三：咸其股，執其隨，往吝。", "九四：貞吉悔亡，憧憧往來，朋從爾思。", "九五：咸其脢，無悔。", "上六：咸其輔頰舌。"]],
+            [32, "雷風恆", "011100", "亨，無咎，利貞，利有攸往。", "雷風，恆。君子以立不易方。", ["初六：浚恆，貞凶，無攸利。", "九二：悔亡。", "九三：不恆其德，或承之羞，貞吝。", "九四：田無禽。", "六五：恆其德，貞，婦人吉，夫子凶。", "上六：振恆，凶。"]],
+            [33, "天山遯", "001111", "亨，小利貞。", "天下有山，遯。君子以遠小人，不惡而嚴。", ["初六：遯尾，厲，勿用有攸往。", "六二：執之用黃牛之革，莫之勝說。", "九三：係遯，有疾厲，畜臣妾吉。", "九四：好遯，君子吉，小人否。", "九五：嘉遯，貞吉。", "上九：肥遯，無不利。"]],
+            [34, "雷天大壯", "111100", "利貞。", "雷在天上，大壯。君子以非禮勿履。", ["初九：壯于趾，征凶，有孚。", "九二：貞吉。", "九三：小人用壯，君子用罔，貞厲。羝羊觸藩。", "九四：貞吉悔亡，藩決不羸，壯于大輿之輹。", "六五：喪羊于易，無悔。", "上六：羝羊觸藩，不能退，不能遂，艱則吉。"]],
+            [35, "火地晉", "000101", "康侯用錫馬蕃庶，晝日三接。", "明出地上，晉。君子以自昭明德。", ["初六：晉如摧如，貞吉。罔孚，裕無咎。", "六二：晉如愁如，貞吉。受茲介福，于其王母。", "六三：眾允，悔亡。", "九四：晉如鼫鼠，貞厲。", "六五：悔亡，失得勿恤，往吉無不利。", "上九：晉其角，維用伐邑，厲吉無咎。"]],
+            [36, "地火明夷", "101000", "利艱貞。", "明入地中，明夷。君子以蒞眾，用晦而明。", ["初九：明夷于飛，垂其翼。君子于行，三日不食。", "六二：明夷，夷于左股，用拯馬壯，吉。", "九三：明夷于南狩，得其大首，不可疾貞。", "六四：入于左腹，獲明夷之心，于出門庭。", "六五：箕子之明夷，利貞。", "上六：不明晦，初登于天，後入于地。"]],
+            [37, "風火家人", "101011", "利女貞。", "風自火出，家人。君子以言有物而行有恆。", ["初九：閑有家，悔亡。", "六二：無攸遂，在中饋，貞吉。", "九三：家人嗃嗃，悔厲吉。婦子嘻嘻，終吝。", "六四：富家，大吉。", "九五：王假有家，勿恤吉。", "上九：有孚威如，終吉。"]],
+            [38, "火澤睽", "110101", "小事吉。", "上火下澤，睽。君子以同而異。", ["初九：悔亡。喪馬勿逐，自復。見惡人，無咎。", "九二：遇主于巷，無咎。", "六三：見輿曳，其牛掣，其人天且劓，無初有終。", "九四：睽孤，遇元夫，交孚，厲無咎。", "六五：悔亡，厥宗噬膚，往何咎。", "上九：睽孤，見豕負塗，往遇雨則吉。"]],
+            [39, "水山蹇", "001010", "利西南，不利東北。利見大人，貞吉。", "山上有水，蹇。君子以反身修德。", ["初六：往蹇來譽。", "六二：王臣蹇蹇，匪躬之故。", "九三：往蹇來反。", "六四：往蹇來連。", "九五：大蹇朋來。", "上六：往蹇來碩，吉，利見大人。"]],
+            [40, "雷水解", "010100", "利西南。無所往，其來復吉。有攸往，夙吉。", "雷雨作，解。君子以赦過宥罪。", ["初六：無咎。", "九二：田獲三狐，得黃矢，貞吉。", "六三：負且乘，致寇至，貞吝。", "九四：解而拇，朋至斯孚。", "六五：君子維有解，吉。有孚于小人。", "上六：公用射隼于高墉之上，獲之，無不利。"]],
+            [41, "山澤損", "110001", "有孚，元吉，無咎，可貞，利有攸往。曷之用，二簋可用享。", "山下有澤，損。君子以懲忿窒欲。", ["初九：已事遄往，無咎，酌損之。", "九二：利貞，征凶，弗損益之。", "六三：三人行，則損一人；一人行，則得其友。", "六四：損其疾，使遄有喜，無咎。", "六五：或益之十朋之龜，弗克違，元吉。", "上九：弗損益之，無咎，貞吉，利有攸往。"]],
+            [42, "風雷益", "100011", "利有攸往，利涉大川。", "風雷，益。君子以見善則遷，有過則改。", ["初九：利用為大作，元吉，無咎。", "六二：或益之十朋之龜，弗克違，永貞吉。", "六三：益之用凶事，無咎。有孚中行。", "六四：中行，告公從。利用為依遷國。", "九五：有孚惠心，勿問元吉。有孚惠我德。", "上九：莫益之，或擊之，立心勿恆，凶。"]],
+            [43, "澤天夬", "111110", "揚于王庭，孚號，有厲。告自邑，不利即戎，利有攸往。", "澤上于天，夬。君子以施祿及下，居德則忌。", ["初九：壯于前趾，往不勝為咎。", "九二：惕號，莫夜有戎，勿恤。", "九三：壯于頄，有凶。君子夬夬，獨行遇雨。", "九四：臀無膚，其行次且。牽羊悔亡。", "九五：莧陸夬夬，中行無咎。", "上六：無號，終有凶。"]],
+            [44, "天風姤", "011111", "女壯，勿用取女。", "天下有風，姤。后以施命誥四方。", ["初六：繫于金柅，貞吉。有攸往，見凶。", "九二：包有魚，無咎，不利賓。", "九三：臀無膚，其行次且，厲，無大咎。", "九四：包無魚，起凶。", "九五：以杞包瓜，含章，有隕自天。", "上九：姤其角，吝，無咎。"]],
+            [45, "澤地萃", "000110", "亨。王假有廟，利見大人，亨，利貞。用大牲吉，利有攸往。", "澤上于地，萃。君子以除戎器，戒不虞。", ["初六：有孚不終，乃亂乃萃，若號，一握為笑。", "六二：引吉，無咎，孚乃利用禴。", "六三：萃如嗟如，無攸利，往無咎，小吝。", "九四：大吉，無咎。", "九五：萃有位，無咎。匪孚，元永貞，悔亡。", "上六：齎咨涕洟，無咎。"]],
+            [46, "地風升", "011000", "元亨，用見大人，勿恤，南征吉。", "地中生木，升。君子以順德，積小以高大。", ["初六：允升，大吉。", "九二：孚乃利用禴，無咎。", "九三：升虛邑。", "六四：王用亨于岐山，吉，無咎。", "六五：貞吉，升階。", "上六：冥升，利于不息之貞。"]],
+            [47, "澤水困", "010110", "亨，貞，大人吉，無咎。有言不信。", "澤無水，困。君子以致命遂志。", ["初六：臀困于株木，入于幽谷，三歲不覿。", "九二：困于酒食，朱紱方來，利用亨祀。", "六三：困于石，據于蒺藜，凶。", "九四：來徐徐，困于金車，吝，有終。", "九五：劓刖，困于赤紱，乃徐有說。", "上六：困于葛藟，于臲卼，曰動悔。有悔，征吉。"]],
+            [48, "水風井", "011010", "改邑不改井，無喪無得，往來井井。汔至，亦未繘井，羸其瓶，凶。", "木上有水，井。君子以勞民勸相。", ["初六：井泥不食，舊井無禽。", "九二：井谷射鮒，甕敝漏。", "九三：井渫不食，為我心惻，可用汲。", "六四：井甃，無咎。", "九五：井冽，寒泉食。", "上六：井收勿幕，有孚元吉。"]],
+            [49, "澤火革", "101110", "巳日乃孚，元亨利貞，悔亡。", "澤中有火，革。君子以治歷明時。", ["初九：鞏用黃牛之革。", "六二：巳日乃革之，征吉，無咎。", "九三：征凶，貞厲，革言三就有孚。", "九四：悔亡，有孚改命，吉。", "九五：大人虎變，未占有孚。", "上六：君子豹變，小人革面，征凶，居貞吉。"]],
+            [50, "火風鼎", "011101", "元吉，亨。", "木上有火，鼎。君子以正位凝命。", ["初六：鼎顛趾，利出否，得妾以其子，無咎。", "九二：鼎有實，我仇有疾，不我能即，吉。", "九三：鼎耳革，其行塞，雉膏不食，方雨虧悔，終吉。", "九四：鼎折足，覆公餗，其形渥，凶。", "六五：鼎黃耳金鉉，利貞。", "上九：鼎玉鉉，大吉，無不利。"]],
+            [51, "震為雷", "100100", "亨。震來虩虩，笑言啞啞。震驚百里，不喪匕鬯。", "洊雷，震。君子以恐懼修省。", ["初九：震來虩虩，後笑言啞啞，吉。", "六二：震來厲，億喪貝，躋于九陵，勿逐，七日得。", "六三：震蘇蘇，震行無眚。", "九四：震遂泥。", "六五：震往來厲，億無喪，有事。", "上六：震索索，視矍矍，征凶。"]],
+            [52, "艮為山", "001001", "艮其背，不獲其身，行其庭，不見其人，無咎。", "兼山，艮。君子以思不出其位。", ["初六：艮其趾，無咎，利永貞。", "六二：艮其腓，不拯其隨，其心不快。", "九三：艮其限，列其夤，厲薰心。", "六四：艮其身，無咎。", "六五：艮其輔，言有序，悔亡。", "上九：敦艮，吉。"]],
+            [53, "風山漸", "001011", "女歸吉，利貞。", "山上有木，漸。君子以居賢德善俗。", ["初六：鴻漸于干，小子厲，有言，無咎。", "六二：鴻漸于磐，飲食衎衎，吉。", "九三：鴻漸于陸，夫征不復，婦孕不育，凶。", "六四：鴻漸于木，或得其桷，無咎。", "九五：鴻漸于陵，婦三歲不孕，終莫之勝，吉。", "上九：鴻漸于逵，其羽可用為儀，吉。"]],
+            [54, "雷澤歸妹", "110100", "征凶，無攸利。", "澤上有雷，歸妹。君子以永終知敝。", ["初九：歸妹以娣，跛能履，征吉。", "九二：眇能視，利幽人之貞。", "六三：歸妹以須，反歸以娣。", "九四：歸妹愆期，遲歸有時。", "六五：帝乙歸妹，其君之袂，不如其娣之袂良，吉。", "上六：女承筐無實，士刲羊無血，無攸利。"]],
+            [55, "雷火豐", "101100", "亨，王假之，勿憂，宜日中。", "雷電皆至，豐。君子以折獄致刑。", ["初九：遇其配主，雖旬無咎，往有尚。", "六二：豐其蔀，日中見斗，有孚發若，吉。", "九三：豐其沛，日中見沬，折其右肱，無咎。", "九四：豐其蔀，日中見斗，遇其夷主，吉。", "六五：來章，有慶譽，吉。", "上六：豐其屋，蔀其家，闚其戶，闃其無人，凶。"]],
+            [56, "火山旅", "001101", "小亨，旅貞吉。", "山上有火，旅。君子以明慎用刑，而不留獄。", ["初六：旅瑣瑣，斯其所取災。", "六二：旅即次，懷其資，得童僕貞。", "九三：旅焚其次，喪其童僕，貞厲。", "九四：旅于處，得其資斧，我心不快。", "六五：射雉一矢亡，終以譽命。", "上九：鳥焚其巢，旅人先笑後號啕，凶。"]],
+            [57, "巽為風", "011011", "小亨，利有攸往，利見大人。", "隨風，巽。君子以申命行事。", ["初六：進退，利武人之貞。", "九二：巽在床下，用史巫紛若，吉，無咎。", "九三：頻巽，吝。", "六四：悔亡，田獲三品。", "九五：貞吉悔亡，無不利。先庚三日，後庚三日，吉。", "上九：巽在床下，喪其資斧，貞凶。"]],
+            [58, "兌為澤", "110110", "亨，利貞。", "麗澤，兌。君子以朋友講習。", ["初九：和兌，吉。", "九二：孚兌，吉，悔亡。", "六三：來兌，凶。", "九四：商兌未寧，介疾有喜。", "九五：孚于剝，有厲。", "上六：引兌。"]],
+            [59, "風水渙", "010011", "亨。王假有廟，利涉大川，利貞。", "風行水上，渙。先王以享于帝立廟。", ["初六：用拯馬壯，吉。", "九二：渙奔其机，悔亡。", "六三：渙其躬，無悔。", "六四：渙其群，元吉。渙有丘，匪夷所思。", "九五：渙汗其大號，渙王居，無咎。", "上九：渙其血，去逖出，無咎。"]],
+            [60, "水澤節", "110010", "亨。苦節不可貞。", "澤上有水，節。君子以制數度，議德行。", ["初九：不出戶庭，無咎。", "九二：不出門庭，凶。", "六三：不節若，則嗟若，無咎。", "六四：安節，亨。", "九五：甘節，吉，往有尚。", "上六：苦節，貞凶，悔亡。"]],
+            [61, "風澤中孚", "110011", "豚魚吉，利涉大川，利貞。", "澤上有風，中孚。君子以議獄緩死。", ["初九：虞吉，有他不燕。", "九二：鳴鶴在陰，其子和之。", "六三：得敵，或鼓或罷，或泣或歌。", "六四：月幾望，馬匹亡，無咎。", "九五：有孚攣如，無咎。", "上九：翰音登于天，貞凶。"]],
+            [62, "雷山小過", "001100", "亨，利貞。可小事，不可大事。飛鳥遺之音，不宜上，宜下，大吉。", "山上有雷，小過。君子以行過乎恭，喪過乎哀，用過乎儉。", ["初六：飛鳥以凶。", "六二：過其祖，遇其妣；不及其君，遇其臣，無咎。", "九三：弗過防之，從或戕之，凶。", "九四：無咎，弗過遇之。往厲必戒，勿用永貞。", "六五：密雲不雨，自我西郊。", "上六：弗遇過之，飛鳥離之，凶。"]],
+            [63, "水火既濟", "101010", "亨，小利貞，初吉終亂。", "水在火上，既濟。君子以思患而豫防之。", ["初九：曳其輪，濡其尾，無咎。", "六二：婦喪其茀，勿逐，七日得。", "九三：高宗伐鬼方，三年克之，小人勿用。", "六四：繻有衣袽，終日戒。", "九五：東鄰殺牛，不如西鄰之禴祭，實受其福。", "上六：濡其首，厲。"]],
+            [64, "火水未濟", "010101", "亨，小狐汔濟，濡其尾，無攸利。", "火在水上，未濟。君子以慎辨物居方。", ["初六：濡其尾，吝。", "九二：曳其輪，貞吉。", "六三：未濟，征凶，利涉大川。", "九四：貞吉，悔亡，震用伐鬼方。", "六五：貞吉，無悔，君子之光，有孚，吉。", "上九：有孚于飲酒，無咎，濡其首，有孚失是。"]]
         ];
 
-        // 農民曆模擬組合
-        const ALMANAC_PRESETS = [
-            { date: "農曆九月二十 · 霜降後", ganzhi: "丙午年 戊戌月 丁卯日", yi: "祭祀、沐浴、靜思、修造、納財", ji: "詞訟、遠行、動土、爭執" },
-            { date: "農曆九月廿一 · 霜降節氣", ganzhi: "丙午年 戊戌月 戊辰日", yi: "會友、立券、掃除、栽種、祈福", ji: "開倉、安床、急躁行事" },
-            { date: "農曆九月廿二 · 秋意漸深", ganzhi: "丙午年 戊戌月 己巳日", yi: "出行、納采、訂盟、讀書、靜坐", ji: "破土、大興土木、口舌爭辯" },
-            { date: "農曆九月廿三 · 下弦月", ganzhi: "丙午年 戊戌月 庚午日", yi: "諸事不宜（宜休養生息、內觀自省）", ji: "重大決策、強求外緣" }
-        ];
+        // 將 64 卦轉換為完整物件並建立二進位索引
+        const HEXAGRAMS_BY_CODE = {};
+        const HEXAGRAMS = RAW_64_HEXAGRAMS.map(item => {
+            const [id, name, code, guaci, xiang, lines_text] = item;
+            const lowerTri = TRIGRAMS[code.substring(0, 3)];
+            const upperTri = TRIGRAMS[code.substring(3, 6)];
+            const symbol = String.fromCodePoint(0x4DC0 + id - 1);
+            const mnemonic = `外卦（上卦）為「${upperTri.name}（${upperTri.image}，主${upperTri.attr}）」，內卦（下卦）為「${lowerTri.name}（${lowerTri.image}，主${lowerTri.attr}）」。結合大象傳「${xiang}」，外境如${upperTri.nature}、內心如${lowerTri.nature}，以此畫面記住卦義「${guaci}」。`;
+            const obj = {
+                id,
+                name,
+                code,
+                symbol,
+                guaci: `${name.replace(/.*為/, '')}：${guaci}`,
+                vern: `上${upperTri.name}${upperTri.nature}（${upperTri.attr}）、下${lowerTri.name}${lowerTri.nature}（${lowerTri.attr}）。核心精義：${xiang}`,
+                xiang,
+                lines_text,
+                mnemonic
+            };
+            HEXAGRAMS_BY_CODE[code] = obj;
+            return obj;
+        });
 
-        let currentHexagram = HEXAGRAMS[22]; // 預設澤水困或地雷復
+        let currentHexagram = HEXAGRAMS[0];
         let currentChangingLine = 1; // 1~6
+        let currentZhiHexagram = HEXAGRAMS[0]; // 動爻變出之卦
+        let lastCastingMeta = {}; // 紀錄本次三才上卦的計算過程
 
-        // =========================================================================
-        // 🛡️ 方法 C：Cloudflare Worker 免費代理網址設定
-        // 已綁定為您部署好的專屬 Worker 網址：https://yi.gavintux.workers.dev
-        // 因為 Worker 已經鎖定 CORS 只允許 gavintux.github.io 呼叫，把這個網址寫在 HTML 裡完全不會洩漏 API Key！
-        // =========================================================================
         const DEFAULT_WORKER_URL = "https://yi.gavintux.workers.dev";
-
         let runtimeWorkerUrl = DEFAULT_WORKER_URL;
-        let runtimeApiKey = ""; // 備用：使用者在瀏覽器動態設定的 API Key
-        let runtimeGasUrl = ""; // Google Apps Script Webhook URL (用於直接寫入 Google Drive 1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb)
+        let runtimeApiKey = "";
+        let runtimeGasUrl = "";
         const TARGET_GDRIVE_FOLDER_ID = "1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb";
+        let currentJournalCleanText = "";
+        let isJournalPreviewMode = false;
+
+        function getYesterdayDateStr() {
+            const d = new Date();
+            d.setDate(d.getDate() - 1);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
 
         // 初始化頁面
-        window.onload = function() {
+        window.onload = async function() {
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} 06:15`;
             document.getElementById('current-date-badge').textContent = dateStr;
+
+            const yestStr = getYesterdayDateStr();
+            const hintEl = document.getElementById('yesterday-filename-hint');
+            if (hintEl) hintEl.textContent = `~/Obsidian/zenlife/Daily/${yestStr}.md`;
+
             try {
                 const store = window.localStorage || window.sessionStorage;
                 const savedWorker = store ? store.getItem('zenlife_worker_url') : '';
-                if (savedWorker) {
-                    runtimeWorkerUrl = savedWorker;
-                }
+                if (savedWorker) runtimeWorkerUrl = savedWorker;
                 const savedKey = store ? store.getItem('zenlife_gemini_key') : '';
-                if (savedKey) {
-                    runtimeApiKey = savedKey;
-                }
+                if (savedKey) runtimeApiKey = savedKey;
                 const savedGas = store ? store.getItem('zenlife_gas_url') : '';
                 if (savedGas) {
                     runtimeGasUrl = savedGas;
                     updateGDocBadge();
                 }
             } catch (e) {}
+
             updateApiKeyBadge();
             renderHexagramGrid();
+
+            // 1. 自動計算「今天」的真實農民曆宜忌
+            computeTodayAlmanac(false);
+
+            // 2. 自動抓取「今天」的真實天氣與氣溫
+            await fetchRealTimeWeather(false);
+
+            // 3. 嚴格嘗試自動載入昨天日誌
+            await tryAutoLoadYesterdayJournal();
+
+            // 4. 依據真實天時、地利、人和三才上卦並解卦
             castDivination('resonant');
         };
+
+        // =========================================================================
+        // 1. 【天時】自動抓取當日即時天氣與氣溫
+        // =========================================================================
+        const WMO_WEATHER_MAP = {
+            0: "☀️ 晴朗無雲，晨光溫暖和煦",
+            1: "🌤️ 晴時多雲，陽光柔和舒適",
+            2: "⛅ 多雲時晴，微風輕拂",
+            3: "☁️ 陰天多雲，天色靜謐柔和",
+            45: "🌫️ 晨霧籠罩，能見度低而靜謐",
+            48: "🌫️ 濃霧微寒，空氣濕潤",
+            51: "🌦️ 毛毛微雨，空氣濕潤微涼",
+            53: "🌧️ 綿綿細雨，微涼濕潤",
+            55: "🌧️ 細雨不斷，氣息沉靜",
+            61: "🌧️ 微雨綿綿，空氣濕潤微涼",
+            63: "🌧️ 陣雨連綿，雨聲潺潺",
+            65: "🌧️ 大雨滂沱，宜靜心安居",
+            80: "🌦️ 短暫陣雨，雲氣流動",
+            81: "🌧️ 間歇陣雨，濕度偏高",
+            82: "⛈️ 強陣雨來襲，氣壓偏低",
+            95: "⛈️ 雷雨交加，氣壓偏低"
+        };
+
+        async function fetchRealTimeWeather(showNotification = false) {
+            const locBadge = document.getElementById('weather-loc-badge');
+            const weatherInput = document.getElementById('weather-select');
+            const tempInput = document.getElementById('temp-input');
+
+            let lat = 24.757;
+            let lon = 121.753;
+            let cityName = "宜蘭";
+
+            try {
+                const geoResp = await fetch("https://get.geojs.io/v1/ip/geo.json");
+                if (geoResp.ok) {
+                    const geoData = await geoResp.json();
+                    if (geoData.latitude && geoData.longitude) {
+                        lat = parseFloat(geoData.latitude);
+                        lon = parseFloat(geoData.longitude);
+                        cityName = geoData.city || geoData.region || "本地";
+                    }
+                }
+            } catch (e) {}
+
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=Asia%2FTaipei`;
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error("Weather API error");
+                const data = await resp.json();
+                const cur = data.current;
+
+                const code = cur.weather_code;
+                const desc = WMO_WEATHER_MAP[code] || (code >= 50 ? "🌧️ 陰雨微涼，水氣豐沛" : "⛅ 多雲微風，氣息平和");
+                const temp = Math.round(cur.temperature_2m * 10) / 10;
+                const hum = cur.relative_humidity_2m;
+                const feel = cur.temperature_2m < 18 ? "偏涼微寒" : (cur.temperature_2m > 28 ? "溫暖微熱" : "舒適宜人");
+
+                weatherInput.value = desc;
+                tempInput.value = `${temp}°C (濕度 ${hum}% · ${feel})`;
+                if (locBadge) locBadge.textContent = `(📍 ${cityName}即時氣象)`;
+
+                if (showNotification) {
+                    showToast(`🌤️ 已更新今日即時天氣：${cityName} ${temp}°C`);
+                    castDivination('resonant');
+                }
+            } catch (err) {
+                console.warn("即時天氣無法連線:", err);
+                if (locBadge) locBadge.textContent = "(⚠️ 無法取得即時氣象)";
+                if (!weatherInput.value.trim()) {
+                    weatherInput.value = "沒原始內容";
+                    tempInput.value = "沒原始內容";
+                }
+            }
+        }
+
+        // =========================================================================
+        // 2. 【地利】自動計算當日真實農民曆（節氣、干支、宜忌）
+        // =========================================================================
+        function computeTodayAlmanac(showNotification = false) {
+            const now = new Date();
+            try {
+                if (typeof Solar !== 'undefined') {
+                    const solar = Solar.fromDate(now);
+                    const lunar = solar.getLunar();
+
+                    const lunarMonth = lunar.getMonthInChinese();
+                    const lunarDay = lunar.getDayInChinese();
+                    const jieQi = lunar.getJieQi() || lunar.getPrevJieQi(true)?.getName() || "";
+                    const jieQiLabel = lunar.getJieQi() ? `今日節氣：${jieQi}` : (jieQi ? `${jieQi}後` : "");
+
+                    const yearGZ = lunar.getYearInGanZhi();
+                    const monthGZ = lunar.getMonthInGanZhi();
+                    const dayGZ = lunar.getDayInGanZhi();
+
+                    const yiArr = lunar.getDayYi() || [];
+                    const jiArr = lunar.getDayJi() || [];
+                    const yiList = yiArr.length ? yiArr.slice(0, 6).join('、') : "沒原始內容";
+                    const jiList = jiArr.length ? jiArr.slice(0, 6).join('、') : "沒原始內容";
+
+                    document.getElementById('lunar-date-str').textContent = `農曆${lunarMonth}月${lunarDay}${jieQiLabel ? ' · ' + jieQiLabel : ''}`;
+                    document.getElementById('lunar-ganzhi').textContent = `${yearGZ}年 ${monthGZ}月 ${dayGZ}日`;
+                    document.getElementById('almanac-yi').value = yiList;
+                    document.getElementById('almanac-ji').value = jiList;
+
+                    if (showNotification) {
+                        showToast(`📅 已同步今日真實農民曆：農曆${lunarMonth}月${lunarDay} (${dayGZ}日)`);
+                        castDivination('resonant');
+                    }
+                    return;
+                }
+            } catch (e) {
+                console.warn("Lunar library error:", e);
+            }
+
+            document.getElementById('lunar-date-str').textContent = "沒原始內容";
+            document.getElementById('lunar-ganzhi').textContent = "沒原始內容";
+            document.getElementById('almanac-yi').value = "沒原始內容";
+            document.getElementById('almanac-ji').value = "沒原始內容";
+        }
+
+        // =========================================================================
+        // 3. 【人和】Markdown 解析器 + 自動抓取 ~/Obsidian/zenlife/Daily 昨天日誌
+        // =========================================================================
+        function parseObsidianMarkdown(rawMd, fileName = "") {
+            let content = String(rawMd || "").replace(/\r\n/g, "\n");
+            let frontmatter = {};
+
+            const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n?/);
+            if (fmMatch) {
+                const fmBlock = fmMatch[1];
+                content = content.slice(fmMatch[0].length);
+                fmBlock.split('\n').forEach(line => {
+                    const idx = line.indexOf(':');
+                    if (idx > 0) {
+                        const k = line.slice(0, idx).trim();
+                        const v = line.slice(idx + 1).trim();
+                        if (k && v) frontmatter[k] = v;
+                    }
+                });
+            }
+
+            const htmlReadyMd = content
+                .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '<span class="text-[#8C6D46] font-medium">🔗$2</span>')
+                .replace(/\[\[([^\]]+)\]\]/g, '<span class="text-[#8C6D46] font-medium">🔗$1</span>')
+                .replace(/==([^=]+)==/g, '<mark class="bg-amber-100 px-1 rounded">$1</mark>');
+
+            const cleanText = content
+                .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
+                .replace(/\[\[([^\]]+)\]\]/g, '$1')
+                .replace(/^[#>*\-\d.]+\s+/gm, '')
+                .replace(/[`*_~]/g, '')
+                .trim();
+
+            currentJournalCleanText = cleanText || content.trim();
+
+            const metaBar = document.getElementById('md-meta-bar');
+            const badgesBox = document.getElementById('md-frontmatter-badges');
+            if (metaBar && badgesBox) {
+                badgesBox.innerHTML = '';
+                if (fileName) {
+                    badgesBox.innerHTML += `<span class="bg-[#2C2A29] text-[#F7F5F0] px-2 py-0.5 rounded font-mono">📄 ${fileName}</span>`;
+                }
+                Object.entries(frontmatter).slice(0, 4).forEach(([k, v]) => {
+                    badgesBox.innerHTML += `<span class="bg-white border border-[#DED8CE] px-2 py-0.5 rounded font-mono">${k}: ${v}</span>`;
+                });
+                metaBar.classList.remove('hidden');
+            }
+
+            const previewEl = document.getElementById('journal-md-preview');
+            if (previewEl) {
+                const trimmedContent = content.trim();
+                if (trimmedContent === "沒有昨天日誌" || trimmedContent === "沒有容") {
+                    previewEl.innerHTML = `<div class="text-[#9E2A2B] font-semibold">${trimmedContent}</div>`;
+                } else if (!trimmedContent) {
+                    currentJournalCleanText = "沒有容";
+                    previewEl.innerHTML = `<div class="text-[#9E2A2B] font-semibold">沒有容</div>`;
+                } else if (typeof marked !== 'undefined') {
+                    previewEl.innerHTML = marked.parse(htmlReadyMd);
+                } else {
+                    previewEl.innerHTML = `<div class="whitespace-pre-wrap">${htmlReadyMd}</div>`;
+                }
+            }
+        }
+
+        function setJournalDisplayMode(previewMode) {
+            isJournalPreviewMode = previewMode;
+            const previewEl = document.getElementById('journal-md-preview');
+            const textareaEl = document.getElementById('journal-input');
+            const toggleBtn = document.getElementById('btn-toggle-md-view');
+
+            if (previewMode) {
+                previewEl.classList.remove('hidden');
+                textareaEl.classList.add('hidden');
+                if (toggleBtn) toggleBtn.textContent = "✏️ 切換編輯原始碼";
+            } else {
+                previewEl.classList.add('hidden');
+                textareaEl.classList.remove('hidden');
+                if (toggleBtn) toggleBtn.textContent = "👁️ 預覽 Markdown 排版";
+            }
+        }
+
+        function toggleJournalEditMode() {
+            parseObsidianMarkdown(document.getElementById('journal-input').value);
+            setJournalDisplayMode(!isJournalPreviewMode);
+        }
+
+        function syncMarkdownPreviewFromInput() {
+            const raw = document.getElementById('journal-input').value;
+            parseObsidianMarkdown(raw);
+        }
+
+        function openHandleDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open('ZenLifeObsidianDB', 1);
+                req.onupgradeneeded = (e) => {
+                    e.target.result.createObjectStore('handles');
+                };
+                req.onsuccess = (e) => resolve(e.target.result);
+                req.onerror = (e) => reject(e);
+            });
+        }
+
+        async function saveDirHandle(handle) {
+            try {
+                const db = await openHandleDB();
+                const tx = db.transaction('handles', 'readwrite');
+                tx.objectStore('handles').put(handle, 'dailyDir');
+            } catch (e) {}
+        }
+
+        async function getSavedDirHandle() {
+            try {
+                const db = await openHandleDB();
+                return await new Promise((resolve) => {
+                    const tx = db.transaction('handles', 'readonly');
+                    const req = tx.objectStore('handles').get('dailyDir');
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => resolve(null);
+                });
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function readYesterdayFromDirHandle(dirHandle, yestStr) {
+            let matchedFile = null;
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file' && (entry.name.endsWith('.md') || entry.name.endsWith('.markdown') || entry.name.endsWith('.txt'))) {
+                    if (entry.name.includes('易經晨報')) continue;
+                    const altYestStr = yestStr.replace(/-/g, '');
+                    if (entry.name === `${yestStr}.md` || entry.name.includes(yestStr) || entry.name.includes(altYestStr)) {
+                        matchedFile = await entry.getFile();
+                        break;
+                    }
+                }
+            }
+            return matchedFile;
+        }
+
+        async function tryAutoLoadYesterdayJournal() {
+            const yestStr = getYesterdayDateStr();
+
+            try {
+                const resp = await fetch(`./today_context.json?t=${Date.now()}`);
+                if (resp.ok) {
+                    const ctx = await resp.json();
+                    if (ctx && ctx.date === yestStr) {
+                        if (!ctx.file_found) {
+                            document.getElementById('journal-input').value = "沒有昨天日誌";
+                            parseObsidianMarkdown("沒有昨天日誌", `${yestStr}.md (未找到檔案)`);
+                            setJournalDisplayMode(true);
+                            document.getElementById('journal-status-hint').textContent = `⚠️ 沒有昨天日誌（~/Obsidian/zenlife/Daily 中找不到 ${yestStr}.md）`;
+                            return;
+                        }
+                        const rawText = (ctx.journal_content || "").trim();
+                        const finalVal = rawText ? rawText : "沒有容";
+                        document.getElementById('journal-input').value = finalVal;
+                        parseObsidianMarkdown(finalVal, ctx.journal_name || `${yestStr}.md`);
+                        setJournalDisplayMode(true);
+                        document.getElementById('journal-status-hint').textContent = rawText
+                            ? `✅ 已匯入昨天日誌：${ctx.journal_name}`
+                            : `⚠️ 已找到 ${ctx.journal_name}，但沒有容`;
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            const savedHandle = await getSavedDirHandle();
+            if (savedHandle) {
+                try {
+                    const perm = await savedHandle.queryPermission({ mode: 'read' });
+                    if (perm === 'granted') {
+                        const matchedFile = await readYesterdayFromDirHandle(savedHandle, yestStr);
+                        if (matchedFile) {
+                            const rawText = await matchedFile.text();
+                            parseObsidianMarkdown(rawText, matchedFile.name);
+                            const hasBody = currentJournalCleanText && currentJournalCleanText !== "沒有容" && currentJournalCleanText.trim().length > 0;
+                            if (!hasBody) {
+                                document.getElementById('journal-input').value = "沒有容";
+                                parseObsidianMarkdown("沒有容", matchedFile.name);
+                                document.getElementById('journal-status-hint').textContent = `⚠️ 已抓到昨天檔案 (${matchedFile.name})，但沒有容`;
+                            } else {
+                                document.getElementById('journal-input').value = rawText;
+                                document.getElementById('journal-status-hint').textContent = `✅ 已自動從 Daily 資料夾匯入昨天日誌：${matchedFile.name}`;
+                            }
+                            setJournalDisplayMode(true);
+                            return;
+                        } else {
+                            document.getElementById('journal-input').value = "沒有昨天日誌";
+                            parseObsidianMarkdown("沒有昨天日誌", `${yestStr}.md (未找到)`);
+                            setJournalDisplayMode(true);
+                            document.getElementById('journal-status-hint').textContent = `⚠️ 沒有昨天日誌（Daily 資料夾內無 ${yestStr}.md）`;
+                            return;
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            document.getElementById('journal-input').value = "沒有昨天日誌";
+            parseObsidianMarkdown("沒有昨天日誌", `${yestStr}.md`);
+            setJournalDisplayMode(true);
+            document.getElementById('journal-status-hint').textContent = `⚠️ 沒有昨天日誌（請點上方「📁 連結 Daily 資料夾自動抓昨天」選取 ~/Obsidian/zenlife/Daily）`;
+        }
+
+        async function pickObsidianDailyFolder() {
+            const yestStr = getYesterdayDateStr();
+
+            if (window.showDirectoryPicker) {
+                try {
+                    const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+                    await saveDirHandle(dirHandle);
+                    const matchedFile = await readYesterdayFromDirHandle(dirHandle, yestStr);
+
+                    if (matchedFile) {
+                        const rawText = await matchedFile.text();
+                        parseObsidianMarkdown(rawText, matchedFile.name);
+                        const hasBody = currentJournalCleanText && currentJournalCleanText !== "沒有容" && currentJournalCleanText.trim().length > 0;
+                        if (!hasBody) {
+                            document.getElementById('journal-input').value = "沒有容";
+                            parseObsidianMarkdown("沒有容", matchedFile.name);
+                            setJournalDisplayMode(true);
+                            document.getElementById('journal-status-hint').textContent = `⚠️ 已抓到昨天檔案 (${matchedFile.name})，但沒有容`;
+                            showToast(`⚠️ 已載入 ${matchedFile.name}，但沒有容`);
+                        } else {
+                            document.getElementById('journal-input').value = rawText;
+                            setJournalDisplayMode(true);
+                            document.getElementById('journal-status-hint').textContent = `✅ 已從 Daily 資料夾匯入昨天日誌：${matchedFile.name}`;
+                            showToast(`📂 已匯入昨天日誌：${matchedFile.name}`);
+                        }
+                        castDivination('resonant');
+                        return;
+                    } else {
+                        document.getElementById('journal-input').value = "沒有昨天日誌";
+                        parseObsidianMarkdown("沒有昨天日誌", `${yestStr}.md (未找到)`);
+                        setJournalDisplayMode(true);
+                        document.getElementById('journal-status-hint').textContent = `⚠️ 沒有昨天日誌（該資料夾內找不到 ${yestStr}.md）`;
+                        showToast(`⚠️ 沒有昨天日誌（找不到 ${yestStr}.md）`);
+                        castDivination('resonant');
+                        return;
+                    }
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
+            }
+
+            document.getElementById('obsidian-file-input').click();
+        }
+
         // API Key 與 Cloudflare Worker 安全設定彈窗控制
         function toggleApiKeyModal() {
             const modal = document.getElementById('apikey-modal');
@@ -588,7 +1033,7 @@ fetch("https://yi-proxy.您的帳號.workers.dev")</pre>
 
             if (!workerVal || !workerVal.startsWith('https://')) {
                 resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
-                resBox.textContent = "❌ 請輸入以 https:// 開頭的 Cloudflare Worker 網址（例如 https://yi-proxy.您的帳號.workers.dev）";
+                resBox.textContent = "❌ 請輸入以 https:// 開頭的 Cloudflare Worker 網址";
                 return;
             }
 
@@ -621,7 +1066,7 @@ fetch("https://yi-proxy.您的帳號.workers.dev")</pre>
                 }
             } catch (err) {
                 resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
-                resBox.textContent = "❌ 無法連線至該 Worker 網址，請確認網址是否正確且已部署：" + err.message;
+                resBox.textContent = "❌ 無法連線至該 Worker 網址：" + err.message;
             } finally {
                 btn.disabled = false;
                 btn.textContent = "⚡ 測試 Worker 連線";
@@ -721,7 +1166,7 @@ fetch("https://yi-proxy.您的帳號.workers.dev")</pre>
             btn.disabled = true;
             btn.textContent = "⏳ 測試寫入中...";
             resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-amber-100 text-amber-900";
-            resBox.textContent = "正在傳送測試文件至您的 Google Drive 資料夾 (1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb)...";
+            resBox.textContent = "正在傳送測試文件至您的 Google Drive 資料夾...";
 
             try {
                 const resp = await fetch(val, {
@@ -740,16 +1185,13 @@ fetch("https://yi-proxy.您的帳號.workers.dev")</pre>
                 if (data.status === 'ok') {
                     resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-emerald-100 text-emerald-900";
                     resBox.innerHTML = `✅ <strong>寫入成功！</strong>檔案已建立於您的雲端資料夾：<a href="${data.url}" target="_blank" class="underline font-bold">點此直接開啟剛建立的 Google Docs ↗</a>`;
-                } else if (data.status === 'error') {
-                    resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
-                    resBox.textContent = `❌ Google Apps Script 執行錯誤：${data.message}（請確認是否已在 Apps Script 編輯器上方點過『執行 testAuth』並核准權限）`;
                 } else {
                     resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
-                    resBox.textContent = "⚠️ 收到非預期回應，請確認部署時「誰可以存取」已選為「所有人 (Anyone)」。";
+                    resBox.textContent = `❌ 寫入異常：${data.message || '請確認部署時誰可以存取已設為所有人'}`;
                 }
             } catch (err) {
                 resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
-                resBox.textContent = "❌ 連線被阻擋！這通常是因為部署時「誰可以存取」沒選「所有人 (Anyone)」，或尚未在 script.google.com 按過「執行」授權。";
+                resBox.textContent = "❌ 連線被阻擋！請確認部署時「誰可以存取」已選「所有人 (Anyone)」。";
             } finally {
                 btn.disabled = false;
                 btn.textContent = "⚡ 儲存並立即測試寫入";
@@ -771,40 +1213,46 @@ fetch("https://yi-proxy.您的帳號.workers.dev")</pre>
         function copyGasScript() {
             const code = document.getElementById('gas-code-block').innerText;
             navigator.clipboard.writeText(code);
-            showToast("📋 已複製升級版 Google Apps Script！請至 script.google.com 貼上並先按一次『執行』授權");
+            showToast("📋 已複製升級版 Google Apps Script！");
         }
 
         function buildCurrentMarkdown() {
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-            const weather = document.getElementById('weather-select').value + ' ' + document.getElementById('temp-input').value;
+            const weatherVal = document.getElementById('weather-select').value.trim() || "沒原始內容";
+            const tempVal = document.getElementById('temp-input').value.trim() || "沒原始內容";
+            const weather = (weatherVal === "沒原始內容" && tempVal === "沒原始內容") ? "沒原始內容" : `${weatherVal} ${tempVal}`;
             const lunar = document.getElementById('lunar-date-str').textContent + ' (' + document.getElementById('lunar-ganzhi').textContent + ')';
-            const yi = document.getElementById('almanac-yi').value;
-            const ji = document.getElementById('almanac-ji').value;
-            const journal = document.getElementById('journal-input').value;
+            const yi = document.getElementById('almanac-yi').value.trim() || "沒原始內容";
+            const ji = document.getElementById('almanac-ji').value.trim() || "沒原始內容";
+            const journal = (currentJournalCleanText || document.getElementById('journal-input').value).trim() || "沒有昨天日誌";
             const guidanceText = document.getElementById('guidance-content').innerText;
+            const movingLineText = currentHexagram.lines_text[currentChangingLine - 1] || "";
 
             const md = `---
 created: ${dateStr}
 tags: [易經晨卜, zenlife]
 hexagram: ${currentHexagram.name}
+zhigua: ${currentZhiHexagram.name}
 weather: ${weather}
 ---
 
-# ☯ ${dateStr} 易經晨間提點：${currentHexagram.symbol} ${currentHexagram.name}（第 ${currentChangingLine} 爻動）
+# ☯ ${dateStr} 易經晨間提點：${currentHexagram.symbol} ${currentHexagram.name}（第 ${currentChangingLine} 爻動 ➔ 之卦：${currentZhiHexagram.name}）
 
-> **天時（天氣）**：${weather}
-> **地利（農民曆）**：${lunar} ｜ 宜：${yi} ｜ 忌：${ji}
+> **天時（即時天氣與氣溫）**：${weather}
+> **地利（今日農民曆宜忌）**：${lunar} ｜ 宜：${yi} ｜ 忌：${ji}
+> **上卦依據**：${lastCastingMeta.formulaText || ''}
 
-## 📜 卦辭與秒記心法
-- **卦辭**：${currentHexagram.guaci}（${currentHexagram.vern}）
+## 📜 本卦卦辭、動爻與秒記心法
+- **本卦卦辭**：${currentHexagram.guaci}
 - **大象傳**：${currentHexagram.xiang}
-- **🧠 圖像記憶口訣**：${currentHexagram.mnemonic}
+- **動爻爻辭**：${movingLineText}（動而化為：**${currentZhiHexagram.name}**「${currentZhiHexagram.guaci}」）
+- **🧠 上下卦象記憶法**：${currentHexagram.mnemonic}
 
-## 🪞 昨天日誌回顧 (~/Obsidian/zenlife/Daily)
+## 🪞 昨天日誌原始內容 (~/Obsidian/zenlife/Daily)
 ${journal}
 
-## 🍵 晨間解卦與今日應對方針
+## 🍵 晨間 06:15 專屬解卦與今日應對方針
 ${guidanceText}
 `;
             return { dateStr, title: `${dateStr}_易經晨報_${currentHexagram.name}`, md };
@@ -814,7 +1262,7 @@ ${guidanceText}
             const { title, md } = buildCurrentMarkdown();
             if (!runtimeGasUrl) {
                 toggleGDocModal();
-                showToast("💡 請先貼上您的 Google Apps Script 網址並點擊測試，即可自動寫入雲端資料夾！");
+                showToast("💡 請先貼上您的 Google Apps Script 網址並點擊測試！");
                 return;
             }
 
@@ -838,118 +1286,166 @@ ${guidanceText}
                 try { resData = JSON.parse(text); } catch (e) {}
 
                 if (resData.status === 'ok' && resData.url) {
-                    showToast(`✅ 已成功存入 Google Docs！正在為您開啟文件...`);
+                    showToast(`✅ 已成功存入 Google Docs！正在開啟文件...`);
                     window.open(resData.url, '_blank');
                 } else {
                     toggleGDocModal();
-                    showToast(`⚠️ 寫入失敗：${resData.message || '請在設定視窗點擊測試檢查權限'}`);
+                    showToast(`⚠️ 寫入失敗：${resData.message || '請檢查權限'}`);
                 }
             } catch (e) {
                 toggleGDocModal();
-                showToast("⚠️ 無法寫入雲端硬碟，請在彈出視窗中檢查 Apps Script 授權與部署設定！");
+                showToast("⚠️ 無法寫入雲端硬碟，請檢查 Apps Script 授權與部署設定！");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = origText;
             }
         }
 
-        // 切換分頁
         function switchTab(tab) {
             ['divination', 'hexagrams', 'automation'].forEach(t => {
                 const viewEl = document.getElementById(`view-${t}`);
                 const btn = document.getElementById(`tab-${t}`);
                 if (viewEl) viewEl.classList.add('hidden');
-                if (btn) {
-                    btn.className = "px-3.5 py-2 rounded-lg text-[#6E6A63] hover:text-[#2C2A29] transition-all";
-                }
+                if (btn) btn.className = "px-3.5 py-2 rounded-lg text-[#6E6A63] hover:text-[#2C2A29] transition-all";
             });
             const activeView = document.getElementById(`view-${tab}`);
             const activeBtn = document.getElementById(`tab-${tab}`);
             if (activeView) activeView.classList.remove('hidden');
-            if (activeBtn) {
-                activeBtn.className = "px-3.5 py-2 rounded-lg bg-white text-[#2C2A29] shadow-sm transition-all";
-            }
+            if (activeBtn) activeBtn.className = "px-3.5 py-2 rounded-lg bg-white text-[#2C2A29] shadow-sm transition-all";
         }
 
-        // 隨機切換農民曆模擬
-        function randomizeAlmanac() {
-            const item = ALMANAC_PRESETS[Math.floor(Math.random() * ALMANAC_PRESETS.length)];
-            document.getElementById('lunar-date-str').textContent = item.date;
-            document.getElementById('lunar-ganzhi').textContent = item.ganzhi;
-            document.getElementById('almanac-yi').value = item.yi;
-            document.getElementById('almanac-ji').value = item.ji;
-            showToast("已更新當日農民曆干支與宜忌");
-        }
-
-        // 讀取本地 Obsidian .md 日誌檔案
         function loadObsidianFile(event) {
             const file = event.target.files[0];
-            if (!file) return;
+            if (!file) {
+                document.getElementById('journal-input').value = "沒有昨天日誌";
+                parseObsidianMarkdown("沒有昨天日誌");
+                setJournalDisplayMode(true);
+                return;
+            }
             const reader = new FileReader();
             reader.onload = function(e) {
-                document.getElementById('journal-input').value = e.target.result;
-                showToast(`已載入昨天日誌：${file.name}`);
+                const rawMd = e.target.result || "";
+                parseObsidianMarkdown(rawMd, file.name);
+                const hasBody = currentJournalCleanText && currentJournalCleanText !== "沒有容" && currentJournalCleanText.trim().length > 0;
+                if (!hasBody) {
+                    document.getElementById('journal-input').value = "沒有容";
+                    parseObsidianMarkdown("沒有容", file.name);
+                    setJournalDisplayMode(true);
+                    document.getElementById('journal-status-hint').textContent = `⚠️ 已載入 ${file.name}，但沒有容`;
+                    showToast(`⚠️ ${file.name} 沒有容`);
+                } else {
+                    document.getElementById('journal-input').value = rawMd;
+                    setJournalDisplayMode(true);
+                    document.getElementById('journal-status-hint').textContent = `✅ 已成功匯入昨天 Markdown 日誌：${file.name}`;
+                    showToast(`已匯入昨天 Markdown 日誌：${file.name}`);
+                }
                 castDivination('resonant');
             };
-            reader.readAsText(file);
+            reader.readAsText(file, 'UTF-8');
         }
 
-        // 字串雜湊函數 (用於將 天氣 + 農民曆 + 昨天日誌 轉為決定性卦象)
-        function hashString(str) {
-            let hash = 5381;
-            for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) + hash) + str.charCodeAt(i);
+        // 計算字串數理總和 (將每個實際字元的 Unicode 點位與字數納入上卦數理)
+        function calcTextNumerology(str) {
+            const s = String(str || "").trim();
+            if (!s) return 8;
+            let sum = 0;
+            for (let i = 0; i < s.length; i++) {
+                sum += s.charCodeAt(i) * (i + 1);
             }
-            return Math.abs(hash);
+            return sum;
         }
 
-        // 起卦核心邏輯
+        // =========================================================================
+        // ☯ 命理師三才上卦核心邏輯：
+        // - 外卦（上卦）：由【天時】今日即時天氣氣溫 + 【地利】今日農民曆宜忌 數理總和除以 8 取餘數上卦
+        // - 內卦（下卦）：由【人和】昨天日誌實際內容 數理總和除以 8 取餘數上卦
+        // - 動爻：天地人三才數理總和除以 6 取餘數求動爻，並排出變卦（之卦）
+        // =========================================================================
         async function castDivination(mode = 'resonant') {
-            const weather = document.getElementById('weather-select').value;
-            const temp = document.getElementById('temp-input').value;
-            const yi = document.getElementById('almanac-yi').value;
-            const ji = document.getElementById('almanac-ji').value;
-            const journal = document.getElementById('journal-input').value.trim();
-            const dateStr = new Date().toDateString();
+            const weatherVal = document.getElementById('weather-select').value.trim() || "沒原始內容";
+            const tempVal = document.getElementById('temp-input').value.trim() || "沒原始內容";
+            const lunarDateVal = document.getElementById('lunar-date-str').textContent.trim() || "沒原始內容";
+            const ganzhiVal = document.getElementById('lunar-ganzhi').textContent.trim() || "沒原始內容";
+            const yiVal = document.getElementById('almanac-yi').value.trim() || "沒原始內容";
+            const jiVal = document.getElementById('almanac-ji').value.trim() || "沒原始內容";
+            const journalVal = (currentJournalCleanText || document.getElementById('journal-input').value).trim() || "沒有昨天日誌";
+
+            let upperNum, lowerNum, movingLine;
 
             if (mode === 'resonant') {
-                const seed = `${dateStr}|${weather}|${temp}|${yi}|${ji}|${journal}`;
-                const h = hashString(seed);
-                currentHexagram = HEXAGRAMS[h % HEXAGRAMS.length];
-                currentChangingLine = (h % 6) + 1;
+                const tianShiNum = calcTextNumerology(`${weatherVal}|${tempVal}`);
+                const diLiNum = calcTextNumerology(`${lunarDateVal}|${ganzhiVal}|宜:${yiVal}|忌:${jiVal}`);
+                const renHeNum = calcTextNumerology(journalVal);
+
+                upperNum = ((tianShiNum + diLiNum) % 8) || 8;
+                lowerNum = (renHeNum % 8) || 8;
+                movingLine = ((tianShiNum + diLiNum + renHeNum) % 6) || 6;
+
+                const upperTri = BAGUA_BY_NUM[upperNum];
+                const lowerTri = BAGUA_BY_NUM[lowerNum];
+                const fullCode = lowerTri.code + upperTri.code;
+                currentHexagram = HEXAGRAMS_BY_CODE[fullCode] || HEXAGRAMS[0];
+                currentChangingLine = movingLine;
+
+                // 求之卦（變卦）
+                const codeArr = fullCode.split('');
+                codeArr[movingLine - 1] = codeArr[movingLine - 1] === '1' ? '0' : '1';
+                const zhiCode = codeArr.join('');
+                currentZhiHexagram = HEXAGRAMS_BY_CODE[zhiCode] || HEXAGRAMS[0];
+
+                const formulaText = `外卦(上卦)取自【天時+地利】得「${upperTri.name}為${upperTri.nature}(兌數${upperNum})」；內卦(下卦)取自【人和昨日日誌(${journalVal === '沒有昨天日誌' || journalVal === '沒有容' ? journalVal : '共 ' + journalVal.length + ' 字'})】得「${lowerTri.name}為${lowerTri.nature}(卦數${lowerNum})」 ➔ 合成【${currentHexagram.name}】，第 ${movingLine} 爻動，動變之卦為【${currentZhiHexagram.name}】。`;
+                lastCastingMeta = { upperTri, lowerTri, movingLine, formulaText };
+                const formulaEl = document.getElementById('casting-formula-detail');
+                if (formulaEl) formulaEl.textContent = formulaText;
             } else {
-                currentHexagram = HEXAGRAMS[Math.floor(Math.random() * HEXAGRAMS.length)];
-                currentChangingLine = Math.floor(Math.random() * 6) + 1;
+                upperNum = Math.floor(Math.random() * 8) + 1;
+                lowerNum = Math.floor(Math.random() * 8) + 1;
+                movingLine = Math.floor(Math.random() * 6) + 1;
+
+                const upperTri = BAGUA_BY_NUM[upperNum];
+                const lowerTri = BAGUA_BY_NUM[lowerNum];
+                const fullCode = lowerTri.code + upperTri.code;
+                currentHexagram = HEXAGRAMS_BY_CODE[fullCode] || HEXAGRAMS[0];
+                currentChangingLine = movingLine;
+
+                const codeArr = fullCode.split('');
+                codeArr[movingLine - 1] = codeArr[movingLine - 1] === '1' ? '0' : '1';
+                currentZhiHexagram = HEXAGRAMS_BY_CODE[codeArr.join('')] || HEXAGRAMS[0];
+
+                const formulaText = `隨機搖卦：上卦「${upperTri.name}${upperTri.nature}」＋下卦「${lowerTri.name}${lowerTri.nature}」➔【${currentHexagram.name}】，第 ${movingLine} 爻動，之卦【${currentZhiHexagram.name}】。`;
+                lastCastingMeta = { upperTri, lowerTri, movingLine, formulaText };
+                const formulaEl = document.getElementById('casting-formula-detail');
+                if (formulaEl) formulaEl.textContent = formulaText;
             }
 
-            renderHexagramUI(currentHexagram, currentChangingLine);
+            renderHexagramUI(currentHexagram, currentChangingLine, currentZhiHexagram);
             await generateDailyGuidance();
         }
 
-        // 繪製六爻與卦辭視覺
-        function renderHexagramUI(hex, changingLine) {
+        // 繪製六爻與卦辭、動爻辭、之卦視覺
+        function renderHexagramUI(hex, changingLine, zhiHex) {
             document.getElementById('hex-watermark').textContent = hex.symbol;
             document.getElementById('hex-number-badge').textContent = `第 ${hex.id} 卦`;
 
             const lowerCode = hex.code.substring(0, 3);
             const upperCode = hex.code.substring(3, 6);
-            const lowerTri = TRIGRAMS[lowerCode] || { name: "乾", nature: "天" };
-            const upperTri = TRIGRAMS[upperCode] || { name: "坤", nature: "地" };
+            const lowerTri = TRIGRAMS[lowerCode];
+            const upperTri = TRIGRAMS[upperCode];
             document.getElementById('hex-trigrams').textContent = `上${upperTri.name}${upperTri.nature} · 下${lowerTri.name}${lowerTri.nature}`;
 
             document.getElementById('hex-title').textContent = hex.name;
-            const lineNames = ["初", "二", "三", "四", "五", "上"];
-            const lineYinYang = hex.code[changingLine - 1] === '1' ? '九' : '六';
-            const lineLabel = changingLine === 1 || changingLine === 6
-                ? `${lineNames[changingLine-1]}${lineYinYang}`
-                : `${lineYinYang}${lineNames[changingLine-1]}`;
-            document.getElementById('hex-changing-info').textContent = `⚡ 本卦動爻：${lineLabel}爻動（提示今日轉機所在）`;
+            const movingLineText = hex.lines_text[changingLine - 1] || `第 ${changingLine} 爻動`;
+            const movingLabel = movingLineText.split('：')[0] || `第 ${changingLine} 爻`;
+            document.getElementById('hex-changing-info').textContent = `⚡ 動爻：${movingLabel}爻動 ➔ 之卦（變卦）：第 ${zhiHex.id} 卦【${zhiHex.name}】`;
 
             document.getElementById('hex-mnemonic').textContent = hex.mnemonic;
             document.getElementById('hex-guaci').textContent = hex.guaci;
-            document.getElementById('hex-guaci-Vernacular').textContent = `白話解讀：${hex.vern}`;
+            document.getElementById('hex-guaci-Vernacular').textContent = hex.vern;
             document.getElementById('hex-xiang').textContent = hex.xiang;
-            document.getElementById('hex-xiang-Vernacular').textContent = `君子借鏡自然：觀察「上${upperTri.nature}下${lowerTri.nature}」的互動，作為今日待人處事的準則。`;
+            document.getElementById('hex-xiang-Vernacular').textContent = `外卦為「${upperTri.name}（${upperTri.image}）」，內卦為「${lowerTri.name}（${lowerTri.image}）」。`;
+
+            document.getElementById('hex-yaoci').textContent = movingLineText;
+            document.getElementById('hex-zhigua-desc').textContent = `動爻變化後轉為「${zhiHex.name}（${zhiHex.xiang}）」，代表今日事情發展的趨勢走向。`;
 
             const barsContainer = document.getElementById('hexagram-bars');
             barsContainer.innerHTML = '';
@@ -977,14 +1473,28 @@ ${guidanceText}
             }
         }
 
-        // 生成結合「天氣 + 農民曆 + 昨天日誌」的個人化晨間提點
+        // =========================================================================
+        // 🍵 命理師解卦核心：嚴格依據「天時、地利、人和」實際內容，絕不自行發想編造
+        // =========================================================================
         async function generateDailyGuidance() {
-            const weather = document.getElementById('weather-select').value;
-            const temp = document.getElementById('temp-input').value;
-            const lunarDate = document.getElementById('lunar-date-str').textContent;
-            const yi = document.getElementById('almanac-yi').value;
-            const ji = document.getElementById('almanac-ji').value;
-            const journal = document.getElementById('journal-input').value.trim();
+            const weatherVal = document.getElementById('weather-select').value.trim();
+            const tempVal = document.getElementById('temp-input').value.trim();
+            const hasWeather = Boolean(weatherVal && weatherVal !== "沒原始內容" && !weatherVal.includes("讀取"));
+            const weatherFull = hasWeather ? `${weatherVal}，${tempVal}` : "沒原始內容";
+
+            const lunarDate = document.getElementById('lunar-date-str').textContent.trim();
+            const ganzhi = document.getElementById('lunar-ganzhi').textContent.trim();
+            const yi = document.getElementById('almanac-yi').value.trim();
+            const ji = document.getElementById('almanac-ji').value.trim();
+            const hasAlmanac = Boolean(yi && yi !== "沒原始內容" && !yi.includes("讀取"));
+
+            const rawJournal = (currentJournalCleanText || document.getElementById('journal-input').value).trim();
+            const hasJournal = Boolean(rawJournal && rawJournal !== "沒有昨天日誌" && rawJournal !== "沒有容");
+            const journalStatusLabel = hasJournal ? rawJournal : (rawJournal === "沒有容" ? "沒有容（昨日日誌檔案為空白，無原始內容）" : "沒有昨天日誌（無原始內容）");
+
+            const lowerTri = TRIGRAMS[currentHexagram.code.substring(0, 3)];
+            const upperTri = TRIGRAMS[currentHexagram.code.substring(3, 6)];
+            const movingLineText = currentHexagram.lines_text[currentChangingLine - 1] || "";
 
             const statusEl = document.getElementById('ai-status');
             const contentEl = document.getElementById('guidance-content');
@@ -995,17 +1505,39 @@ ${guidanceText}
 
             if (runtimeWorkerUrl || activeApiKey) {
                 try {
-                    const prompt = `你是一位溫潤、通達《易經》與禪修生活的導師。現在是早晨 6 點 15 分，請根據以下三才資訊為使用者解卦並給出今日生活指南：
-1. 【今日所卜之卦】第 ${currentHexagram.id} 卦「${currentHexagram.name}」（第 ${currentChangingLine} 爻動）。卦辭：「${currentHexagram.guaci}」，大象傳：「${currentHexagram.xiang}」。
-2. 【今日天時（天氣）】${weather}，${temp}。
-3. 【今日地利（農民曆）】${lunarDate}，宜：${yi}；忌：${ji}。
-4. 【今日人和（使用者位於 ~/Obsidian/zenlife/Daily 的昨天日誌）】：「${journal}」
+                    const systemInstructionText = `你是一位精熟《易經》與梅花易數三才卜卦的資深命理師，擅長用最淺顯易懂、貼近日常生活的白話詞語為人解卦。
+【命理師鐵律（絕對遵守，違者視為嚴重失誤）】：
+1. 你只能使用使用者實際提供的三項資料：【天時（今日即時天氣與氣溫）】、【地利（今日農民曆宜忌）】、【人和（昨天日誌）】來卜卦與解卦。
+2. 嚴格禁止自行發想、腦補、猜測或編造任何未出現在上述三項原始資料中的情節（例如：若【人和】昨天日誌為「沒有昨天日誌」或「沒有容」，絕對不可自己編造「昨天工作忙碌、開會爭執、睡眠不好」等虛構內容，必須直接坦白寫出「【人和】昨天日誌沒有原始內容，故不強加臆測昨日事件，僅依本卦內卦與動爻之易理為今日定心」）。
+3. 同理，若【天時】或【地利】顯示「沒有原始內容」或「沒原始內容」，也必須直接說明「沒有原始內容」，不可自行假設天氣或農民曆。
+4. 解說卦辭、大象傳、動爻辭與之卦（變卦）時，請用極度淺顯易懂、人人聽得懂的生活白話文，避免艱澀玄虛的術語，讓求卦者能立刻理解並應用在今天的生活中。`;
 
-請用溫暖、不迷信、具啟發性的 HTML 段落格式（使用 <h4> 與 <ul class="list-disc pl-5 space-y-1">，不要使用 markdown code block）回覆以下四個部分：
-1. 🧠 為什麼今天不用死背就能記住「${currentHexagram.name}」？（把今天的天氣、昨天日誌的情境與卦象畫面綁在一起記憶）
-2. 🪞 昨天日誌的回響與轉化（針對他昨天的心情與事件，用這支卦溫柔地開解）
-3. 🌤️ 結合今日天氣與農民曆（宜：${yi} / 忌：${ji}）的順勢之道
-4. 🌱 今日過好日子的 3 個具體微行動建議（早、中、晚各一項）`;
+                    const prompt = `現在是早晨 06:15，請根據以下【三才實際排盤資料】為我進行今日的易經白話解卦與應對方針：
+
+=== 一、三才實際原始資料（沒資料處即標示「沒有原始內容」） ===
+1. 【天時】今日即時天氣與氣溫：${hasWeather ? weatherFull : "沒有原始內容"}
+2. 【地利】今日農民曆宜忌：${hasAlmanac ? `${lunarDate}（${ganzhi}）｜宜：${yi}｜忌：${ji}` : "沒有原始內容"}
+3. 【人和】昨天日誌（~/Obsidian/zenlife/Daily）：${hasJournal ? `「${rawJournal}」` : `沒有原始內容（狀態：${rawJournal || "沒有昨天日誌"}）`}
+
+=== 二、依上述三才資料排出的本卦與變卦 ===
+- 【上卦（外卦，應天時地利）】：${upperTri.name}為${upperTri.nature}（象徵：${upperTri.image}，特質：${upperTri.attr}）
+- 【下卦（內卦，應人和心境）】：${lowerTri.name}為${lowerTri.nature}（象徵：${lowerTri.image}，特質：${lowerTri.attr}）
+- 【今日所得本卦】：第 ${currentHexagram.id} 卦「${currentHexagram.name}」
+  - 卦辭：「${currentHexagram.guaci}」
+  - 大象傳：「${currentHexagram.xiang}」
+- 【今日動爻】：第 ${currentChangingLine} 爻動，爻辭：「${movingLineText}」
+- 【動爻變出之卦（變卦趨勢）】：第 ${currentZhiHexagram.id} 卦「${currentZhiHexagram.name}」（卦辭：「${currentZhiHexagram.guaci}」，象曰：「${currentZhiHexagram.xiang}」）
+
+請嚴格遵守【命理師鐵律】（有什麼資料說什麼話，沒資料就直說「沒有原始內容」，絕不自己編造情節），並用淺顯易懂的白話 HTML 格式（僅使用 <div class="space-y-4">、<h4>、<p>、<ul class="list-disc pl-5 space-y-1.5">，不要輸出 \`\`\`html 標籤）回覆以下四個部分：
+
+1. <h4>1. 🧠 命理師白話拆卦：怎麼用最簡單的畫面記住「${currentHexagram.name}」與動爻？</h4>
+   （用淺顯白話拆解「上卦${upperTri.nature}、下卦${lowerTri.nature}」組成的自然畫面，解釋卦辭「${currentHexagram.guaci}」、大象傳「${currentHexagram.xiang}」，以及為什麼第 ${currentChangingLine} 爻動「${movingLineText}」變成「${currentZhiHexagram.name}」代表今天的關鍵轉折。）
+2. <h4>2. 🌤️ 【天時】與【地利】實據解讀（結合今日實際天氣與農民曆宜忌）</h4>
+   （僅針對上方實際提供的天氣「${hasWeather ? weatherFull : "沒有原始內容"}」與農民曆「宜：${hasAlmanac ? yi : "沒有原始內容"} / 忌：${hasAlmanac ? ji : "沒有原始內容"}」對應外卦「${upperTri.name}${upperTri.nature}」做白話剖析；若無原始內容請直說沒有原始內容。）
+3. <h4>3. 🪞 【人和】昨日日誌實據應對（對應內卦「${lowerTri.name}${lowerTri.nature}」與動爻）</h4>
+   （若上方【人和】有實際日誌內容，請緊扣日誌裡的真實文字逐一用本卦與動爻白話解析；若上方【人和】為「沒有昨天日誌」或「沒有容」，請明確寫出「昨日日誌沒有原始內容，命理師不作無根據之揣測」，並單純就內卦「${lowerTri.name}」與動爻「${movingLineText}」說明今日內心應保持的狀態。）
+4. <h4>4. 🌱 今日 06:15 過好日子的 3 個淺顯具體行動方針（早、中、晚）</h4>
+   （嚴格依據上述實際天時、地利、人和與本卦「${currentHexagram.name} ➔ ${currentZhiHexagram.name}」給出早、中、晚三個馬上能做到的白話行動建議。）`;
 
                     const targetUrl = runtimeWorkerUrl
                         ? runtimeWorkerUrl
@@ -1015,73 +1547,89 @@ ${guidanceText}
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }] }]
+                            contents: [{ parts: [{ text: prompt }] }],
+                            systemInstruction: {
+                                parts: [{ text: systemInstructionText }]
+                            },
+                            generationConfig: {
+                                temperature: 0.2
+                            }
                         })
                     });
                     const data = await response.json();
                     const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (aiText) {
-                        contentEl.innerHTML = aiText.replace(/```html|```/g, '');
+                        contentEl.innerHTML = aiText.replace(/```html|```/g, '').trim();
                         statusEl.classList.add('hidden');
                         return;
                     }
                 } catch (err) {
-                    console.warn("Fallback to local synthesis:", err);
+                    console.warn("Fallback to strict local synthesis:", err);
                 }
             }
 
-            setTimeout(() => {
-                statusEl.classList.add('hidden');
-                const lowerCode = currentHexagram.code.substring(0, 3);
-                const upperCode = currentHexagram.code.substring(3, 6);
-                const lowerTri = TRIGRAMS[lowerCode] || { name: "坎", nature: "水", attr: "柔韌智慧" };
-                const upperTri = TRIGRAMS[upperCode] || { name: "兌", nature: "澤", attr: "喜悅溝通" };
+            // 本地命理師嚴格實據解卦（絕不自行發想編造任何未提供的資料）
+            statusEl.classList.add('hidden');
 
-                contentEl.innerHTML = `
-                    <div class="space-y-4">
-                        <div class="p-3.5 bg-[#FAF8F5] rounded-xl border-l-4 border-[#8C6D46]">
-                            <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">1. 🧠 情境綁定記憶法：今天這樣記住「${currentHexagram.name}」</h4>
-                            <p class="text-xs text-[#4A4642] leading-relaxed">
-                                不必死背古文！今天早上的天氣是<strong>「${weather}（${temp}）」</strong>，請在腦海裡畫出一幅畫面：上方是<strong>「${upperTri.nature}（${upperTri.name}卦，代表${upperTri.attr}）」</strong>，下方是<strong>「${lowerTri.nature}（${lowerTri.name}卦，代表${lowerTri.attr}）」</strong>。
-                                ${currentHexagram.mnemonic} 把今天出門看到的天空與這幅畫面疊合，你就一輩子記住「<em>${currentHexagram.guaci}</em>」了！
-                            </p>
-                        </div>
+            const tianShiHtml = hasWeather
+                ? `今日【天時】實際觀測為「<strong>${weatherFull}</strong>」`
+                : `今日【天時】<strong>沒有原始內容</strong>（尚未取得天氣與氣溫資料，不作假設）`;
 
-                        <div>
-                            <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">2. 🪞 呼應您的昨天日誌 (<code class="text-xs bg-[#F0ECE1] px-1 rounded">~/Obsidian/zenlife/Daily</code>)</h4>
-                            <p class="text-xs text-[#4A4642] leading-relaxed">
-                                您在昨天的日誌中提到：<em>「${journal.slice(0, 68)}${journal.length > 68 ? '...' : ''}」</em>。<br>
-                                <strong>${currentHexagram.name}</strong> 的大象傳特別提點我們：<strong>「${currentHexagram.xiang}」</strong>。昨天已經過去，那些急躁或外在人事的摩擦，正是來教導我們修練「內在定力」的教材。本卦第 ${currentChangingLine} 爻動，代表只要您今天轉換一個念頭，原本卡住的局勢就會自然流動。
-                            </p>
-                        </div>
+            const diLiHtml = hasAlmanac
+                ? `今日【地利】實際農民曆為「<strong>${lunarDate}（${ganzhi}）</strong>」，其中明確記載<strong>「宜：${yi}」</strong>、<strong>「忌：${ji}」</strong>。`
+                : `今日【地利】<strong>沒有原始內容</strong>（尚未取得農民曆宜忌資料，不作假設）。`;
 
-                        <div>
-                            <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">3. 🌤️ 順應今日天氣與農民曆宜忌</h4>
-                            <p class="text-xs text-[#4A4642] leading-relaxed">
-                                今日${lunarDate}，農民曆提示<strong>「宜：${yi}」</strong>、<strong>「忌：${ji}」</strong>。配合今日「${weather}」的氣候氣場，外在環境容易讓人情緒波動。請順應農民曆「忌${ji.split('、')[0]}」的提醒，把原本想急著爭辯或強推的進度緩一緩，改為「宜${yi.split('、')[0]}」的內斂步伐。
-                            </p>
-                        </div>
+            const renHeHtml = hasJournal
+                ? `根據您【人和】昨天日誌的實際記錄（共 ${rawJournal.length} 字），內卦落於「<strong>${lowerTri.name}為${lowerTri.nature}（${lowerTri.attr}）</strong>」。針對您日誌中所寫的實際狀況，本卦大象傳「<strong>${currentHexagram.xiang}</strong>」與動爻「<strong>${movingLineText}</strong>」提醒您：面對日誌中記錄的人事物，內心要像「${lowerTri.image}」一樣保持${lowerTri.attr}，順著動爻的指引調整步調，局勢便會朝向之卦「<strong>${currentZhiHexagram.name}</strong>」發展。`
+                : `<strong>⚠️【人和】昨天日誌沒有原始內容（目前狀態：${rawJournal || "沒有昨天日誌"}）。</strong><br>命理師恪守實據原則，<strong>絕不自行發想或編造任何昨日事件</strong>。單就今日內卦「<strong>${lowerTri.name}為${lowerTri.nature}</strong>」與動爻「<strong>${movingLineText}</strong>」的易理來看，今天內心只需保持「${lowerTri.attr}」的純粹狀態，不預設立場、不被外境干擾即可。`;
 
-                        <div class="bg-[#F4EFE6]/70 p-4 rounded-xl">
-                            <h4 class="serif font-bold text-[#2C2A29] text-sm mb-2">4. 🌱 今日過好日子的 3 個具體微行動</h4>
-                            <ul class="text-xs text-[#3A3735] space-y-2">
-                                <li class="flex items-start gap-2">
-                                    <span class="font-bold text-[#8C6D46] whitespace-nowrap">【晨間 06:15】</span>
-                                    <span>深呼吸三次，默念一次今日卦辭「<strong>${currentHexagram.guaci}</strong>」，喝一杯溫水，為身體建立不受外界干擾的結界。</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="font-bold text-[#8C6D46] whitespace-nowrap">【日間待人】</span>
-                                    <span>當遇到進度不如預期或他人語氣急躁時，在心裡浮現「<strong>${currentHexagram.symbol} ${currentHexagram.name}</strong>」的意象，先停頓 3 秒再溫和回應。</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="font-bold text-[#8C6D46] whitespace-nowrap">【晚間歸零】</span>
-                                    <span>今晚寫 <code class="bg-white px-1 rounded">~/Obsidian/zenlife/Daily</code> 日誌時，只記錄一件「我今天實踐了 ${currentHexagram.name} 智慧」的小事，安然入睡。</span>
-                                </li>
-                            </ul>
-                        </div>
+            contentEl.innerHTML = `
+                <div class="space-y-4">
+                    <div class="p-3.5 bg-[#FAF8F5] rounded-xl border-l-4 border-[#8C6D46]">
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">1. 🧠 命理師白話拆卦：怎麼輕鬆記住「${currentHexagram.name}」與今日動爻？</h4>
+                        <p class="text-xs text-[#4A4642] leading-relaxed">
+                            這支卦一點都不難記！我們把「<strong>${currentHexagram.name}</strong>」拆開來看：<br>
+                            • <strong>外卦（上面三爻，代表外在環境）</strong>是「<strong>${upperTri.name}卦（${upperTri.image}，性質是${upperTri.attr}）</strong>」；<br>
+                            • <strong>內卦（下面三爻，代表您的內心）</strong>是「<strong>${lowerTri.name}卦（${lowerTri.image}，性質是${lowerTri.attr}）</strong>」。<br>
+                            所以大象傳才說：「<strong>${currentHexagram.xiang}</strong>」，卦辭說：「<strong>${currentHexagram.guaci}</strong>」。<br>
+                            更關鍵的是今天落在<strong>第 ${currentChangingLine} 爻動（「${movingLineText}」）</strong>，這一爻一變，整支卦就會轉成「<strong>${currentZhiHexagram.name}（${currentZhiHexagram.xiang}）</strong>」，告訴您只要把握這個動爻的提醒，事情就能順利轉化。
+                        </p>
                     </div>
-                `;
-            }, 350);
+
+                    <div>
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">2. 🌤️ 【天時】與【地利】實據解讀（外卦：${upperTri.name}為${upperTri.nature}）</h4>
+                        <p class="text-xs text-[#4A4642] leading-relaxed">
+                            ${tianShiHtml}；${diLiHtml}<br>
+                            以易經外卦「<strong>${upperTri.name}（${upperTri.nature}）</strong>」對應今日外在環境：${hasWeather ? `面對今日「${weatherVal}」的氣候，` : ''}行事上請確實順應農民曆${hasAlmanac ? `「<strong>宜：${yi}</strong>」的方向去安排今日重點，並主動避開「<strong>忌：${ji}</strong>」的行為` : '的客觀節奏'}，這就是《易經》最務實的「順天應時」。
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">3. 🪞 【人和】昨日日誌實據解讀（內卦：${lowerTri.name}為${lowerTri.nature} · 動爻：${movingLineText.split('：')[0]}）</h4>
+                        <p class="text-xs text-[#4A4642] leading-relaxed">
+                            ${renHeHtml}
+                        </p>
+                    </div>
+
+                    <div class="bg-[#F4EFE6]/70 p-4 rounded-xl">
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-2">4. 🌱 今日 06:15 過好日子的 3 個淺顯具體行動方針</h4>
+                        <ul class="text-xs text-[#3A3735] space-y-2">
+                            <li class="flex items-start gap-2">
+                                <span class="font-bold text-[#8C6D46] whitespace-nowrap">【早晨應天時】</span>
+                                <span>${hasWeather ? `配合今日「${weatherFull}」的實際氣候調整衣著與出門節奏，` : '今日天氣沒有原始內容，請觀察窗外實際氣候，'}在心中記住今日卦象「<strong>上${upperTri.nature}下${lowerTri.nature} · ${currentHexagram.name}</strong>」的畫面。</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="font-bold text-[#8C6D46] whitespace-nowrap">【日間應地利】</span>
+                                <span>${hasAlmanac ? `今日農民曆明確「宜：${yi}」、「忌：${ji}」。白天的行事決策請優先執行「${yi.split('、')[0]}」相關事務，並嚴格避開「${ji.split('、')[0]}」。` : '今日農民曆沒有原始內容，請依本卦「' + currentHexagram.xiang + '」作為日間行事準則。'}</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="font-bold text-[#8C6D46] whitespace-nowrap">【晚間應人和】</span>
+                                <span>落實本卦動爻「<strong>${movingLineText}</strong>」的提醒（走向之卦「<strong>${currentZhiHexagram.name}</strong>」），今晚睡前於 <code class="bg-white px-1 rounded">~/Obsidian/zenlife/Daily</code> 誠實記下今日點滴，作為明日 06:15 卜卦的真實人和依據。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            `;
         }
 
         // 渲染六十四卦記憶卡片網格
@@ -1105,7 +1653,10 @@ ${guidanceText}
                 card.onclick = () => {
                     currentHexagram = h;
                     currentChangingLine = 1;
-                    renderHexagramUI(h, 1);
+                    const codeArr = h.code.split('');
+                    codeArr[0] = codeArr[0] === '1' ? '0' : '1';
+                    currentZhiHexagram = HEXAGRAMS_BY_CODE[codeArr.join('')] || HEXAGRAMS[0];
+                    renderHexagramUI(h, 1, currentZhiHexagram);
                     generateDailyGuidance();
                     switchTab('divination');
                     showToast(`已切換至：第 ${h.id} 卦 · ${h.name}`);
@@ -1120,7 +1671,7 @@ ${guidanceText}
                         <p class="serif text-xs text-[#5A554E] font-medium mb-2">${h.guaci}</p>
                     </div>
                     <div class="bg-[#F4EFE6] p-2.5 rounded-lg mt-2">
-                        <div class="text-[11px] font-bold text-[#8C6D46] mb-0.5">🧠 秒記畫面：</div>
+                        <div class="text-[11px] font-bold text-[#8C6D46] mb-0.5">🧠 上下卦秒記畫面：</div>
                         <p class="text-[11px] text-[#4A4642] leading-relaxed">${h.mnemonic}</p>
                     </div>
                 `;
