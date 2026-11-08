@@ -5,40 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>每日健康日誌 | HealthGuard</title>
     
-    <!-- 加入全域錯誤攔截：如果腳本執行失敗，在畫面上顯示錯誤訊息 -->
+    <!-- 加入全域錯誤攔截 -->
     <script>
         window.addEventListener('error', function(event) {
             const root = document.getElementById('root');
             if (root && !root.hasChildNodes()) {
                 root.innerHTML = `
                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; text-align: center; padding: 20px; background-color: #f8fafc;">
-                        <div style="color: #ef4444; margin-bottom: 1rem;">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-                        </div>
                         <h2 style="font-size: 1.5rem; font-weight: bold; color: #1e293b; margin-bottom: 0.5rem;">網頁載入發生錯誤</h2>
-                        <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 1rem;">程式可能被瀏覽器擴充功能 (如擋廣告套件) 阻擋，或是網路 CDN 暫時無法連線。</p>
                         <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; max-width: 600px; width: 100%; text-align: left; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                             <code style="color: #ef4444; font-size: 0.875rem;">${event.message}</code><br/>
                             <span style="color: #94a3b8; font-size: 0.75rem; margin-top: 8px; display: block;">位置：${event.filename}:${event.lineno}</span>
-                        </div>
-                        <p style="color: #64748b; font-size: 0.875rem; margin-top: 1.5rem;">建議動作：請嘗試<b>停用擋廣告套件</b>、<b>清除快取後重新整理</b>，或按下 <b>F12</b> 查看主控台資訊。</p>
-                    </div>
-                `;
-            }
-        });
-
-        window.addEventListener('unhandledrejection', function(event) {
-             const root = document.getElementById('root');
-            if (root && !root.hasChildNodes()) {
-                root.innerHTML = `
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; text-align: center; padding: 20px; background-color: #f8fafc;">
-                        <div style="color: #ef4444; margin-bottom: 1rem;">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-                        </div>
-                        <h2 style="font-size: 1.5rem; font-weight: bold; color: #1e293b; margin-bottom: 0.5rem;">模組下載失敗</h2>
-                        <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 1rem;">無法從外部伺服器下載必要的程式資源 (Promise Rejection)。這通常是因為網路不穩或 CDN 異常。</p>
-                        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; max-width: 600px; width: 100%; text-align: left; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                            <code style="color: #ef4444; font-size: 0.875rem;">${event.reason}</code>
                         </div>
                     </div>
                 `;
@@ -51,22 +28,19 @@
         // ⚙️ 系統設定
         // =============================================================================
         const SITE_CONFIG = {
-            // 1. 網站基本資訊
             app: {
                 title: "每日健康日誌",
                 subtitle: "HealthGuard Personal",
                 user: "林光章",
                 targetValues: {
-                    bmi: 24,           // 目標 BMI
-                    weight: 65,        // 目標體重 (根據身高 170.9cm 推算 BMI 22 約為 64kg)
-                    bp_sys: 120,       // 收縮壓目標
-                    bp_dia: 80,        // 舒張壓目標
-                    waist: 90,         // 男性腰圍警戒值
-                    ldl: 130           // LDL 警戒值
+                    bmi: 24,
+                    weight: 65,
+                    bp_sys: 120,
+                    bp_dia: 80,
+                    waist: 90,
+                    ldl: 130
                 }
             },
-
-            // 2. Firebase 設定
             firebase: {
                 apiKey: "AIzaSyDwXsplXePeD1wU1GG4BwQBR6iSMd3_5nY",
                 authDomain: "linkcphoto.firebaseapp.com",
@@ -75,17 +49,10 @@
                 messagingSenderId: "841541302440",
                 appId: "1:841541302440:web:a2b3dfef70a32bb345ea9d"
             },
-            
-            // 3. AI 設定 (新增)
-            ai: {
-                // 請至 https://aistudio.google.com/app/apikey 申請免費 Key
-                geminiApiKey: "AIzaSyB8jSssFpkpRatRawkFfJNjnFngUMqhaWo", 
-            },
-
-            // 4. 系統參數
+            // 使用 Cloudflare Worker 代理，此處不需要填入明碼 API Key
             system: {
                 collectionName: 'health_logs_v1', 
-                adminPasscode: '590123', // 管理員密碼
+                adminPasscode: '590123',
             }
         };
 
@@ -108,9 +75,6 @@
                     },
                     fontFamily: {
                         sans: ['Inter', 'Noto Sans TC', 'system-ui', 'sans-serif'],
-                    },
-                    animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
@@ -123,7 +87,6 @@
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script>
-        // 強制 Babel 使用傳統的 React.createElement，避免產生 react/jsx-runtime 找不到的路徑錯誤
         Babel.registerPreset('linkc-react-preset', {
             presets: [
                 [Babel.availablePresets['react'], { runtime: 'classic' }]
@@ -134,20 +97,15 @@
     <style>
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .recharts-wrapper { margin: 0 auto; }
-        
-        /* 動畫 */
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .animate-fade-in { animation: fadeIn 0.5s ease-out; }
         .animate-slide-up { animation: slideUp 0.3s ease-out; }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
-        
-        /* Markdown 簡單樣式 */
         .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 0.5em; }
         .markdown-body li { margin-bottom: 0.25em; }
         .markdown-body strong { color: #4f46e5; font-weight: 600; }
@@ -156,14 +114,12 @@
 </head>
 <body>
     <div id="root">
-        <!-- 加上 Loading 畫面，避免全白直到載入完成 -->
         <div class="flex flex-col items-center justify-center h-screen">
             <div class="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin mb-4"></div>
             <div class="text-teal-800 text-sm tracking-widest font-medium">載入健康日誌中...</div>
         </div>
     </div>
 
-    <!-- React App: 加入 data-presets 屬性 -->
     <script type="text/babel" data-type="module" data-presets="linkc-react-preset">
         import React, { useState, useEffect, useMemo, useRef } from 'https://esm.sh/react@18.3.1';
         import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
@@ -174,7 +130,7 @@
             LogOut, Trash2, Edit2, Check, X, ArrowUp, ArrowDown, Minus,
             Wifi, WifiOff, AlertTriangle, Lock, Unlock, KeyRound,
             Dumbbell, PenTool, Flower, Timer, Download, Sparkles, BrainCircuit,
-            Utensils, Sunrise, Sun, Sunset, Coffee, ListPlus, RotateCcw, Loader2
+            Utensils, Sunrise, Sun, Sunset, Coffee, ListPlus, RotateCcw, Loader2, Clock
         } from 'https://esm.sh/lucide-react@0.294.0?deps=react@18.3.1';
         
         import { 
@@ -202,77 +158,66 @@
         }
 
         // =============================================================================
-        // 🤖 Gemini API Service
+        // 🤖 Gemini API Service (透過 Cloudflare Worker 代理安全呼叫)
         // =============================================================================
         const callGeminiAPI = async (prompt) => {
-            // 嘗試取得 API Key：
-            // 1. 環境變數 (Canvas 預覽用)
-            // 2. SITE_CONFIG (下載後單機使用)
-            let apiKey = ""; 
-            
-            // 如果是下載後的檔案，讀取使用者填寫的設定
-            if (!apiKey && SITE_CONFIG.ai && SITE_CONFIG.ai.geminiApiKey && !SITE_CONFIG.ai.geminiApiKey.includes("您的_GEMINI_API_KEY")) {
-                apiKey = SITE_CONFIG.ai.geminiApiKey;
-            }
+            const workerUrl = "https://yi.gavintux.workers.dev"; // 您的 Cloudflare Worker 網址
 
-            if (!apiKey) {
-                console.warn("API Key missing");
-                return null;
-            }
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            
             try {
-                const response = await fetch(url, {
+                const response = await fetch(workerUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        model: "gemini-2.5-flash",
                         contents: [{ parts: [{ text: prompt }] }]
                     })
                 });
 
                 if (!response.ok) {
                     const errData = await response.json();
-                    throw new Error(`API Error: ${errData.error?.message || response.status}`);
+                    throw new Error(`Worker Error: ${errData.error || response.status}`);
                 }
                 
                 const data = await response.json();
                 return data.candidates?.[0]?.content?.parts?.[0]?.text;
             } catch (error) {
-                console.error("Gemini API Error:", error);
+                console.error("Cloudflare Proxy Error:", error);
                 throw error;
             }
         };
 
         // =============================================================================
-        // 🧩 元件
+        // 🧩 元件區
         // =============================================================================
 
-        // AI Insights Card Component
         const AIInsightsWidget = ({ logs }) => {
             const [insight, setInsight] = useState(null);
             const [isLoading, setIsLoading] = useState(false);
             const [error, setError] = useState(null);
 
             const generateInsight = async () => {
-                // 檢查是否已設定 API Key (僅檢查設定檔，環境變數由 callGeminiAPI 內部處理)
-                const hasConfigKey = SITE_CONFIG.ai && SITE_CONFIG.ai.geminiApiKey && !SITE_CONFIG.ai.geminiApiKey.includes("您的_GEMINI_API_KEY");
-                // 注意：在預覽環境 apiKey 會自動注入，所以這裡不做嚴格阻擋，交由 callGeminiAPI 判斷
-
                 setIsLoading(true);
                 setError(null);
                 setInsight(null);
 
-                // 準備最近 7 筆資料
-                const recentLogs = logs.slice(0, 7).map(log => ({
-                    date: log.date,
-                    weight: log.weight,
-                    bp: `${log.bp_sys}/${log.bp_dia}`,
-                    exercises: log.exercises || (log.exerciseType ? `${log.exerciseType} ${log.exerciseTime}分` : ''),
-                    meditation: log.meditationTime ? `${log.meditationTime}分` : '',
-                    diet: [log.diet_breakfast, log.diet_lunch, log.diet_dinner].filter(Boolean).join(', '),
-                    notes: log.notes
-                }));
+                const recentLogs = logs.slice(0, 7).map(log => {
+                    let bpInfo = "";
+                    if (log.measurements && log.measurements.length > 0) {
+                        bpInfo = log.measurements.map(m => `${m.period}(${m.time}): ${m.sys}/${m.dia} HR${m.hr}`).join('; ');
+                    } else {
+                        bpInfo = `${log.bp_sys}/${log.bp_dia} (HR${log.hr})`;
+                    }
+
+                    return {
+                        date: log.date,
+                        weight: log.weight,
+                        bp_records: bpInfo,
+                        exercises: log.exercises || (log.exerciseType ? `${log.exerciseType} ${log.exerciseTime}分` : ''),
+                        meditation: log.meditationTime ? `${log.meditationTime}分` : '',
+                        diet: [log.diet_breakfast, log.diet_lunch, log.diet_dinner].filter(Boolean).join(', '),
+                        notes: log.notes
+                    };
+                });
 
                 if (recentLogs.length === 0) {
                     setError("目前沒有足夠的記錄可供分析。");
@@ -284,13 +229,13 @@
 你是一位專業且溫暖的個人健康教練。使用者是一位 55 歲男性，有高血壓、脊椎側彎與膽囊結石病史。
 健康目標：收縮壓 < 120, 舒張壓 < 80, BMI < 24。
 
-以下是他最近的健康日誌數據 (JSON)：
+以下是他最近的健康日誌數據 (JSON)，其中血壓包含一日多次測量：
 ${JSON.stringify(recentLogs)}
 
 請根據數據，用**繁體中文**提供一份簡短的健康週報：
-1. 📊 **趨勢分析**：觀察血壓與體重的變化趨勢。
-2. 🧘 **關聯洞察**：分析運動/靜坐/飲食對生理數據的可能影響（例如：有靜坐那天血壓是否較低？）。
-3. ✨ **行動建議**：針對目前狀況給予 2-3 個具體建議（需考慮他的脊椎與膽囊病史，例如核心運動建議或飲食提醒）。
+1. 📊 **趨勢分析**：觀察血壓（注意早晚變化）與體重的變化趨勢。
+2. 🧘 **關聯洞察**：分析運動/靜坐/飲食對生理數據的可能影響。
+3. ✨ **行動建議**：針對目前狀況給予 2-3 個具體建議。
 
 請使用 Markdown 格式，語氣要正面、鼓勵且令人安心。
                 `;
@@ -300,7 +245,7 @@ ${JSON.stringify(recentLogs)}
                     if (result) {
                         setInsight(result);
                     } else {
-                        setError("無法連接 AI。請確認您是否已在 SITE_CONFIG 填入 Gemini API Key。");
+                        setError("無法連接 AI 服務。");
                     }
                 } catch (err) {
                     console.error(err);
@@ -310,15 +255,12 @@ ${JSON.stringify(recentLogs)}
                 }
             };
 
-            // 簡單的 Markdown 渲染 (將 **bold** 轉為 <strong>, - list 轉為 bullet)
             const renderMarkdown = (text) => {
                 if (!text) return null;
                 const lines = text.split('\n');
                 return lines.map((line, i) => {
                     let formatted = line;
-                    // Bold
                     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                    
                     if (line.startsWith('###')) return <h3 key={i} className="text-sm font-bold text-violet-700 mt-2 mb-1" dangerouslySetInnerHTML={{__html: formatted.replace('###', '')}} />;
                     if (line.startsWith('- ') || line.startsWith('* ')) return <li key={i} className="ml-4 list-disc text-slate-600 text-sm" dangerouslySetInnerHTML={{__html: formatted.substring(2)}} />;
                     if (line.trim() === '') return <div key={i} className="h-2" />;
@@ -328,109 +270,212 @@ ${JSON.stringify(recentLogs)}
 
             return (
                 <div className="bg-gradient-to-br from-violet-50 to-white rounded-2xl p-1 border border-violet-100 shadow-sm relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <Sparkles size={80} className="text-violet-500" />
-                    </div>
-                    
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Sparkles size={80} className="text-violet-500" /></div>
                     <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 h-full">
                         <div className="flex justify-between items-center mb-4">
-                            <h4 className="font-bold text-violet-800 flex items-center gap-2">
-                                <BrainCircuit size={20} className="text-violet-600" /> 
-                                AI 健康顧問
-                            </h4>
+                            <h4 className="font-bold text-violet-800 flex items-center gap-2"><BrainCircuit size={20} className="text-violet-600" /> AI 健康顧問</h4>
                             {!insight && !isLoading && (
-                                <button 
-                                    onClick={generateInsight}
-                                    className="bg-violet-600 hover:bg-violet-700 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg shadow-violet-200 transition-all flex items-center gap-1 active:scale-95"
-                                >
-                                    <Sparkles size={12} /> 分析近況
-                                </button>
+                                <button onClick={generateInsight} className="bg-violet-600 hover:bg-violet-700 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg shadow-violet-200 transition-all flex items-center gap-1 active:scale-95"><Sparkles size={12} /> 分析近況</button>
                             )}
                         </div>
-
-                        {isLoading && (
-                            <div className="flex flex-col items-center justify-center py-8 text-violet-500 gap-2">
-                                <Loader2 size={32} className="animate-spin" />
-                                <span className="text-xs font-medium animate-pulse">AI 正在分析您的健康數據...</span>
-                            </div>
-                        )}
-
-                        {error && (
-                            <div className="bg-rose-50 text-rose-600 p-3 rounded-lg text-xs flex flex-col gap-2">
-                                <div className="flex items-center gap-2 font-bold"><AlertTriangle size={16} /> 發生錯誤</div>
-                                <div>{error}</div>
-                                <div className="text-[10px] text-rose-400 mt-1">請用記事本開啟此檔案，搜尋 SITE_CONFIG 並填入您的 Gemini API Key。</div>
-                            </div>
-                        )}
-
-                        {insight && (
-                            <div className="animate-fade-in">
-                                <div className="markdown-body bg-white/80 rounded-lg p-3 max-h-64 overflow-y-auto custom-scrollbar border border-violet-100">
-                                    {renderMarkdown(insight)}
-                                </div>
-                                <div className="mt-3 text-center">
-                                    <button onClick={() => setInsight(null)} className="text-xs text-violet-400 hover:text-violet-600 underline">
-                                        重新分析
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {!insight && !isLoading && !error && (
-                            <p className="text-xs text-violet-400/80 leading-relaxed">
-                                點擊按鈕，讓 AI 根據您最近的飲食、運動與血壓記錄，提供個人化的健康洞察與建議。
-                            </p>
-                        )}
+                        {isLoading && (<div className="flex flex-col items-center justify-center py-8 text-violet-500 gap-2"><Loader2 size={32} className="animate-spin" /><span className="text-xs font-medium animate-pulse">AI 正在分析您的健康數據...</span></div>)}
+                        {error && (<div className="bg-rose-50 text-rose-600 p-3 rounded-lg text-xs flex flex-col gap-2"><div className="flex items-center gap-2 font-bold"><AlertTriangle size={16} /> 發生錯誤</div><div>{error}</div></div>)}
+                        {insight && (<div className="animate-fade-in"><div className="markdown-body bg-white/80 rounded-lg p-3 max-h-64 overflow-y-auto custom-scrollbar border border-violet-100">{renderMarkdown(insight)}</div><div className="mt-3 text-center"><button onClick={() => setInsight(null)} className="text-xs text-violet-400 hover:text-violet-600 underline">重新分析</button></div></div>)}
+                        {!insight && !isLoading && !error && (<p className="text-xs text-violet-400/80 leading-relaxed">點擊按鈕，透過 Cloudflare 安全代理讓 AI 分析您最近的健康記錄與趨勢。</p>)}
                     </div>
                 </div>
             );
         };
-        
-        // LoginModal
+
         const LoginModal = ({ onClose, onSuccess }) => {
             const [passcode, setPasscode] = useState('');
             const [error, setError] = useState(false);
             const handleVerify = (e) => { e.preventDefault(); if (passcode === SITE_CONFIG.system.adminPasscode) { onSuccess(); onClose(); } else { setError(true); setTimeout(() => setError(false), 500); } };
             return (<div className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"><div className={`bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl ${error ? 'shake' : ''}`}><div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-4 mx-auto"><Lock size={24} /></div><h3 className="text-lg font-bold text-center text-slate-800 mb-2">請輸入管理密碼</h3><p className="text-xs text-slate-500 text-center mb-6">輸入密碼以啟用編輯功能</p><form onSubmit={handleVerify}><input type="password" inputMode="numeric" autoFocus placeholder="******" className={`w-full p-3 mb-4 text-center text-xl tracking-widest bg-slate-50 rounded-xl border focus:ring-2 outline-none transition-all ${error ? 'border-rose-300 focus:ring-rose-200' : 'border-slate-200 focus:ring-indigo-200'}`} value={passcode} onChange={e => setPasscode(e.target.value)} /><div className="grid grid-cols-2 gap-3"><button type="button" onClick={onClose} className="py-2.5 rounded-xl text-slate-500 font-medium hover:bg-slate-50">取消</button><button type="submit" className="py-2.5 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700">解鎖</button></div></form></div></div>);
         };
-        
-        // Diagnostics
+
         const Diagnostics = ({ user, error }) => {
             const [expanded, setExpanded] = useState(false);
             return (<div className={`fixed bottom-20 right-4 z-50 transition-all duration-300 ${expanded ? 'max-w-xs w-full' : 'w-auto'}`}>{expanded ? (<div className="bg-slate-800 text-white p-4 rounded-xl shadow-2xl text-xs font-mono"><div className="flex justify-between items-center mb-2 border-b border-slate-600 pb-2"><span className="font-bold text-teal-400">系統診斷</span><button onClick={() => setExpanded(false)}><X size={14}/></button></div><div className="space-y-2"><div className="flex justify-between"><span className="text-slate-400">Auth:</span><span className={user ? "text-green-400" : "text-red-400"}>{user ? "OK" : "No"}</span></div><div className="flex justify-between"><span className="text-slate-400">Col:</span><span className="text-blue-300">{SITE_CONFIG.system.collectionName}</span></div>{error && <div className="bg-red-900/50 p-2 rounded mt-2 text-red-200">{error}</div>}</div></div>) : (<button onClick={() => setExpanded(true)} className={`p-2 rounded-full shadow-lg flex items-center gap-2 transition-colors ${error ? 'bg-red-500 text-white animate-pulse' : (user ? 'bg-teal-500 text-white' : 'bg-slate-400 text-white')}`}>{error ? <AlertTriangle size={16}/> : (user ? <Wifi size={16}/> : <WifiOff size={16}/>)}</button>)}</div>);
         };
-        
-        // ErrorModal
+
         const ErrorModal = ({ message, onClose }) => (<div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"><div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-in"><div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4 mx-auto"><AlertTriangle size={24} /></div><h3 className="text-lg font-bold text-center text-slate-800 mb-2">無法儲存資料</h3><p className="text-sm text-slate-600 text-center mb-6">{message}</p><button onClick={onClose} className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold">我了解了</button></div></div>);
-        
-        // ConfigWarning
+
         const ConfigWarning = () => (<div className="min-h-screen flex items-center justify-center p-4 bg-slate-50"><div className="bg-white p-8 rounded-2xl card-shadow max-w-md w-full text-center"><div className="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4"><Settings size={32} /></div><h2 className="text-xl font-bold text-slate-800 mb-2">尚未設定 Firebase</h2><p className="text-slate-500 mb-6">請確認 API Key 設定正確。</p></div></div>);
-        
-        // MetricCard
+
         const MetricCard = ({ title, value, unit, status, trend, icon: Icon, colorClass }) => { const statusColors = { 'good': 'bg-teal-50 text-teal-700 border-teal-100', 'warning': 'bg-yellow-50 text-yellow-700 border-yellow-100', 'alert': 'bg-rose-50 text-rose-700 border-rose-100', 'neutral': 'bg-slate-50 text-slate-700 border-slate-100' }; return (<div className={`p-4 rounded-2xl border ${statusColors[status] || statusColors.neutral} flex flex-col justify-between h-full`}><div className="flex justify-between items-start mb-2"><div className={`p-2 rounded-xl bg-white/60 backdrop-blur-sm ${colorClass}`}><Icon size={20} /></div>{trend && (<div className="flex items-center text-xs font-medium opacity-75">{trend === 'up' && <ArrowUp size={14} />}{trend === 'down' && <ArrowDown size={14} />}{trend === 'stable' && <Minus size={14} />}</div>)}</div><div><span className="text-xs font-medium opacity-70 uppercase tracking-wider">{title}</span><div className="flex items-baseline gap-1"><span className="text-2xl font-bold">{value || '--'}</span><span className="text-sm opacity-70">{unit}</span></div></div></div>); };
-        
-        // MedicalSummary
+
         const MedicalSummary = () => (<div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm mb-6"><div className="flex items-center gap-2 mb-4"><FileText className="text-teal-600" size={20} /><h3 className="font-bold text-slate-800">健檢重點摘要 (2025.12)</h3></div><div className="space-y-4"><div className="p-3 bg-rose-50 rounded-xl border border-rose-100"><h4 className="text-sm font-bold text-rose-700 flex items-center gap-2 mb-2"><AlertCircle size={16} /> 需追蹤項目</h4><ul className="text-sm text-rose-800 space-y-1 list-disc list-inside opacity-90"><li><strong>血壓偏高</strong> (141/79) - 需控制收縮壓</li><li><strong>膽固醇</strong> - LDL 偏高 (131), HDL 偏低 (38)</li><li><strong>體重管理</strong> - BMI 24.4 (過重), 腹圍 86cm</li><li><strong>脊椎</strong> - 側彎, L4-L5 滑脫, 骨刺</li><li><strong>膽囊</strong> - 5mm 結石</li></ul></div><div className="grid grid-cols-2 gap-3"><div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs"><span className="block text-slate-400 mb-1">飯前血糖</span><span className="text-lg font-bold text-slate-700">89</span> <span className="text-slate-500">mg/dl</span><span className="block text-teal-600 mt-1 flex items-center gap-1"><Check size={12}/> 正常</span></div><div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs"><span className="block text-slate-400 mb-1">腎功能 (Cr)</span><span className="text-lg font-bold text-slate-700">0.80</span> <span className="text-slate-500">mg/dl</span><span className="block text-teal-600 mt-1 flex items-center gap-1"><Check size={12}/> 正常</span></div></div></div></div>);
-        
+
         // EntryModal
         const EntryModal = ({ onClose, onSave, initialData, isSaving }) => {
             const initialExercises = initialData?.exercises || (initialData?.exerciseType ? [{type: initialData.exerciseType, amount: initialData.exerciseTime, unit: '分'}] : []);
-            const [formData, setFormData] = useState({ date: new Date().toISOString().split('T')[0], time: new Date().toTimeString().split(' ')[0].slice(0,5), weight: '', bp_sys: '', bp_dia: '', hr: '', notes: '', exercises: initialExercises, meditationTime: '', meditationCount: '', writingTime: '', writingCount: '', diet_breakfast: '', diet_lunch: '', diet_dinner: '', diet_others: '', ...initialData });
+            const initialMeasurements = initialData?.measurements || (initialData?.bp_sys ? [{ time: initialData.time, period: '其他', sys: initialData.bp_sys, dia: initialData.bp_dia, hr: initialData.hr }] : []);
+
+            const [formData, setFormData] = useState({
+                date: new Date().toISOString().split('T')[0],
+                time: new Date().toTimeString().split(' ')[0].slice(0,5),
+                weight: '', 
+                measurements: initialMeasurements,
+                exercises: initialExercises,
+                meditationTime: '', meditationCount: '',
+                writingTime: '', writingCount: '',
+                diet_breakfast: '', diet_lunch: '', diet_dinner: '', diet_others: '', notes: '',
+                ...initialData
+            });
+
             const [newExercise, setNewExercise] = useState({ type: '禪跑', customType: '', amount: '', unit: '分' });
+            const [newMeasure, setNewMeasure] = useState({ time: new Date().toTimeString().slice(0,5), period: '早上', sys: '', dia: '', hr: '' });
+            
             const exerciseOptions = ['禪跑', '律動儀', '步行', '伏地挺身', '其他'];
             const unitOptions = ['分', '下', '次', '組'];
-            const addExercise = () => { if (newExercise.amount) { if (newExercise.type === '其他' && !newExercise.customType.trim()) { alert("請輸入運動項目名稱"); return; } setFormData(prev => ({ ...prev, exercises: [...prev.exercises, { ...newExercise, amount: Number(newExercise.amount), customType: newExercise.type === '其他' ? newExercise.customType : '' }] })); setNewExercise({ type: '禪跑', customType: '', amount: '', unit: '分' }); } };
-            const removeExercise = (index) => { setFormData(prev => ({ ...prev, exercises: prev.exercises.filter((_, i) => i !== index) })); };
-            const handleSubmit = (e) => { e.preventDefault(); onSave({ ...formData, weight: Number(formData.weight) || null, bp_sys: Number(formData.bp_sys) || null, bp_dia: Number(formData.bp_dia) || null, hr: Number(formData.hr) || null, exercises: formData.exercises, exerciseType: formData.exercises[0]?.type || null, exerciseTime: formData.exercises[0]?.unit === '分' ? formData.exercises[0]?.amount : null, meditationTime: Number(formData.meditationTime) || null, meditationCount: Number(formData.meditationCount) || null, writingTime: Number(formData.writingTime) || null, writingCount: Number(formData.writingCount) || null, timestamp: new Date(`${formData.date}T${formData.time}`).getTime() }); };
-            return (<div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"><div className="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto"><div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-slate-800">{initialData ? '修改紀錄' : '新增今日記錄'}</h3><button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-500"><X size={20} /></button></div><form onSubmit={handleSubmit} className="space-y-6"><div className="grid grid-cols-2 gap-4"><div><label className="block text-xs font-bold text-slate-500 mb-1">日期</label><input type="date" required className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div><div><label className="block text-xs font-bold text-slate-500 mb-1">時間</label><input type="time" required className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} /></div></div><div className="space-y-4 p-4 bg-slate-50 rounded-2xl border border-slate-100"><h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">生理數據</h4><div className="grid grid-cols-2 gap-4"><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Scale size={16} className="text-teal-500"/> 體重 (kg)</label><input type="number" step="0.1" placeholder="71.4" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} /></div><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Activity size={16} className="text-sky-500"/> 心率</label><input type="number" placeholder="73" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.hr} onChange={e => setFormData({...formData, hr: e.target.value})} /></div></div><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Heart size={16} className="text-rose-500"/> 血壓 (mmHg)</label><div className="flex gap-4"><input type="number" placeholder="收縮壓" className="flex-1 w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.bp_sys} onChange={e => setFormData({...formData, bp_sys: e.target.value})} /><span className="text-slate-300 self-center">/</span><input type="number" placeholder="舒張壓" className="flex-1 w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.bp_dia} onChange={e => setFormData({...formData, bp_dia: e.target.value})} /></div></div></div><div className="space-y-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100"><h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">活動與靜心</h4><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Dumbbell size={16} className="text-indigo-500"/> 運動記錄</label>{formData.exercises.length > 0 && (<div className="mb-3 space-y-2">{formData.exercises.map((ex, idx) => (<div key={idx} className="flex items-center justify-between bg-white p-2 px-3 rounded-lg border border-indigo-100 text-sm"><span className="font-medium text-slate-700">{ex.type === '其他' ? (ex.customType || '其他') : ex.type}</span><div className="flex items-center gap-3"><span className="text-indigo-600 font-bold">{ex.amount} {ex.unit}</span><button type="button" onClick={() => removeExercise(idx)} className="text-slate-400 hover:text-rose-500"><X size={14}/></button></div></div>))}</div>)}<div className="flex flex-col gap-2 bg-white p-3 rounded-xl border border-slate-200"><div className="flex gap-2"><select className="flex-1 p-2 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" value={newExercise.type} onChange={e => setNewExercise({...newExercise, type: e.target.value})}>{exerciseOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}</select>{newExercise.type === '其他' && (<input type="text" placeholder="項目名稱" className="flex-1 p-2 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" value={newExercise.customType} onChange={e => setNewExercise({...newExercise, customType: e.target.value})} />)}</div><div className="flex gap-2"><input type="number" placeholder="量" className="flex-1 p-2 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" value={newExercise.amount} onChange={e => setNewExercise({...newExercise, amount: e.target.value})} /><select className="w-20 p-2 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" value={newExercise.unit} onChange={e => setNewExercise({...newExercise, unit: e.target.value})}>{unitOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}</select><button type="button" onClick={addExercise} className="p-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 shadow-sm"><Plus size={20}/></button></div></div></div><div className="grid grid-cols-1 gap-4 pt-2 border-t border-indigo-100"><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Flower size={16} className="text-purple-500"/> 靜坐</label><div className="flex gap-2"><div className="flex-1 relative"><input type="number" placeholder="0" className="w-full p-3 pr-8 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none" value={formData.meditationTime} onChange={e => setFormData({...formData, meditationTime: e.target.value})} /><span className="absolute right-3 top-3.5 text-xs text-slate-400">分</span></div><div className="w-24 relative"><input type="number" placeholder="0" className="w-full p-3 pr-8 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none" value={formData.meditationCount} onChange={e => setFormData({...formData, meditationCount: e.target.value})} /><span className="absolute right-3 top-3.5 text-xs text-slate-400">次</span></div></div></div><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><PenTool size={16} className="text-amber-500"/> 直心書寫</label><div className="flex gap-2"><div className="flex-1 relative"><input type="number" placeholder="0" className="w-full p-3 pr-8 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 outline-none" value={formData.writingTime} onChange={e => setFormData({...formData, writingTime: e.target.value})} /><span className="absolute right-3 top-3.5 text-xs text-slate-400">分</span></div><div className="w-24 relative"><input type="number" placeholder="0" className="w-full p-3 pr-8 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 outline-none" value={formData.writingCount} onChange={e => setFormData({...formData, writingCount: e.target.value})} /><span className="absolute right-3 top-3.5 text-xs text-slate-400">次</span></div></div></div></div></div><div className="space-y-4 p-4 bg-orange-50/50 rounded-2xl border border-orange-100"><h4 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">飲食記錄</h4><div className="grid grid-cols-1 gap-3"><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Sunrise size={14} className="text-orange-400"/> 早餐</label><input type="text" placeholder="例如: 燕麥片、水煮蛋" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-400 outline-none" value={formData.diet_breakfast} onChange={e => setFormData({...formData, diet_breakfast: e.target.value})} /></div><div className="grid grid-cols-2 gap-3"><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Sun size={14} className="text-orange-500"/> 午餐</label><input type="text" placeholder="內容" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-400 outline-none" value={formData.diet_lunch} onChange={e => setFormData({...formData, diet_lunch: e.target.value})} /></div><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Sunset size={14} className="text-indigo-400"/> 晚餐</label><input type="text" placeholder="內容" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-400 outline-none" value={formData.diet_dinner} onChange={e => setFormData({...formData, diet_dinner: e.target.value})} /></div></div><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Coffee size={14} className="text-slate-400"/> 其他/點心</label><input type="text" placeholder="水果、飲料..." className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-400 outline-none" value={formData.diet_others} onChange={e => setFormData({...formData, diet_others: e.target.value})} /></div></div></div><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><FileText size={16} className="text-slate-500"/> 備註</label><textarea rows="2" placeholder="背痛？心情？" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none resize-none" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}></textarea></div><button type="submit" disabled={isSaving} className="w-full py-4 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-lg shadow-teal-200 transition-all flex items-center justify-center gap-2">{isSaving ? "儲存中..." : <><Check size={20} /> 儲存記錄</>}</button></form></div></div>);
-        };
-        
-        // ChartsSection
-        const ChartsSection = ({ data }) => { const chartData = [...data].reverse().map(d => ({ date: d.date.slice(5), weight: d.weight, bp_sys: d.bp_sys, bp_dia: d.bp_dia })); if (chartData.length < 2) return (<div className="bg-white p-6 rounded-2xl border border-slate-100 text-center text-slate-400 py-12">記錄兩筆以上資料後，此處將顯示趨勢圖。</div>); return (<div className="space-y-6 mb-8"><div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm"><h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Heart size={18} className="text-rose-500"/> 血壓趨勢</h4><div className="h-64 w-full text-xs"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="date" stroke="#94a3b8" tickLine={false} axisLine={false} /><YAxis domain={['auto', 'auto']} stroke="#94a3b8" tickLine={false} axisLine={false} /><Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} /><ReferenceLine y={120} stroke="#f43f5e" strokeDasharray="3 3" label={{ value: '上限', fill: '#f43f5e', fontSize: 10, position: 'right' }} /><Line type="monotone" dataKey="bp_sys" name="收縮壓" stroke="#f43f5e" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} /><Line type="monotone" dataKey="bp_dia" name="舒張壓" stroke="#fca5a5" strokeWidth={2} dot={{r: 3}} /></LineChart></ResponsiveContainer></div></div><div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm"><h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Scale size={18} className="text-teal-500"/> 體重趨勢</h4><div className="h-64 w-full text-xs"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData}><defs><linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#14b8a6" stopOpacity={0.2}/><stop offset="95%" stopColor="#14b8a6" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="date" stroke="#94a3b8" tickLine={false} axisLine={false} /><YAxis domain={['auto', 'auto']} stroke="#94a3b8" tickLine={false} axisLine={false} /><Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} /><Area type="monotone" dataKey="weight" name="體重" stroke="#14b8a6" strokeWidth={3} fillOpacity={1} fill="url(#colorWeight)" /></AreaChart></ResponsiveContainer></div></div></div>); };
+            const periodOptions = ['早上', '中午', '下午', '睡前', '其他'];
 
-        // =============================================================================
-        // 🚀 主程式 App
-        // =============================================================================
+            const addExercise = () => {
+                if (newExercise.amount) {
+                    if (newExercise.type === '其他' && !newExercise.customType.trim()) { alert("請輸入運動項目名稱"); return; }
+                    setFormData(prev => ({
+                        ...prev,
+                        exercises: [...prev.exercises, { ...newExercise, amount: Number(newExercise.amount), customType: newExercise.type === '其他' ? newExercise.customType : '' }]
+                    }));
+                    setNewExercise({ type: '禪跑', customType: '', amount: '', unit: '分' }); 
+                }
+            };
+            
+            const removeExercise = (index) => { setFormData(prev => ({ ...prev, exercises: prev.exercises.filter((_, i) => i !== index) })); };
+
+            const addMeasure = () => {
+                if (newMeasure.sys && newMeasure.dia) {
+                    setFormData(prev => ({
+                        ...prev,
+                        measurements: [...prev.measurements, { ...newMeasure, sys: Number(newMeasure.sys), dia: Number(newMeasure.dia), hr: Number(newMeasure.hr) }]
+                    }));
+                    setNewMeasure({ time: new Date().toTimeString().slice(0,5), period: '早上', sys: '', dia: '', hr: '' }); 
+                } else {
+                    alert("請輸入收縮壓與舒張壓");
+                }
+            };
+
+            const removeMeasure = (index) => { setFormData(prev => ({ ...prev, measurements: prev.measurements.filter((_, i) => i !== index) })); };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const lastMeasure = formData.measurements.length > 0 ? formData.measurements[formData.measurements.length - 1] : {};
+
+                onSave({
+                    ...formData,
+                    weight: Number(formData.weight) || null,
+                    bp_sys: lastMeasure.sys || null,
+                    bp_dia: lastMeasure.dia || null,
+                    hr: lastMeasure.hr || null,
+                    measurements: formData.measurements,
+                    exercises: formData.exercises, 
+                    exerciseType: formData.exercises[0]?.type || null,
+                    exerciseTime: formData.exercises[0]?.unit === '分' ? formData.exercises[0]?.amount : null,
+                    meditationTime: Number(formData.meditationTime) || null,
+                    meditationCount: Number(formData.meditationCount) || null,
+                    writingTime: Number(formData.writingTime) || null,
+                    writingCount: Number(formData.writingCount) || null,
+                    timestamp: new Date(`${formData.date}T${formData.time}`).getTime()
+                });
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+                    <div className="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-slate-800">{initialData ? '修改紀錄' : '新增今日記錄'}</h3><button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-500"><X size={20} /></button></div>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="block text-xs font-bold text-slate-500 mb-1">日期</label><input type="date" required className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
+                                <div><label className="block text-xs font-bold text-slate-500 mb-1">時間</label><input type="time" required className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} /></div>
+                            </div>
+                            
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">體重 (每日一次)</h4>
+                                <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Scale size={16} className="text-teal-500"/> 體重 (kg)</label><input type="number" step="0.1" placeholder="71.4" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none" value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} /></div>
+                            </div>
+
+                            <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100">
+                                <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-2">血壓與心率 (可多筆)</h4>
+                                {formData.measurements.length > 0 && (
+                                    <div className="mb-3 space-y-2">
+                                        {formData.measurements.map((m, idx) => (
+                                            <div key={idx} className="flex items-center justify-between bg-white p-2 px-3 rounded-lg border border-rose-100 text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded">{m.period}</span>
+                                                    <span className="text-slate-400 text-xs">{m.time}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-bold text-slate-700">{m.sys}/{m.dia}</span>
+                                                    <span className="text-xs text-slate-400">HR:{m.hr}</span>
+                                                    <button type="button" onClick={() => removeMeasure(idx)} className="text-slate-300 hover:text-rose-500"><X size={14}/></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="bg-white p-3 rounded-xl border border-rose-100 flex flex-col gap-2">
+                                    <div className="flex gap-2">
+                                        <input type="time" className="w-24 p-2 bg-slate-50 rounded-lg border border-slate-200 text-sm" value={newMeasure.time} onChange={e => setNewMeasure({...newMeasure, time: e.target.value})} />
+                                        <select className="flex-1 p-2 bg-slate-50 rounded-lg border border-slate-200 text-sm" value={newMeasure.period} onChange={e => setNewMeasure({...newMeasure, period: e.target.value})}>{periodOptions.map(p => <option key={p} value={p}>{p}</option>)}</select>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <input type="number" placeholder="收縮" className="flex-1 p-2 bg-slate-50 rounded-lg border border-slate-200 text-sm" value={newMeasure.sys} onChange={e => setNewMeasure({...newMeasure, sys: e.target.value})} />
+                                        <span className="text-slate-300 self-center">/</span>
+                                        <input type="number" placeholder="舒張" className="flex-1 p-2 bg-slate-50 rounded-lg border border-slate-200 text-sm" value={newMeasure.dia} onChange={e => setNewMeasure({...newMeasure, dia: e.target.value})} />
+                                        <input type="number" placeholder="心率" className="w-16 p-2 bg-slate-50 rounded-lg border border-slate-200 text-sm" value={newMeasure.hr} onChange={e => setNewMeasure({...newMeasure, hr: e.target.value})} />
+                                        <button type="button" onClick={addMeasure} className="p-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 shadow-sm"><Plus size={20}/></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                                <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">活動與靜心</h4>
+                                <div>
+                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Dumbbell size={16} className="text-indigo-500"/> 運動記錄</label>
+                                    {formData.exercises.length > 0 && (<div className="mb-3 space-y-2">{formData.exercises.map((ex, idx) => (<div key={idx} className="flex items-center justify-between bg-white p-2 px-3 rounded-lg border border-indigo-100 text-sm"><span className="font-medium text-slate-700">{ex.type === '其他' ? (ex.customType || '其他') : ex.type}</span><div className="flex items-center gap-3"><span className="text-indigo-600 font-bold">{ex.amount} {ex.unit}</span><button type="button" onClick={() => removeExercise(idx)} className="text-slate-400 hover:text-rose-500"><X size={14}/></button></div></div>))}</div>)}
+                                    <div className="flex flex-col gap-2 bg-white p-3 rounded-xl border border-slate-200">
+                                        <div className="flex gap-2"><select className="flex-1 p-2 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" value={newExercise.type} onChange={e => setNewExercise({...newExercise, type: e.target.value})}>{exerciseOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}</select>{newExercise.type === '其他' && (<input type="text" placeholder="項目名稱" className="flex-1 p-2 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" value={newExercise.customType} onChange={e => setNewExercise({...newExercise, customType: e.target.value})} />)}</div>
+                                        <div className="flex gap-2"><input type="number" placeholder="量" className="flex-1 p-2 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" value={newExercise.amount} onChange={e => setNewExercise({...newExercise, amount: e.target.value})} /><select className="w-20 p-2 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" value={newExercise.unit} onChange={e => setNewExercise({...newExercise, unit: e.target.value})}>{unitOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}</select><button type="button" onClick={addExercise} className="p-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 shadow-sm"><Plus size={20}/></button></div>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4 pt-2 border-t border-indigo-100">
+                                    <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><Flower size={16} className="text-purple-500"/> 靜坐</label><div className="flex gap-2"><div className="flex-1 relative"><input type="number" placeholder="0" className="w-full p-3 pr-8 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none" value={formData.meditationTime} onChange={e => setFormData({...formData, meditationTime: e.target.value})} /><span className="absolute right-3 top-3.5 text-xs text-slate-400">分</span></div><div className="w-24 relative"><input type="number" placeholder="0" className="w-full p-3 pr-8 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none" value={formData.meditationCount} onChange={e => setFormData({...formData, meditationCount: e.target.value})} /><span className="absolute right-3 top-3.5 text-xs text-slate-400">次</span></div></div></div>
+                                    <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><PenTool size={16} className="text-amber-500"/> 直心書寫</label><div className="flex gap-2"><div className="flex-1 relative"><input type="number" placeholder="0" className="w-full p-3 pr-8 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 outline-none" value={formData.writingTime} onChange={e => setFormData({...formData, writingTime: e.target.value})} /><span className="absolute right-3 top-3.5 text-xs text-slate-400">分</span></div><div className="w-24 relative"><input type="number" placeholder="0" className="w-full p-3 pr-8 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 outline-none" value={formData.writingCount} onChange={e => setFormData({...formData, writingCount: e.target.value})} /><span className="absolute right-3 top-3.5 text-xs text-slate-400">次</span></div></div></div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
+                                <h4 className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">飲食記錄</h4>
+                                <div className="grid grid-cols-1 gap-3">
+                                    <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Sunrise size={14} className="text-orange-400"/> 早餐</label><input type="text" placeholder="例如: 燕麥片、水煮蛋" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-400 outline-none" value={formData.diet_breakfast} onChange={e => setFormData({...formData, diet_breakfast: e.target.value})} /></div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Sun size={14} className="text-orange-500"/> 午餐</label><input type="text" placeholder="內容" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-400 outline-none" value={formData.diet_lunch} onChange={e => setFormData({...formData, diet_lunch: e.target.value})} /></div>
+                                        <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Sunset size={14} className="text-indigo-400"/> 晚餐</label><input type="text" placeholder="內容" className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-400 outline-none" value={formData.diet_dinner} onChange={e => setFormData({...formData, diet_dinner: e.target.value})} /></div>
+                                    </div>
+                                    <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-1"><Coffee size={14} className="text-slate-400"/> 其他/點心</label><input type="text" placeholder="水果、飲料..." className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-400 outline-none" value={formData.diet_others} onChange={e => setFormData({...formData, diet_others: e.target.value})} /></div>
+                                </div>
+                            </div>
+
+                            <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2"><FileText size={16} className="text-slate-500"/> 備註</label><textarea rows="2" placeholder="背痛？心情？" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 outline-none resize-none" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}></textarea></div>
+                            <button type="submit" disabled={isSaving} className="w-full py-4 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-lg shadow-teal-200 transition-all flex items-center justify-center gap-2">{isSaving ? "儲存中..." : <><Check size={20} /> 儲存記錄</>}</button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const ChartsSection = ({ data }) => { 
+            const chartData = [...data].reverse().map(d => ({ date: d.date.slice(5), weight: d.weight, bp_sys: d.bp_sys, bp_dia: d.bp_dia })); 
+            if (chartData.length < 2) return (<div className="bg-white p-6 rounded-2xl border border-slate-100 text-center text-slate-400 py-12">記錄兩筆以上資料後，此處將顯示趨勢圖。</div>); 
+            return (
+                <div className="space-y-6 mb-8">
+                    <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm"><h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Heart size={18} className="text-rose-500"/> 血壓趨勢 (日平均/最新)</h4><div className="h-64 w-full text-xs"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="date" stroke="#94a3b8" tickLine={false} axisLine={false} /><YAxis domain={['auto', 'auto']} stroke="#94a3b8" tickLine={false} axisLine={false} /><Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} /><ReferenceLine y={120} stroke="#f43f5e" strokeDasharray="3 3" label={{ value: '上限', fill: '#f43f5e', fontSize: 10, position: 'right' }} /><Line type="monotone" dataKey="bp_sys" name="收縮壓" stroke="#f43f5e" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} /><Line type="monotone" dataKey="bp_dia" name="舒張壓" stroke="#fca5a5" strokeWidth={2} dot={{r: 3}} /></LineChart></ResponsiveContainer></div></div>
+                    <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm"><h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Scale size={18} className="text-teal-500"/> 體重趨勢</h4><div className="h-64 w-full text-xs"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData}><defs><linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#14b8a6" stopOpacity={0.2}/><stop offset="95%" stopColor="#14b8a6" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="date" stroke="#94a3b8" tickLine={false} axisLine={false} /><YAxis domain={['auto', 'auto']} stroke="#94a3b8" tickLine={false} axisLine={false} /><Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} /><Area type="monotone" dataKey="weight" name="體重" stroke="#14b8a6" strokeWidth={3} fillOpacity={1} fill="url(#colorWeight)" /></AreaChart></ResponsiveContainer></div></div>
+                </div>
+            ); 
+        };
+
         const App = () => {
             const [user, setUser] = useState(null);
             const [logs, setLogs] = useState([]);
@@ -464,12 +509,7 @@ ${JSON.stringify(recentLogs)}
                 return () => unsubscribeAuth();
             }, []);
 
-            // 安全機制：若非管理員且當前為報告分頁，強制跳回總覽
-            useEffect(() => {
-                if (!isAdmin && activeTab === 'medical') {
-                    setActiveTab('dashboard');
-                }
-            }, [isAdmin, activeTab]);
+            useEffect(() => { if (!isAdmin && activeTab === 'medical') { setActiveTab('dashboard'); } }, [isAdmin, activeTab]);
 
             const handleLoginSuccess = () => { setIsAdmin(true); localStorage.setItem('health_log_admin', 'true'); };
             const handleLock = () => { setIsAdmin(false); localStorage.removeItem('health_log_admin'); };
@@ -513,7 +553,13 @@ ${JSON.stringify(recentLogs)}
                 let content = `# 每日健康日誌\n匯出時間: ${now.toLocaleString()}\n\n`;
                 filteredLogs.forEach(log => {
                     content += `## ${log.date} (${log.time})\n`;
-                    content += `- **生理數據**: 體重 ${log.weight || '-'}kg | 血壓 ${log.bp_sys || '-'}/${log.bp_dia || '-'} | 心率 ${log.hr || '-'}\n`;
+                    content += `- **生理數據**: 體重 ${log.weight || '-'}kg\n`;
+                    if (log.measurements && log.measurements.length > 0) {
+                        content += `  - **血壓與心率**:\n`;
+                        log.measurements.forEach(m => content += `    - ${m.period}(${m.time}): BP ${m.sys}/${m.dia}, HR ${m.hr}\n`);
+                    } else {
+                        content += `  - 血壓: ${log.bp_sys || '-'}/${log.bp_dia || '-'}\n  - 心率: ${log.hr || '-'}\n`;
+                    }
                     
                     const exercises = log.exercises || (log.exerciseType ? [{type: log.exerciseType, amount: log.exerciseTime, unit: '分'}] : []);
                     if (exercises.length > 0) {
@@ -602,7 +648,6 @@ ${JSON.stringify(recentLogs)}
                     <main className="flex-1 -mt-8 px-4 pb-24 z-20 overflow-y-auto no-scrollbar">
                         {activeTab === 'dashboard' && (
                             <div className="space-y-6 animate-fade-in">
-                                {/* AI Insight Widget */}
                                 <AIInsightsWidget logs={logs} />
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -628,13 +673,7 @@ ${JSON.stringify(recentLogs)}
                                 <div className="flex justify-between items-center px-2">
                                     <h3 className="font-bold text-slate-700">歷史記錄 ({logs.length})</h3>
                                     <div className="relative">
-                                        <button 
-                                            onClick={() => setShowExportMenu(!showExportMenu)} 
-                                            className="p-2 bg-white text-slate-400 hover:text-teal-600 rounded-full shadow-sm border border-slate-100 transition-colors"
-                                            title="匯出資料"
-                                        >
-                                            <Download size={18} />
-                                        </button>
+                                        <button onClick={() => setShowExportMenu(!showExportMenu)} className="p-2 bg-white text-slate-400 hover:text-teal-600 rounded-full shadow-sm border border-slate-100 transition-colors" title="匯出資料"><Download size={18} /></button>
                                         {showExportMenu && (
                                             <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-fade-in">
                                                 <button onClick={() => handleExport('week')} className="w-full px-4 py-3 text-left text-sm text-slate-600 hover:bg-slate-50 border-b border-slate-50">匯出本週</button>
@@ -646,11 +685,33 @@ ${JSON.stringify(recentLogs)}
                                 </div>
                                 {logs.map(log => {
                                     const displayExercises = log.exercises || (log.exerciseType ? [{type: log.exerciseType, amount: log.exerciseTime, unit: '分'}] : []);
+                                    const hasMeasurements = log.measurements && log.measurements.length > 0;
+                                    
                                     return (
                                     <div key={log.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-start group">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2"><span className="font-bold text-slate-800">{log.date}</span><span className="text-xs text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">{log.time}</span></div>
-                                            <div className="flex items-center gap-4 text-sm text-slate-600 mb-2">{(log.weight) && <span className="flex items-center gap-1"><Scale size={14} className="text-teal-500"/> {log.weight}</span>}{(log.bp_sys) && <span className="flex items-center gap-1"><Heart size={14} className="text-rose-500"/> {log.bp_sys}/{log.bp_dia}</span>}</div>
+                                            
+                                            <div className="flex flex-col gap-1.5 text-sm text-slate-600 mb-3">
+                                                {(log.weight) && <span className="flex items-center gap-1.5"><Scale size={14} className="text-teal-500"/> 體重: {log.weight} kg</span>}
+                                                
+                                                {hasMeasurements ? (
+                                                    <div className="flex flex-col gap-1 mt-1">
+                                                        {log.measurements.map((m, i) => (
+                                                            <div key={i} className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                                                                <Heart size={12} className="text-rose-400"/>
+                                                                <span className="font-medium text-slate-600 min-w-[3em]">{m.period}</span>
+                                                                <span className="text-rose-600 font-bold">{m.sys}/{m.dia}</span>
+                                                                <span className="text-sky-500">HR:{m.hr}</span>
+                                                                <span className="text-slate-300 scale-90">{m.time}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    (log.bp_sys) && <span className="flex items-center gap-1.5"><Heart size={14} className="text-rose-500"/> 血壓: {log.bp_sys}/{log.bp_dia} (HR {log.hr})</span>
+                                                )}
+                                            </div>
+
                                             <div className="flex flex-wrap gap-2 mb-2">
                                                 {displayExercises.map((ex, i) => (<span key={i} className="inline-flex items-center gap-1 text-[10px] px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg font-medium border border-indigo-100"><Dumbbell size={10}/> {ex.type === '其他' ? (ex.customType || '其他') : ex.type} {' '}{ex.amount}{ex.unit}</span>))}
                                                 {(log.meditationTime > 0 || log.meditationCount > 0) && (<span className="inline-flex items-center gap-1 text-[10px] px-2 py-1 bg-purple-50 text-purple-600 rounded-lg font-medium border border-purple-100"><Flower size={10}/> 靜坐 {log.meditationTime ? ` ${log.meditationTime}m` : ''} {log.meditationCount ? ` ${log.meditationCount}次` : ''}</span>)}
