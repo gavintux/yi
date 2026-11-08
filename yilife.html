@@ -34,6 +34,7 @@
             color: #9E2A2B;
             font-family: 'Noto Serif TC', serif;
         }
+        /* Markdown 解析預覽樣式 */
         .md-preview h1, .md-preview h2, .md-preview h3 {
             font-family: 'Noto Serif TC', serif;
             font-weight: 700;
@@ -60,6 +61,7 @@
             border-radius: 4px;
             font-size: 0.75rem;
         }
+        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -121,12 +123,85 @@
                 <button onclick="toggleGDocModal()" class="text-[#7A756E] hover:text-[#2C2A29] text-lg font-bold">✕</button>
             </div>
 
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 space-y-1.5 leading-relaxed">
+                <div class="font-bold">💡 為什麼剛剛按了沒出現在雲端資料夾？請檢查這 3 個關鍵步驟：</div>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>您必須先在 <a href="https://script.google.com" target="_blank" class="underline font-bold">script.google.com</a> 貼上下方腳本，並先按一次頂端的 <strong>「▶ 執行 (Run) — 選擇 testAuth 函式」</strong>，跳出視窗時點選「審查權限 ➔ 進階 ➔ 前往專案（不安全）➔ 允許」，Google 才會允許腳本在您的資料夾建立 Google Docs。</li>
+                    <li>點擊右上角「部署 ➔ 新增部署作業」，類型選「網頁應用程式」，<strong>「誰可以存取 (Who has access)」一定要選「所有人 (Anyone)」</strong>。</li>
+                    <li>每次修改腳本後，必須選「管理部署作業 ➔ 編輯 ➔ 版本選：<strong>新版本 (New version)</strong>」才會生效。</li>
+                </ol>
+            </div>
+
             <div class="bg-[#2C2A29] text-[#F7F5F0] p-3.5 rounded-xl text-[11px] font-mono space-y-2">
                 <div class="flex justify-between items-center text-[#D0C9BC] border-b border-white/10 pb-1.5">
-                    <span>升級版 Google Apps Script：</span>
+                    <span>升級版 Google Apps Script（原生 Google Writer 富文本格式排版 + 權限測試）：</span>
                     <button onclick="copyGasScript()" class="bg-[#8C6D46] text-white px-2.5 py-1 rounded text-[11px] hover:opacity-90 font-sans">📋 複製完整腳本</button>
                 </div>
                 <pre id="gas-code-block" class="overflow-x-auto leading-relaxed max-h-48">const FOLDER_ID = "1nNcNK8rKiqP1vaKza-deaizdV_L8ogWb";
+
+function testAuth() {
+  var folder = DriveApp.getFolderById(FOLDER_ID);
+  var doc = DocumentApp.create("易經晨報_連線授權成功測試");
+  doc.getBody().appendParagraph("恭喜！您的 Google Drive 資料夾連線與 Google Docs 寫入權限已成功打通。");
+  doc.saveAndClose();
+  DriveApp.getFileById(doc.getId()).moveTo(folder);
+  Logger.log("測試成功：" + doc.getUrl());
+}
+
+function appendFormattedText(el, text) {
+  var clean = String(text || "");
+  var parts = clean.split(/(\*\*[^*]+\*\*)/g);
+  el.setText("");
+  var offset = 0;
+  var textObj = el.editAsText();
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i];
+    if (!p) continue;
+    var isBold = p.indexOf("**") === 0 && p.lastIndexOf("**") === p.length - 2 && p.length > 4;
+    var str = isBold ? p.slice(2, -2) : p;
+    textObj.appendText(str);
+    textObj.setBold(offset, offset + str.length - 1, isBold);
+    offset += str.length;
+  }
+}
+
+function writeRichGoogleDoc(body, content) {
+  body.clear();
+  var lines = String(content || "").split(/\r?\n/);
+  var inYaml = false;
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (i === 0 && line === "---") { inYaml = true; continue; }
+    if (inYaml) { if (line === "---") inYaml = false; continue; }
+    if (!line) continue;
+    if (line === "---") { body.appendHorizontalRule(); continue; }
+    if (line.indexOf("# ") === 0) {
+      var h1 = body.appendParagraph(line.slice(2));
+      h1.setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    } else if (line.indexOf("## ") === 0) {
+      var h2 = body.appendParagraph(line.slice(3));
+      h2.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    } else if (line.indexOf("### ") === 0 || line.indexOf("#### ") === 0) {
+      var h3 = body.appendParagraph(line.replace(/^#+\s*/, ""));
+      h3.setHeading(DocumentApp.ParagraphHeading.HEADING3);
+    } else if (line.indexOf("- ") === 0 || line.indexOf("* ") === 0 || line.indexOf("• ") === 0) {
+      var li = body.appendListItem("");
+      li.setGlyphType(DocumentApp.GlyphType.BULLET);
+      appendFormattedText(li, line.slice(2));
+    } else if (/^\d+\.\s+/.test(line)) {
+      var nli = body.appendListItem("");
+      nli.setGlyphType(DocumentApp.GlyphType.NUMBER);
+      appendFormattedText(nli, line.replace(/^\d+\.\s+/, ""));
+    } else if (line.indexOf("> ") === 0) {
+      var q = body.appendParagraph("");
+      q.setIndentStart(18);
+      appendFormattedText(q, line.slice(2));
+    } else {
+      var p = body.appendParagraph("");
+      appendFormattedText(p, line);
+    }
+  }
+}
 
 function doPost(e) {
   try {
@@ -135,9 +210,10 @@ function doPost(e) {
     var folderId = data.folderId || FOLDER_ID;
     var folder = DriveApp.getFolderById(folderId);
     var doc = DocumentApp.create(data.title || "易經晨間提點");
-    doc.getBody().setText(data.content || "");
+    writeRichGoogleDoc(doc.getBody(), data.content || "");
     doc.saveAndClose();
-    DriveApp.getFileById(doc.getId()).moveTo(folder);
+    var file = DriveApp.getFileById(doc.getId());
+    file.moveTo(folder);
     return ContentService.createTextOutput(JSON.stringify({
       status: "ok",
       url: doc.getUrl(),
@@ -179,12 +255,15 @@ function doPost(e) {
         <div class="bg-[#FAF8F5] border border-[#DED8CE] rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-[#E6E1D6] pb-3">
                 <h3 class="serif text-lg font-bold text-[#2C2A29] flex items-center gap-2">
-                    <span>🛡️</span> Cloudflare Worker 免費安全代理設定
+                    <span>🛡️</span> Cloudflare Worker 免費安全代理設定（方法 C）
                 </h3>
                 <button onclick="toggleApiKeyModal()" class="text-[#7A756E] hover:text-[#2C2A29] text-lg font-bold">✕</button>
             </div>
+            <p class="text-xs text-[#5A554E] leading-relaxed">
+                將 <code class="bg-[#EAE5DB] px-1.5 py-0.5 rounded">GEMINI_API_KEY</code> 存放在 Cloudflare Worker 的加密環境變數中，前端 <code class="bg-[#EAE5DB] px-1.5 py-0.5 rounded">yilife.html</code> 完全不需暴露金鑰。
+            </p>
             <div>
-                <label class="block text-xs font-semibold text-[#7A756E] mb-1">1. Cloudflare Worker 代理網址：</label>
+                <label class="block text-xs font-semibold text-[#7A756E] mb-1">1. Cloudflare Worker 代理網址（已預設為您的 `yi.gavintux.workers.dev`）：</label>
                 <div class="flex gap-2">
                     <input type="text" id="worker-url-input" placeholder="https://yi.gavintux.workers.dev" class="flex-1 bg-white border border-[#DED8CE] rounded-xl px-3.5 py-2.5 text-xs font-mono focus:outline-none focus:border-[#8C6D46]">
                     <button onclick="testWorkerConnection()" id="btn-test-worker" class="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-medium whitespace-nowrap">
@@ -194,7 +273,7 @@ function doPost(e) {
                 <p id="worker-test-result" class="text-xs mt-2 hidden p-2.5 rounded-lg"></p>
             </div>
             <div class="pt-2 border-t border-[#E6E1D6]">
-                <label class="block text-xs font-semibold text-[#7A756E] mb-1">2. 備用方案：本機瀏覽器直連 API Key：</label>
+                <label class="block text-xs font-semibold text-[#7A756E] mb-1">2. 備用方案：本機瀏覽器直連 API Key（若已設上方 Worker 則留空即可）：</label>
                 <input type="password" id="user-apikey-input" placeholder="若已設定上方 Cloudflare Worker，此欄請留空" class="w-full bg-white border border-[#DED8CE] rounded-xl px-3.5 py-2 text-xs font-mono focus:outline-none focus:border-[#8C6D46]">
             </div>
             <div class="flex justify-end gap-2 pt-2">
@@ -270,7 +349,7 @@ function doPost(e) {
                                 【人和】昨天日誌 (<code id="yesterday-filename-hint" class="bg-[#EAE5DB] px-1 rounded text-[11px]">~/Obsidian/zenlife/Daily</code>)
                             </label>
                             <div class="flex items-center gap-2">
-                                <button type="button" onclick="pickObsidianDailyFolder()" class="text-xs bg-[#EAE5DB] hover:bg-[#DED8CE] text-[#2C2A29] px-2 py-1 rounded-lg font-medium transition-all">
+                                <button type="button" onclick="pickObsidianDailyFolder()" class="text-xs bg-[#EAE5DB] hover:bg-[#DED8CE] text-[#2C2A29] px-2 py-1 rounded-lg font-medium transition-all" title="選擇 ~/Obsidian/zenlife/Daily 資料夾，自動抓取昨天的 .md 檔">
                                     📁 連結 Daily 資料夾自動抓昨天
                                 </button>
                                 <label class="cursor-pointer text-xs text-[#8C6D46] hover:underline flex items-center gap-1">
@@ -298,7 +377,7 @@ function doPost(e) {
                         </div>
                     </div>
 
-                    <!-- 上卦數理推演明細 -->
+                    <!-- 上卦數理推演明細 (透明呈現如何由三才資料上卦) -->
                     <div id="casting-formula-box" class="mb-5 bg-[#F4EFE6] border border-[#E2D9C8] rounded-xl p-3 text-[11px] text-[#4A4642] space-y-1">
                         <div class="font-bold text-[#8C6D46] serif">📐 命理師三才上卦數理根據：</div>
                         <div id="casting-formula-detail" class="leading-relaxed font-mono">計算中...</div>
@@ -334,13 +413,17 @@ function doPost(e) {
                 
                 <!-- Hexagram Card -->
                 <div class="ink-card rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+                    <!-- Subtle Watermark -->
                     <div id="hex-watermark" class="absolute -right-6 -bottom-10 text-[180px] text-[#2C2A29]/[0.03] serif select-none pointer-events-none leading-none">
                         ䷮
                     </div>
 
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-[#EFECE6] pb-6">
+                        <!-- Visual Hexagram Bars -->
                         <div class="flex items-center gap-6">
-                            <div id="hexagram-bars" class="w-28 bg-[#FAF8F5] p-4 rounded-xl border border-[#E6E1D6] flex flex-col-reverse gap-2.5 shadow-inner"></div>
+                            <div id="hexagram-bars" class="w-28 bg-[#FAF8F5] p-4 rounded-xl border border-[#E6E1D6] flex flex-col-reverse gap-2.5 shadow-inner">
+                                <!-- Bars injected via JS -->
+                            </div>
                             <div>
                                 <div class="flex items-center gap-2.5 mb-1">
                                     <span id="hex-number-badge" class="seal-badge px-2 py-0.5 text-xs font-bold rounded">第四十七卦</span>
@@ -351,6 +434,7 @@ function doPost(e) {
                             </div>
                         </div>
 
+                        <!-- Memory Mnemonic Box -->
                         <div class="bg-[#F4EFE6] border border-[#E2D9C8] rounded-xl p-4 sm:max-w-xs">
                             <div class="text-xs font-bold text-[#8C6D46] flex items-center gap-1.5 mb-1">
                                 <span>🧠</span> 上下卦象白話秒記法
@@ -359,6 +443,7 @@ function doPost(e) {
                         </div>
                     </div>
 
+                    <!-- Classical Texts (Gua Ci, Xiang, Moving Line) -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
                         <div class="bg-[#FAF8F5] p-4 rounded-xl border border-[#EFECE6]">
                             <div class="text-xs text-[#8C6D46] font-bold mb-1 serif">【本卦卦辭】</div>
@@ -377,6 +462,7 @@ function doPost(e) {
                         </div>
                     </div>
 
+                    <!-- AI Integrated Daily Guidance -->
                     <div class="mt-6">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="serif text-lg font-bold text-[#2C2A29] flex items-center gap-2">
@@ -385,7 +471,9 @@ function doPost(e) {
                             <span id="ai-status" class="text-xs text-[#8C6D46] hidden animate-pulse">命理師正依據您的實際三才資料排盤解卦中...</span>
                         </div>
 
-                        <div id="guidance-content" class="bg-white border border-[#E6E1D6] rounded-xl p-5 space-y-4 text-sm leading-relaxed text-[#3A3735]"></div>
+                        <div id="guidance-content" class="bg-white border border-[#E6E1D6] rounded-xl p-5 space-y-4 text-sm leading-relaxed text-[#3A3735]">
+                            <!-- Filled dynamically by Gemini API or fallback strict synthesis -->
+                        </div>
                     </div>
                 </div>
 
@@ -404,7 +492,9 @@ function doPost(e) {
                         <input type="text" id="hex-search" oninput="renderHexagramGrid()" placeholder="搜尋全部64卦名、卦辭或象辭..." class="w-full bg-[#FAF8F5] border border-[#DED8CE] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#8C6D46]">
                     </div>
                 </div>
-                <div id="hex-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                <div id="hex-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Injected via JS -->
+                </div>
             </div>
         </section>
 
@@ -418,6 +508,16 @@ function doPost(e) {
                         本系統嚴格採用「天時（即時天氣）、地利（當日農民曆）、人和（昨日 Obsidian 日誌）」起卦與解卦，絕不虛構不存在之日誌情節。
                     </p>
                 </div>
+
+                <div class="bg-[#F4EFE6] border border-[#E2D9C8] rounded-xl p-5">
+                    <h3 class="serif font-bold text-base mb-2">✨ 本地端 06:15 自動讀取 `~/Obsidian/zenlife/Daily` 設定步驟</h3>
+                    <ul class="text-xs text-[#4A4642] space-y-2 list-disc list-inside leading-relaxed">
+                        <li><strong>步驟 1（昨天日誌路徑）：</strong>自動讀取 `~/Obsidian/zenlife/Daily` 資料夾中<strong>昨天</strong>（`today - 1 day`）的 `.md` 日誌檔。若無檔案則標示 `沒有昨天日誌`；若檔案無內容則標示 `沒有容`。</li>
+                        <li><strong>步驟 2（06:15 定時執行）：</strong>在終端機執行 `crontab -e`，貼上：<br>
+                            <code class="bg-white px-2 py-1 rounded border border-[#DED8CE] font-mono inline-block mt-1">15 6 * * * GAS_WEBHOOK_URL="您的GAS網址" /usr/bin/python3 ~/Obsidian/zenlife/zenlife_iching_615.py</code>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </section>
 
@@ -430,6 +530,7 @@ function doPost(e) {
 
     <script>
         // --- 先天八卦序號與二進位對應 (1:乾, 2:兌, 3:離, 4:震, 5:巽, 6:坎, 7:艮, 8:坤) ---
+        // Binary: 初爻(左1) -> 二爻(中) -> 三爻(右3)
         const BAGUA_BY_NUM = {
             1: { num: 1, code: "111", name: "乾", nature: "天", attr: "剛健開創", image: "晴空健行之天" },
             2: { num: 2, code: "110", name: "兌", nature: "澤", attr: "喜悅溝通", image: "溫潤欣悅之湖澤" },
@@ -491,7 +592,7 @@ function doPost(e) {
             [35, "火地晉", "000101", "康侯用錫馬蕃庶，晝日三接。", "明出地上，晉。君子以自昭明德。", ["初六：晉如摧如，貞吉。罔孚，裕無咎。", "六二：晉如愁如，貞吉。受茲介福，于其王母。", "六三：眾允，悔亡。", "九四：晉如鼫鼠，貞厲。", "六五：悔亡，失得勿恤，往吉無不利。", "上九：晉其角，維用伐邑，厲吉無咎。"]],
             [36, "地火明夷", "101000", "利艱貞。", "明入地中，明夷。君子以蒞眾，用晦而明。", ["初九：明夷于飛，垂其翼。君子于行，三日不食。", "六二：明夷，夷于左股，用拯馬壯，吉。", "九三：明夷于南狩，得其大首，不可疾貞。", "六四：入于左腹，獲明夷之心，于出門庭。", "六五：箕子之明夷，利貞。", "上六：不明晦，初登于天，後入于地。"]],
             [37, "風火家人", "101011", "利女貞。", "風自火出，家人。君子以言有物而行有恆。", ["初九：閑有家，悔亡。", "六二：無攸遂，在中饋，貞吉。", "九三：家人嗃嗃，悔厲吉。婦子嘻嘻，終吝。", "六四：富家，大吉。", "九五：王假有家，勿恤吉。", "上九：有孚威如，終吉。"]],
-            [38, "火澤睽", "110101", "小事吉。", "上火下澤，睽。君子以同而異。", ["初九：悔亡。喪馬勿逐，自復。見惡人，無咎。", "九二：遇主于巷，無咎。", "六三：見輿曳，其牛掣，其人天且劓，無初有終。", "九四：睽孤，遇元夫，交孚，厲無咎。", "六五：悔亡，厥宗噬膚，往何咎。", "上九：睽孤，見豕負塗，載鬼一車，先張之弧。"]],
+            [38, "火澤睽", "110101", "小事吉。", "上火下澤，睽。君子以同而異。", ["初九：悔亡。喪馬勿逐，自復。見惡人，無咎。", "九二：遇主于巷，無咎。", "六三：見輿曳，其牛掣，其人天且劓，無初有終。", "九四：睽孤，遇元夫，交孚，厲無咎。", "六五：悔亡，厥宗噬膚，往何咎。", "上九：睽孤，見豕負塗，往遇雨則吉。"]],
             [39, "水山蹇", "001010", "利西南，不利東北。利見大人，貞吉。", "山上有水，蹇。君子以反身修德。", ["初六：往蹇來譽。", "六二：王臣蹇蹇，匪躬之故。", "九三：往蹇來反。", "六四：往蹇來連。", "九五：大蹇朋來。", "上六：往蹇來碩，吉，利見大人。"]],
             [40, "雷水解", "010100", "利西南。無所往，其來復吉。有攸往，夙吉。", "雷雨作，解。君子以赦過宥罪。", ["初六：無咎。", "九二：田獲三狐，得黃矢，貞吉。", "六三：負且乘，致寇至，貞吝。", "九四：解而拇，朋至斯孚。", "六五：君子維有解，吉。有孚于小人。", "上六：公用射隼于高墉之上，獲之，無不利。"]],
             [41, "山澤損", "110001", "有孚，元吉，無咎，可貞，利有攸往。曷之用，二簋可用享。", "山下有澤，損。君子以懲忿窒欲。", ["初九：已事遄往，無咎，酌損之。", "九二：利貞，征凶，弗損益之。", "六三：三人行，則損一人；一人行，則得其友。", "六四：損其疾，使遄有喜，無咎。", "六五：或益之十朋之龜，弗克違，元吉。", "上九：弗損益之，無咎，貞吉，利有攸往。"]],
@@ -503,7 +604,7 @@ function doPost(e) {
             [47, "澤水困", "010110", "亨，貞，大人吉，無咎。有言不信。", "澤無水，困。君子以致命遂志。", ["初六：臀困于株木，入于幽谷，三歲不覿。", "九二：困于酒食，朱紱方來，利用亨祀。", "六三：困于石，據于蒺藜，凶。", "九四：來徐徐，困于金車，吝，有終。", "九五：劓刖，困于赤紱，乃徐有說。", "上六：困于葛藟，于臲卼，曰動悔。有悔，征吉。"]],
             [48, "水風井", "011010", "改邑不改井，無喪無得，往來井井。汔至，亦未繘井，羸其瓶，凶。", "木上有水，井。君子以勞民勸相。", ["初六：井泥不食，舊井無禽。", "九二：井谷射鮒，甕敝漏。", "九三：井渫不食，為我心惻，可用汲。", "六四：井甃，無咎。", "九五：井冽，寒泉食。", "上六：井收勿幕，有孚元吉。"]],
             [49, "澤火革", "101110", "巳日乃孚，元亨利貞，悔亡。", "澤中有火，革。君子以治歷明時。", ["初九：鞏用黃牛之革。", "六二：巳日乃革之，征吉，無咎。", "九三：征凶，貞厲，革言三就有孚。", "九四：悔亡，有孚改命，吉。", "九五：大人虎變，未占有孚。", "上六：君子豹變，小人革面，征凶，居貞吉。"]],
-            [50, "火風鼎", "011101", "元吉，亨。", "木上有火，鼎。君子以正位凝命。", ["初六：鼎顛趾，利出否，得妾以其子，無咎。", "九二：鼎有實，我仇有疾，不我能即，吉。", "九三：鼎耳革，其行塞，雉膏不食，終吉。", "九四：鼎折足，覆公餗，其形渥，凶。", "六五：鼎黃耳金鉉，利貞。", "上九：鼎玉鉉，大吉，無不利。"]],
+            [50, "火風鼎", "011101", "元吉，亨。", "木上有火，鼎。君子以正位凝命。", ["初六：鼎顛趾，利出否，得妾以其子，無咎。", "九二：鼎有實，我仇有疾，不我能即，吉。", "九三：鼎耳革，其行塞，雉膏不食，方雨虧悔，終吉。", "九四：鼎折足，覆公餗，其形渥，凶。", "六五：鼎黃耳金鉉，利貞。", "上九：鼎玉鉉，大吉，無不利。"]],
             [51, "震為雷", "100100", "亨。震來虩虩，笑言啞啞。震驚百里，不喪匕鬯。", "洊雷，震。君子以恐懼修省。", ["初九：震來虩虩，後笑言啞啞，吉。", "六二：震來厲，億喪貝，躋于九陵，勿逐，七日得。", "六三：震蘇蘇，震行無眚。", "九四：震遂泥。", "六五：震往來厲，億無喪，有事。", "上六：震索索，視矍矍，征凶。"]],
             [52, "艮為山", "001001", "艮其背，不獲其身，行其庭，不見其人，無咎。", "兼山，艮。君子以思不出其位。", ["初六：艮其趾，無咎，利永貞。", "六二：艮其腓，不拯其隨，其心不快。", "九三：艮其限，列其夤，厲薰心。", "六四：艮其身，無咎。", "六五：艮其輔，言有序，悔亡。", "上九：敦艮，吉。"]],
             [53, "風山漸", "001011", "女歸吉，利貞。", "山上有木，漸。君子以居賢德善俗。", ["初六：鴻漸于干，小子厲，有言，無咎。", "六二：鴻漸于磐，飲食衎衎，吉。", "九三：鴻漸于陸，夫征不復，婦孕不育，凶。", "六四：鴻漸于木，或得其桷，無咎。", "九五：鴻漸于陵，婦三歲不孕，終莫之勝，吉。", "上九：鴻漸于逵，其羽可用為儀，吉。"]],
@@ -512,7 +613,7 @@ function doPost(e) {
             [56, "火山旅", "001101", "小亨，旅貞吉。", "山上有火，旅。君子以明慎用刑，而不留獄。", ["初六：旅瑣瑣，斯其所取災。", "六二：旅即次，懷其資，得童僕貞。", "九三：旅焚其次，喪其童僕，貞厲。", "九四：旅于處，得其資斧，我心不快。", "六五：射雉一矢亡，終以譽命。", "上九：鳥焚其巢，旅人先笑後號啕，凶。"]],
             [57, "巽為風", "011011", "小亨，利有攸往，利見大人。", "隨風，巽。君子以申命行事。", ["初六：進退，利武人之貞。", "九二：巽在床下，用史巫紛若，吉，無咎。", "九三：頻巽，吝。", "六四：悔亡，田獲三品。", "九五：貞吉悔亡，無不利。先庚三日，後庚三日，吉。", "上九：巽在床下，喪其資斧，貞凶。"]],
             [58, "兌為澤", "110110", "亨，利貞。", "麗澤，兌。君子以朋友講習。", ["初九：和兌，吉。", "九二：孚兌，吉，悔亡。", "六三：來兌，凶。", "九四：商兌未寧，介疾有喜。", "九五：孚于剝，有厲。", "上六：引兌。"]],
-            [59, "風水渙", "010011", "亨. 王假有廟，利涉大川，利貞。", "風行水上，渙。先王以享于帝立廟。", ["初六：用拯馬壯，吉。", "九二：渙奔其机，悔亡。", "六三：渙其躬，無悔。", "六四：渙其群，元吉。渙有丘，匪夷所思。", "九五：渙汗其大號，渙王居，無咎。", "上九：渙其血，去逖出，無咎。"]],
+            [59, "風水渙", "010011", "亨。王假有廟，利涉大川，利貞。", "風行水上，渙。先王以享于帝立廟。", ["初六：用拯馬壯，吉。", "九二：渙奔其机，悔亡。", "六三：渙其躬，無悔。", "六四：渙其群，元吉。渙有丘，匪夷所思。", "九五：渙汗其大號，渙王居，無咎。", "上九：渙其血，去逖出，無咎。"]],
             [60, "水澤節", "110010", "亨。苦節不可貞。", "澤上有水，節。君子以制數度，議德行。", ["初九：不出戶庭，無咎。", "九二：不出門庭，凶。", "六三：不節若，則嗟若，無咎。", "六四：安節，亨。", "九五：甘節，吉，往有尚。", "上六：苦節，貞凶，悔亡。"]],
             [61, "風澤中孚", "110011", "豚魚吉，利涉大川，利貞。", "澤上有風，中孚。君子以議獄緩死。", ["初九：虞吉，有他不燕。", "九二：鳴鶴在陰，其子和之。", "六三：得敵，或鼓或罷，或泣或歌。", "六四：月幾望，馬匹亡，無咎。", "九五：有孚攣如，無咎。", "上九：翰音登于天，貞凶。"]],
             [62, "雷山小過", "001100", "亨，利貞。可小事，不可大事。飛鳥遺之音，不宜上，宜下，大吉。", "山上有雷，小過。君子以行過乎恭，喪過乎哀，用過乎儉。", ["初六：飛鳥以凶。", "六二：過其祖，遇其妣；不及其君，遇其臣，無咎。", "九三：弗過防之，從或戕之，凶。", "九四：無咎，弗過遇之。往厲必戒，勿用永貞。", "六五：密雲不雨，自我西郊。", "上六：弗遇過之，飛鳥離之，凶。"]],
@@ -520,6 +621,7 @@ function doPost(e) {
             [64, "火水未濟", "010101", "亨，小狐汔濟，濡其尾，無攸利。", "火在水上，未濟。君子以慎辨物居方。", ["初六：濡其尾，吝。", "九二：曳其輪，貞吉。", "六三：未濟，征凶，利涉大川。", "九四：貞吉，悔亡，震用伐鬼方。", "六五：貞吉，無悔，君子之光，有孚，吉。", "上九：有孚于飲酒，無咎，濡其首，有孚失是。"]]
         ];
 
+        // 將 64 卦轉換為完整物件並建立二進位索引
         const HEXAGRAMS_BY_CODE = {};
         const HEXAGRAMS = RAW_64_HEXAGRAMS.map(item => {
             const [id, name, code, guaci, xiang, lines_text] = item;
@@ -543,9 +645,9 @@ function doPost(e) {
         });
 
         let currentHexagram = HEXAGRAMS[0];
-        let currentChangingLine = 1;
-        let currentZhiHexagram = HEXAGRAMS[0];
-        let lastCastingMeta = {};
+        let currentChangingLine = 1; // 1~6
+        let currentZhiHexagram = HEXAGRAMS[0]; // 動爻變出之卦
+        let lastCastingMeta = {}; // 紀錄本次三才上卦的計算過程
 
         const DEFAULT_WORKER_URL = "https://yi.gavintux.workers.dev";
         let runtimeWorkerUrl = DEFAULT_WORKER_URL;
@@ -561,19 +663,16 @@ function doPost(e) {
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
 
+        // 初始化頁面
         window.onload = async function() {
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} 06:15`;
             const dateBadge = document.getElementById('current-date-badge');
-            if (dateBadge) {
-                dateBadge.textContent = dateStr;
-            }
+            if (dateBadge) dateBadge.textContent = dateStr;
 
             const yestStr = getYesterdayDateStr();
             const hintEl = document.getElementById('yesterday-filename-hint');
-            if (hintEl) {
-                hintEl.textContent = `~/Obsidian/zenlife/Daily/${yestStr}.md`;
-            }
+            if (hintEl) hintEl.textContent = `~/Obsidian/zenlife/Daily/${yestStr}.md`;
 
             try {
                 const store = window.localStorage || window.sessionStorage;
@@ -590,12 +689,23 @@ function doPost(e) {
 
             updateApiKeyBadge();
             renderHexagramGrid();
+
+            // 1. 自動計算「今天」的真實農民曆宜忌
             computeTodayAlmanac(false);
+
+            // 2. 自動抓取「今天」的真實天氣與氣溫
             await fetchRealTimeWeather(false);
+
+            // 3. 嚴格嘗試自動載入昨天日誌
             await tryAutoLoadYesterdayJournal();
+
+            // 4. 依據真實天時、地利、人和三才上卦並解卦
             castDivination('resonant');
         };
 
+        // =========================================================================
+        // 1. 【天時】自動抓取當日即時天氣與氣溫
+        // =========================================================================
         const WMO_WEATHER_MAP = {
             0: "☀️ 晴朗無雲，晨光溫暖和煦",
             1: "🌤️ 晴時多雲，陽光柔和舒適",
@@ -620,7 +730,10 @@ function doPost(e) {
             const weatherInput = document.getElementById('weather-select');
             const tempInput = document.getElementById('temp-input');
 
-            let lat = 24.757, lon = 121.753, cityName = "宜蘭";
+            let lat = 24.757;
+            let lon = 121.753;
+            let cityName = "宜蘭";
+
             try {
                 const geoResp = await fetch("https://get.geojs.io/v1/ip/geo.json");
                 if (geoResp.ok) {
@@ -634,39 +747,46 @@ function doPost(e) {
             } catch (e) {}
 
             try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Asia%2FTaipei`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=Asia%2FTaipei`;
                 const resp = await fetch(url);
                 if (!resp.ok) throw new Error("Weather API error");
                 const data = await resp.json();
                 const cur = data.current;
-                const desc = WMO_WEATHER_MAP[cur.weather_code] || "⛅ 多雲微風，氣息平和";
+
+                const code = cur.weather_code;
+                const desc = WMO_WEATHER_MAP[code] || (code >= 50 ? "🌧️ 陰雨微涼，水氣豐沛" : "⛅ 多雲微風，氣息平和");
                 const temp = Math.round(cur.temperature_2m * 10) / 10;
                 const hum = cur.relative_humidity_2m;
+                const feel = cur.temperature_2m < 18 ? "偏涼微寒" : (cur.temperature_2m > 28 ? "溫暖微熱" : "舒適宜人");
 
-                if (weatherInput) weatherInput.value = desc;
-                if (tempInput) tempInput.value = `${temp}°C (濕度 ${hum}%)`;
+                weatherInput.value = desc;
+                tempInput.value = `${temp}°C (濕度 ${hum}% · ${feel})`;
                 if (locBadge) locBadge.textContent = `(📍 ${cityName}即時氣象)`;
+
                 if (showNotification) {
-                    showToast(`🌤️ 已更新即時天氣：${cityName} ${temp}°C`);
+                    showToast(`🌤️ 已更新今日即時天氣：${cityName} ${temp}°C`);
                     castDivination('resonant');
                 }
             } catch (err) {
-                if (locBadge) locBadge.textContent = "(⚠️ 無法取得氣象)";
-                if (weatherInput && !weatherInput.value.trim()) {
+                console.warn("即時天氣無法連線:", err);
+                if (locBadge) locBadge.textContent = "(⚠️ 無法取得即時氣象)";
+                if (!weatherInput.value.trim()) {
                     weatherInput.value = "沒原始內容";
-                }
-                if (tempInput && !tempInput.value.trim()) {
                     tempInput.value = "沒原始內容";
                 }
             }
         }
 
+        // =========================================================================
+        // 2. 【地利】自動計算當日真實農民曆（節氣、干支、宜忌）
+        // =========================================================================
         function computeTodayAlmanac(showNotification = false) {
             const now = new Date();
             try {
                 if (typeof Solar !== 'undefined') {
                     const solar = Solar.fromDate(now);
                     const lunar = solar.getLunar();
+
                     const lunarMonth = lunar.getMonthInChinese();
                     const lunarDay = lunar.getDayInChinese();
                     const jieQi = lunar.getJieQi() || lunar.getPrevJieQi(true)?.getName() || "";
@@ -678,34 +798,68 @@ function doPost(e) {
 
                     const yiArr = lunar.getDayYi() || [];
                     const jiArr = lunar.getDayJi() || [];
+                    const yiList = yiArr.length ? yiArr.slice(0, 6).join('、') : "沒原始內容";
+                    const jiList = jiArr.length ? jiArr.slice(0, 6).join('、') : "沒原始內容";
 
-                    const lunarDateEl = document.getElementById('lunar-date-str');
-                    const ganzhiEl = document.getElementById('lunar-ganzhi');
-                    const yiEl = document.getElementById('almanac-yi');
-                    const jiEl = document.getElementById('almanac-ji');
-
-                    if (lunarDateEl) lunarDateEl.textContent = `農曆${lunarMonth}月${lunarDay}${jieQiLabel ? ' · ' + jieQiLabel : ''}`;
-                    if (ganzhiEl) ganzhiEl.textContent = `${yearGZ}年 ${monthGZ}月 ${dayGZ}日`;
-                    if (yiEl) yiEl.value = yiArr.length ? yiArr.slice(0, 6).join('、') : "沒原始內容";
-                    if (jiEl) jiEl.value = jiArr.length ? jiArr.slice(0, 6).join('、') : "沒原始內容";
+                    document.getElementById('lunar-date-str').textContent = `農曆${lunarMonth}月${lunarDay}${jieQiLabel ? ' · ' + jieQiLabel : ''}`;
+                    document.getElementById('lunar-ganzhi').textContent = `${yearGZ}年 ${monthGZ}月 ${dayGZ}日`;
+                    document.getElementById('almanac-yi').value = yiList;
+                    document.getElementById('almanac-ji').value = jiList;
 
                     if (showNotification) {
-                        showToast(`📅 已同步真實農民曆：農曆${lunarMonth}月${lunarDay}`);
+                        showToast(`📅 已同步今日真實農民曆：農曆${lunarMonth}月${lunarDay} (${dayGZ}日)`);
                         castDivination('resonant');
                     }
                     return;
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn("Lunar library error:", e);
+            }
 
-            const lunarDateEl = document.getElementById('lunar-date-str');
-            const ganzhiEl = document.getElementById('lunar-ganzhi');
-            const yiEl = document.getElementById('almanac-yi');
-            const jiEl = document.getElementById('almanac-ji');
+            document.getElementById('lunar-date-str').textContent = "沒原始內容";
+            document.getElementById('lunar-ganzhi').textContent = "沒原始內容";
+            document.getElementById('almanac-yi').value = "沒原始內容";
+            document.getElementById('almanac-ji').value = "沒原始內容";
+        }
 
-            if (lunarDateEl) lunarDateEl.textContent = "沒原始內容";
-            if (ganzhiEl) ganzhiEl.textContent = "沒原始內容";
-            if (yiEl) yiEl.value = "沒原始內容";
-            if (jiEl) jiEl.value = "沒原始內容";
+        // =========================================================================
+        // 3. 【人和】Markdown 解析器 + 自動抓取 ~/Obsidian/zenlife/Daily 昨天日誌
+        // =========================================================================
+        function extractUserWrittenJournalContent(markdownBody) {
+            const raw = String(markdownBody || "").trim();
+            if (!raw || raw === "沒有昨天日誌" || raw === "沒有容") return raw;
+
+            const lines = raw.split('\n');
+            const meaningfulLines = [];
+
+            for (let line of lines) {
+                let s = line.trim();
+                if (!s) continue;
+                if (/^[-=*_]{3,}$/.test(s) || /^```/.test(s)) continue;
+                if (/^[-*+]\s*(\[[ xX]?\])?\s*$/.test(s)) continue;
+                const isHeading = /^#{1,6}\s+/.test(s);
+                if (isHeading) {
+                    const headingText = s.replace(/^#{1,6}\s+/, '').trim();
+                    if (/^(今日待辦|待辦事項|日常紀錄|筆記|日誌|心情|反思|感恩|Todo|Tasks|Journal|Notes|Daily)$/i.test(headingText)) {
+                        continue;
+                    }
+                    s = headingText;
+                }
+                s = s
+                    .replace(/^>\s*/, '')
+                    .replace(/^[-*+]\s+(\[[ xX]\]\s+)?/, '')
+                    .replace(/^\d+\.\s+/, '')
+                    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
+                    .replace(/\[\[([^\]]+)\]\]/g, '$1')
+                    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
+                    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+                    .replace(/(\*\*|__|\*|_|~~|==|`)/g, '')
+                    .trim();
+
+                if (s) meaningfulLines.push(s);
+            }
+
+            return meaningfulLines.join('；').trim() || "沒有容";
         }
 
         function parseObsidianMarkdown(rawMd, fileName = "") {
@@ -714,24 +868,35 @@ function doPost(e) {
 
             const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n?/);
             if (fmMatch) {
+                const fmBlock = fmMatch[1];
                 content = content.slice(fmMatch[0].length);
-                fmMatch[1].split('\n').forEach(line => {
+                fmBlock.split('\n').forEach(line => {
                     const idx = line.indexOf(':');
-                    if (idx > 0) frontmatter[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+                    if (idx > 0) {
+                        const k = line.slice(0, idx).trim();
+                        const v = line.slice(idx + 1).trim();
+                        if (k && v) frontmatter[k] = v;
+                    }
                 });
             }
 
             const htmlReadyMd = content
-                .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '<span class="text-[#8C6D46] font-medium">🔗$2</span>')
-                .replace(/\[\[([^\]]+)\]\]/g, '<span class="text-[#8C6D46] font-medium">🔗$1</span>');
+                .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '**🔗$2**')
+                .replace(/\[\[([^\]]+)\]\]/g, '**🔗$1**')
+                .replace(/==([^=]+)==/g, '<mark class="bg-amber-100 px-1 rounded">$1</mark>');
 
-            currentJournalCleanText = content.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2').replace(/\[\[([^\]]+)\]\]/g, '$1').replace(/[`*_~]/g, '').trim();
+            currentJournalCleanText = extractUserWrittenJournalContent(content);
 
             const metaBar = document.getElementById('md-meta-bar');
             const badgesBox = document.getElementById('md-frontmatter-badges');
             if (metaBar && badgesBox) {
                 badgesBox.innerHTML = '';
-                if (fileName) badgesBox.innerHTML += `<span class="bg-[#2C2A29] text-[#F7F5F0] px-2 py-0.5 rounded font-mono">📄 ${fileName}</span>`;
+                if (fileName) {
+                    badgesBox.innerHTML += `<span class="bg-[#2C2A29] text-[#F7F5F0] px-2 py-0.5 rounded font-mono">📄 ${fileName}</span>`;
+                }
+                Object.entries(frontmatter).slice(0, 4).forEach(([k, v]) => {
+                    badgesBox.innerHTML += `<span class="bg-white border border-[#DED8CE] px-2 py-0.5 rounded font-mono">${k}: ${v}</span>`;
+                });
                 metaBar.classList.remove('hidden');
             }
 
@@ -740,10 +905,11 @@ function doPost(e) {
                 const trimmedContent = content.trim();
                 if (trimmedContent === "沒有昨天日誌" || trimmedContent === "沒有容") {
                     previewEl.innerHTML = `<div class="text-[#9E2A2B] font-semibold">${trimmedContent}</div>`;
-                } else if (!trimmedContent) {
+                } else if (!trimmedContent || currentJournalCleanText === "沒有容") {
                     currentJournalCleanText = "沒有容";
                     previewEl.innerHTML = `<div class="text-[#9E2A2B] font-semibold">沒有容</div>`;
                 } else if (typeof marked !== 'undefined') {
+                    marked.setOptions({ breaks: true, gfm: true });
                     previewEl.innerHTML = marked.parse(htmlReadyMd);
                 } else {
                     previewEl.innerHTML = `<div class="whitespace-pre-wrap">${htmlReadyMd}</div>`;
@@ -756,32 +922,34 @@ function doPost(e) {
             const previewEl = document.getElementById('journal-md-preview');
             const textareaEl = document.getElementById('journal-input');
             const toggleBtn = document.getElementById('btn-toggle-md-view');
+
             if (previewMode) {
-                if (previewEl) previewEl.classList.remove('hidden');
-                if (textareaEl) textareaEl.classList.add('hidden');
+                previewEl.classList.remove('hidden');
+                textareaEl.classList.add('hidden');
                 if (toggleBtn) toggleBtn.textContent = "✏️ 切換編輯原始碼";
             } else {
-                if (previewEl) previewEl.classList.add('hidden');
-                if (textareaEl) textareaEl.classList.remove('hidden');
+                previewEl.classList.add('hidden');
+                textareaEl.classList.remove('hidden');
                 if (toggleBtn) toggleBtn.textContent = "👁️ 預覽 Markdown 排版";
             }
         }
 
         function toggleJournalEditMode() {
-            const journalEl = document.getElementById('journal-input');
-            parseObsidianMarkdown(journalEl ? journalEl.value : "");
+            parseObsidianMarkdown(document.getElementById('journal-input').value);
             setJournalDisplayMode(!isJournalPreviewMode);
         }
 
         function syncMarkdownPreviewFromInput() {
-            const journalEl = document.getElementById('journal-input');
-            parseObsidianMarkdown(journalEl ? journalEl.value : "");
+            const raw = document.getElementById('journal-input').value;
+            parseObsidianMarkdown(raw);
         }
 
         function openHandleDB() {
             return new Promise((resolve, reject) => {
                 const req = indexedDB.open('ZenLifeObsidianDB', 1);
-                req.onupgradeneeded = (e) => e.target.result.createObjectStore('handles');
+                req.onupgradeneeded = (e) => {
+                    e.target.result.createObjectStore('handles');
+                };
                 req.onsuccess = (e) => resolve(e.target.result);
                 req.onerror = (e) => reject(e);
             });
@@ -790,7 +958,8 @@ function doPost(e) {
         async function saveDirHandle(handle) {
             try {
                 const db = await openHandleDB();
-                db.transaction('handles', 'readwrite').objectStore('handles').put(handle, 'dailyDir');
+                const tx = db.transaction('handles', 'readwrite');
+                tx.objectStore('handles').put(handle, 'dailyDir');
             } catch (e) {}
         }
 
@@ -798,31 +967,54 @@ function doPost(e) {
             try {
                 const db = await openHandleDB();
                 return await new Promise((resolve) => {
-                    const req = db.transaction('handles', 'readonly').objectStore('handles').get('dailyDir');
+                    const tx = db.transaction('handles', 'readonly');
+                    const req = tx.objectStore('handles').get('dailyDir');
                     req.onsuccess = () => resolve(req.result || null);
                     req.onerror = () => resolve(null);
                 });
-            } catch (e) { return null; }
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function readYesterdayFromDirHandle(dirHandle, yestStr) {
+            let matchedFile = null;
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file' && (entry.name.endsWith('.md') || entry.name.endsWith('.markdown') || entry.name.endsWith('.txt'))) {
+                    if (entry.name.includes('易經晨報')) continue;
+                    const altYestStr = yestStr.replace(/-/g, '');
+                    if (entry.name === `${yestStr}.md` || entry.name.includes(yestStr) || entry.name.includes(altYestStr)) {
+                        matchedFile = await entry.getFile();
+                        break;
+                    }
+                }
+            }
+            return matchedFile;
         }
 
         async function tryAutoLoadYesterdayJournal() {
             const yestStr = getYesterdayDateStr();
-            const journalEl = document.getElementById('journal-input');
+
             try {
                 const resp = await fetch(`./today_context.json?t=${Date.now()}`);
                 if (resp.ok) {
                     const ctx = await resp.json();
                     if (ctx && ctx.date === yestStr) {
                         if (!ctx.file_found) {
-                            if (journalEl) journalEl.value = "沒有昨天日誌";
-                            parseObsidianMarkdown("沒有昨天日誌", `${yestStr}.md`);
+                            document.getElementById('journal-input').value = "沒有昨天日誌";
+                            parseObsidianMarkdown("沒有昨天日誌", `${yestStr}.md (未找到檔案)`);
                             setJournalDisplayMode(true);
+                            document.getElementById('journal-status-hint').textContent = `⚠️ 沒有昨天日誌（~/Obsidian/zenlife/Daily 中找不到 ${yestStr}.md）`;
                             return;
                         }
                         const rawText = (ctx.journal_content || "").trim();
-                        if (journalEl) journalEl.value = rawText || "沒有容";
-                        parseObsidianMarkdown(rawText || "沒有容", ctx.journal_name || `${yestStr}.md`);
+                        const finalVal = rawText ? rawText : "沒有容";
+                        document.getElementById('journal-input').value = finalVal;
+                        parseObsidianMarkdown(finalVal, ctx.journal_name || `${yestStr}.md`);
                         setJournalDisplayMode(true);
+                        document.getElementById('journal-status-hint').textContent = rawText
+                            ? `✅ 已匯入昨天日誌：${ctx.journal_name}`
+                            : `⚠️ 已找到 ${ctx.journal_name}，但沒有容`;
                         return;
                     }
                 }
@@ -831,79 +1023,391 @@ function doPost(e) {
             const savedHandle = await getSavedDirHandle();
             if (savedHandle) {
                 try {
-                    if ((await savedHandle.queryPermission({ mode: 'read' })) === 'granted') {
-                        let matched = null;
-                        for await (const entry of savedHandle.values()) {
-                            if (entry.kind === 'file' && entry.name.includes(yestStr) && !entry.name.includes('易經晨報')) {
-                                matched = await entry.getFile();
-                                break;
+                    const perm = await savedHandle.queryPermission({ mode: 'read' });
+                    if (perm === 'granted') {
+                        const matchedFile = await readYesterdayFromDirHandle(savedHandle, yestStr);
+                        if (matchedFile) {
+                            const rawText = await matchedFile.text();
+                            parseObsidianMarkdown(rawText, matchedFile.name);
+                            const hasBody = currentJournalCleanText && currentJournalCleanText !== "沒有容" && currentJournalCleanText.trim().length > 0;
+                            if (!hasBody) {
+                                document.getElementById('journal-input').value = "沒有容";
+                                parseObsidianMarkdown("沒有容", matchedFile.name);
+                                document.getElementById('journal-status-hint').textContent = `⚠️ 已抓到昨天檔案 (${matchedFile.name})，但沒有容`;
+                            } else {
+                                document.getElementById('journal-input').value = rawText;
+                                document.getElementById('journal-status-hint').textContent = `✅ 已自動從 Daily 資料夾匯入昨天日誌：${matchedFile.name}`;
                             }
-                        }
-                        if (matched) {
-                            const rawText = await matched.text();
-                            parseObsidianMarkdown(rawText, matched.name);
-                            if (journalEl) journalEl.value = currentJournalCleanText ? rawText : "沒有容";
                             setJournalDisplayMode(true);
+                            return;
+                        } else {
+                            document.getElementById('journal-input').value = "沒有昨天日誌";
+                            parseObsidianMarkdown("沒有昨天日誌", `${yestStr}.md (未找到)`);
+                            setJournalDisplayMode(true);
+                            document.getElementById('journal-status-hint').textContent = `⚠️ 沒有昨天日誌（Daily 資料夾內無 ${yestStr}.md）`;
                             return;
                         }
                     }
                 } catch (e) {}
             }
 
-            if (journalEl) journalEl.value = "沒有昨天日誌";
+            document.getElementById('journal-input').value = "沒有昨天日誌";
             parseObsidianMarkdown("沒有昨天日誌", `${yestStr}.md`);
             setJournalDisplayMode(true);
+            document.getElementById('journal-status-hint').textContent = `⚠️ 沒有昨天日誌（請點上方「📁 連結 Daily 資料夾自動抓昨天」選取 ~/Obsidian/zenlife/Daily）`;
         }
 
         async function pickObsidianDailyFolder() {
             const yestStr = getYesterdayDateStr();
-            const journalEl = document.getElementById('journal-input');
+
             if (window.showDirectoryPicker) {
                 try {
                     const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
                     await saveDirHandle(dirHandle);
-                    let matched = null;
-                    for await (const entry of dirHandle.values()) {
-                        if (entry.kind === 'file' && entry.name.includes(yestStr) && !entry.name.includes('易經晨報')) {
-                            matched = await entry.getFile();
-                            break;
+                    const matchedFile = await readYesterdayFromDirHandle(dirHandle, yestStr);
+
+                    if (matchedFile) {
+                        const rawText = await matchedFile.text();
+                        parseObsidianMarkdown(rawText, matchedFile.name);
+                        const hasBody = currentJournalCleanText && currentJournalCleanText !== "沒有容" && currentJournalCleanText.trim().length > 0;
+                        if (!hasBody) {
+                            document.getElementById('journal-input').value = "沒有容";
+                            parseObsidianMarkdown("沒有容", matchedFile.name);
+                            setJournalDisplayMode(true);
+                            document.getElementById('journal-status-hint').textContent = `⚠️ 已抓到昨天檔案 (${matchedFile.name})，但沒有容`;
+                            showToast(`⚠️ 已載入 ${matchedFile.name}，但沒有容`);
+                        } else {
+                            document.getElementById('journal-input').value = rawText;
+                            setJournalDisplayMode(true);
+                            document.getElementById('journal-status-hint').textContent = `✅ 已從 Daily 資料夾匯入昨天日誌：${matchedFile.name}`;
+                            showToast(`📂 已匯入昨天日誌：${matchedFile.name}`);
                         }
-                    }
-                    if (matched) {
-                        const rawText = await matched.text();
-                        parseObsidianMarkdown(rawText, matched.name);
-                        if (journalEl) journalEl.value = currentJournalCleanText ? rawText : "沒有容";
-                        setJournalDisplayMode(true);
-                        showToast(`📂 已匯入昨天日誌：${matched.name}`);
+                        castDivination('resonant');
+                        return;
                     } else {
-                        if (journalEl) journalEl.value = "沒有昨天日誌";
-                        parseObsidianMarkdown("沒有昨天日誌", `${yestStr}.md`);
+                        document.getElementById('journal-input').value = "沒有昨天日誌";
+                        parseObsidianMarkdown("沒有昨天日誌", `${yestStr}.md (未找到)`);
                         setJournalDisplayMode(true);
-                        showToast(`⚠️ 沒有昨天日誌 (${yestStr}.md)`);
+                        document.getElementById('journal-status-hint').textContent = `⚠️ 沒有昨天日誌（該資料夾內找不到 ${yestStr}.md）`;
+                        showToast(`⚠️ 沒有昨天日誌（找不到 ${yestStr}.md）`);
+                        castDivination('resonant');
+                        return;
                     }
-                    castDivination('resonant');
-                    return;
-                } catch (e) { if (e.name === 'AbortError') return; }
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
             }
-            const fileInput = document.getElementById('obsidian-file-input');
-            if (fileInput) fileInput.click();
+
+            document.getElementById('obsidian-file-input').click();
         }
 
-        function loadObsidianFile(event) {
-            const file = event.target.files[0];
-            const journalEl = document.getElementById('journal-input');
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const rawMd = e.target.result || "";
-                parseObsidianMarkdown(rawMd, file.name);
-                const hasBody = currentJournalCleanText && currentJournalCleanText !== "沒有容" && currentJournalCleanText.trim().length > 0;
-                if (journalEl) journalEl.value = hasBody ? rawMd : "沒有容";
-                setJournalDisplayMode(true);
-                showToast(`已載入日誌：${file.name}`);
-                castDivination('resonant');
+        // API Key 與 Cloudflare Worker 安全設定彈窗控制
+        function toggleApiKeyModal() {
+            const modal = document.getElementById('apikey-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('worker-url-input').value = runtimeWorkerUrl;
+                document.getElementById('user-apikey-input').value = runtimeApiKey;
+            }
+        }
+
+        async function testWorkerConnection() {
+            const workerVal = document.getElementById('worker-url-input').value.trim();
+            const resBox = document.getElementById('worker-test-result');
+            const btn = document.getElementById('btn-test-worker');
+            resBox.classList.remove('hidden');
+
+            if (!workerVal || !workerVal.startsWith('https://')) {
+                resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
+                resBox.textContent = "❌ 請輸入以 https:// 開頭的 Cloudflare Worker 網址";
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "⏳ 測試中...";
+            resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-amber-100 text-amber-900";
+            resBox.textContent = `正在連線至 ${workerVal} 檢查狀態...`;
+
+            try {
+                const checkUrl = workerVal.includes('?') ? `${workerVal}&health=1` : `${workerVal}?health=1`;
+                const resp = await fetch(checkUrl, { method: 'GET' });
+                const data = await resp.json();
+                if (resp.ok && data.status === 'ok') {
+                    runtimeWorkerUrl = workerVal;
+                    try {
+                        const store = window.localStorage || window.sessionStorage;
+                        if (store) store.setItem('zenlife_worker_url', workerVal);
+                    } catch (e) {}
+                    updateApiKeyBadge();
+                    if (data.hasApiKeyConfigured) {
+                        resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-emerald-100 text-emerald-900";
+                        resBox.textContent = "✅ Worker 連線成功！且後端已偵測到 GEMINI_API_KEY，您可以直接免費安全算卦了！";
+                    } else {
+                        resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-amber-100 text-amber-900";
+                        resBox.textContent = "⚠️ Worker 連線成功，但後端尚未設定 GEMINI_API_KEY 環境變數，請至 Cloudflare 設定新增 Secret。";
+                    }
+                } else {
+                    resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
+                    resBox.textContent = "❌ Worker 回應異常：" + (data.error || resp.status);
+                }
+            } catch (err) {
+                resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
+                resBox.textContent = "❌ 無法連線至該 Worker 網址：" + err.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "⚡ 測試 Worker 連線";
+            }
+        }
+
+        function saveUserApiKey() {
+            const workerVal = document.getElementById('worker-url-input').value.trim();
+            const val = document.getElementById('user-apikey-input').value.trim();
+            runtimeWorkerUrl = workerVal;
+            runtimeApiKey = val;
+            try {
+                const store = window.localStorage || window.sessionStorage;
+                if (store) {
+                    store.setItem('zenlife_worker_url', workerVal);
+                    store.setItem('zenlife_gemini_key', val);
+                }
+            } catch (e) {}
+            updateApiKeyBadge();
+            toggleApiKeyModal();
+            showToast("🛡️ 已儲存安全連線設定！現在將重新為您解卦...");
+            generateDailyGuidance();
+        }
+
+        function clearUserApiKey() {
+            runtimeWorkerUrl = DEFAULT_WORKER_URL;
+            runtimeApiKey = "";
+            document.getElementById('worker-url-input').value = DEFAULT_WORKER_URL;
+            document.getElementById('user-apikey-input').value = "";
+            try {
+                const store = window.localStorage || window.sessionStorage;
+                if (store) {
+                    store.removeItem('zenlife_worker_url');
+                    store.removeItem('zenlife_gemini_key');
+                }
+            } catch (e) {}
+            updateApiKeyBadge();
+            toggleApiKeyModal();
+            showToast("已重設連線設定");
+        }
+
+        function updateApiKeyBadge() {
+            const badge = document.getElementById('apikey-badge-text');
+            if (!badge) return;
+            if (runtimeWorkerUrl) {
+                badge.textContent = "Worker 代理已啟用";
+                badge.parentElement.classList.add('border-emerald-600/40', 'text-emerald-800');
+            } else if (runtimeApiKey) {
+                badge.textContent = "API Key 已就緒";
+                badge.parentElement.classList.add('border-emerald-600/40', 'text-emerald-800');
+            } else {
+                badge.textContent = "設定 Worker / Key";
+                badge.parentElement.classList.remove('border-emerald-600/40', 'text-emerald-800');
+            }
+        }
+
+        // Google Docs 設定彈窗控制
+        function toggleGDocModal() {
+            const modal = document.getElementById('gdoc-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('gas-webhook-input').value = runtimeGasUrl;
+            }
+        }
+
+        function saveGasWebhook() {
+            const val = document.getElementById('gas-webhook-input').value.trim();
+            runtimeGasUrl = val;
+            try {
+                const store = window.localStorage || window.sessionStorage;
+                if (store) store.setItem('zenlife_gas_url', val);
+            } catch (e) {}
+            updateGDocBadge();
+            toggleGDocModal();
+            showToast("📄 Google Docs 寫入網址已儲存！");
+        }
+
+        async function testGasConnection() {
+            const val = document.getElementById('gas-webhook-input').value.trim();
+            const resBox = document.getElementById('gas-test-result');
+            const btn = document.getElementById('btn-test-gas');
+            resBox.classList.remove('hidden');
+
+            if (!val || !val.includes('script.google.com')) {
+                resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
+                resBox.textContent = "❌ 請先貼上正確的 https://script.google.com/macros/s/.../exec 網址";
+                return;
+            }
+
+            runtimeGasUrl = val;
+            try {
+                const store = window.localStorage || window.sessionStorage;
+                if (store) store.setItem('zenlife_gas_url', val);
+            } catch (e) {}
+            updateGDocBadge();
+
+            btn.disabled = true;
+            btn.textContent = "⏳ 測試寫入中...";
+            resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-amber-100 text-amber-900";
+            resBox.textContent = "正在傳送測試文件至您的 Google Drive 資料夾...";
+
+            try {
+                const resp = await fetch(val, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        folderId: TARGET_GDRIVE_FOLDER_ID,
+                        title: `易經晨間提點_連線測試_${new Date().toLocaleTimeString()}`,
+                        content: "恭喜！這是由《禪生活 · 易經晨間提點》網頁發送的測試文件，代表您的雲端資料夾寫入功能已完全正常運作。"
+                    })
+                });
+                const text = await resp.text();
+                let data = {};
+                try { data = JSON.parse(text); } catch (e) {}
+
+                if (data.status === 'ok') {
+                    resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-emerald-100 text-emerald-900";
+                    resBox.innerHTML = `✅ <strong>寫入成功！</strong>檔案已建立於您的雲端資料夾：<a href="${data.url}" target="_blank" class="underline font-bold">點此直接開啟剛建立的 Google Docs ↗</a>`;
+                } else {
+                    resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
+                    resBox.textContent = `❌ 寫入異常：${data.message || '請確認部署時誰可以存取已設為所有人'}`;
+                }
+            } catch (err) {
+                resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
+                resBox.textContent = "❌ 連線被阻擋！請確認部署時「誰可以存取」已選「所有人 (Anyone)」。";
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "⚡ 儲存並立即測試寫入";
+            }
+        }
+
+        function updateGDocBadge() {
+            const badge = document.getElementById('gdoc-badge-text');
+            if (!badge) return;
+            if (runtimeGasUrl) {
+                badge.textContent = "Google Docs 已連結";
+                badge.parentElement.classList.add('border-emerald-600/40', 'text-emerald-800');
+            } else {
+                badge.textContent = "Google Docs 設定";
+                badge.parentElement.classList.remove('border-emerald-600/40', 'text-emerald-800');
+            }
+        }
+
+        function copyGasScript() {
+            const code = document.getElementById('gas-code-block').innerText;
+            navigator.clipboard.writeText(code);
+            showToast("📋 已複製升級版 Google Apps Script！");
+        }
+
+        function convertGuidanceHtmlToWriterFormat(containerEl) {
+            if (!containerEl) return "";
+            const lines = [];
+            const walk = (node) => {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tag = node.tagName.toUpperCase();
+                    if (tag === 'H3' || tag === 'H4') {
+                        lines.push(`### ${node.innerText.trim()}`);
+                        return;
+                    }
+                    if (tag === 'LI') {
+                        lines.push(`- ${node.innerText.trim()}`);
+                        return;
+                    }
+                    if (tag === 'P') {
+                        const txt = node.innerText.trim();
+                        if (txt) lines.push(txt);
+                        return;
+                    }
+                    Array.from(node.children).forEach(walk);
+                }
             };
-            reader.readAsText(file, 'UTF-8');
+            Array.from(containerEl.children).forEach(walk);
+            return lines.length ? lines.join('\n\n') : containerEl.innerText.trim();
+        }
+
+        function buildCurrentMarkdown() {
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const weatherVal = document.getElementById('weather-select').value.trim() || "沒原始內容";
+            const tempVal = document.getElementById('temp-input').value.trim() || "沒原始內容";
+            const weather = (weatherVal === "沒原始內容" && tempVal === "沒原始內容") ? "沒原始內容" : `${weatherVal} ${tempVal}`;
+            const lunar = document.getElementById('lunar-date-str').textContent + ' (' + document.getElementById('lunar-ganzhi').textContent + ')';
+            const yi = document.getElementById('almanac-yi').value.trim() || "沒原始內容";
+            const ji = document.getElementById('almanac-ji').value.trim() || "沒原始內容";
+            const guidanceEl = document.getElementById('guidance-content');
+            const guidanceText = convertGuidanceHtmlToWriterFormat(guidanceEl);
+            const movingLineText = currentHexagram.lines_text[currentChangingLine - 1] || "";
+
+            const md = `---
+created: ${dateStr}
+tags: [易經晨卜, zenlife]
+hexagram: ${currentHexagram.name}
+zhigua: ${currentZhiHexagram.name}
+weather: ${weather}
+---
+
+# ☯ ${dateStr} 易經晨間提點：${currentHexagram.symbol} ${currentHexagram.name}（第 ${currentChangingLine} 爻動 ➔ 之卦：${currentZhiHexagram.name}）
+
+> **天時（即時天氣與氣溫）**：${weather}
+> **地利（今日農民曆宜忌）**：${lunar} ｜ 宜：${yi} ｜ 忌：${ji}
+> **上卦依據**：${lastCastingMeta.formulaText || ''}
+
+## 📜 本卦卦辭、動爻與秒記心法
+- **本卦卦辭**：${currentHexagram.guaci}
+- **大象傳**：${currentHexagram.xiang}
+- **動爻爻辭**：${movingLineText}（動而化為：**${currentZhiHexagram.name}**「${currentZhiHexagram.guaci}」）
+- **🧠 上下卦象記憶法**：${currentHexagram.mnemonic}
+
+## 🍵 晨間 06:15 專屬解卦與今日應對方針
+${guidanceText}
+`;
+            return { dateStr, title: `${dateStr}_易經晨報_${currentHexagram.name}`, md };
+        }
+
+        async function saveToGoogleDocs() {
+            const { title, md } = buildCurrentMarkdown();
+            if (!runtimeGasUrl) {
+                toggleGDocModal();
+                showToast("💡 請先貼上您的 Google Apps Script 網址並點擊測試！");
+                return;
+            }
+
+            const btn = document.getElementById('btn-save-gdoc');
+            const origText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span>⏳</span> 正在寫入 Google Docs...`;
+
+            try {
+                const resp = await fetch(runtimeGasUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        folderId: TARGET_GDRIVE_FOLDER_ID,
+                        title: title,
+                        content: md
+                    })
+                });
+                const text = await resp.text();
+                let resData = {};
+                try { resData = JSON.parse(text); } catch (e) {}
+
+                if (resData.status === 'ok' && resData.url) {
+                    showToast(`✅ 已成功存入 Google Docs！正在開啟文件...`);
+                    window.open(resData.url, '_blank');
+                } else {
+                    toggleGDocModal();
+                    showToast(`⚠️ 寫入失敗：${resData.message || '請檢查權限'}`);
+                }
+            } catch (e) {
+                toggleGDocModal();
+                showToast("⚠️ 無法寫入雲端硬碟，請檢查 Apps Script 授權與部署設定！");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origText;
+            }
         }
 
         function switchTab(tab) {
@@ -919,184 +1423,44 @@ function doPost(e) {
             if (activeBtn) activeBtn.className = "px-3.5 py-2 rounded-lg bg-white text-[#2C2A29] shadow-sm transition-all";
         }
 
-        function toggleApiKeyModal() {
-            const modal = document.getElementById('apikey-modal');
-            if (!modal) return;
-            modal.classList.toggle('hidden');
-            if (!modal.classList.contains('hidden')) {
-                const wInput = document.getElementById('worker-url-input');
-                const kInput = document.getElementById('user-apikey-input');
-                if (wInput) wInput.value = runtimeWorkerUrl;
-                if (kInput) kInput.value = runtimeApiKey;
-            }
-        }
-
-        async function testWorkerConnection() {
-            const wInput = document.getElementById('worker-url-input');
-            const workerVal = wInput ? wInput.value.trim() : "";
-            const resBox = document.getElementById('worker-test-result');
-            if (resBox) resBox.classList.remove('hidden');
-            try {
-                const resp = await fetch(`${workerVal}?health=1`, { method: 'GET' });
-                const data = await resp.json();
-                if (resp.ok && data.status === 'ok') {
-                    runtimeWorkerUrl = workerVal;
-                    if (resBox) {
-                        resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-emerald-100 text-emerald-900";
-                        resBox.textContent = "✅ Worker 連線成功！";
-                    }
-                }
-            } catch (err) {
-                if (resBox) {
-                    resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
-                    resBox.textContent = "❌ 連線失敗：" + err.message;
-                }
-            }
-        }
-
-        function saveUserApiKey() {
-            const wInput = document.getElementById('worker-url-input');
-            const kInput = document.getElementById('user-apikey-input');
-            if (wInput) runtimeWorkerUrl = wInput.value.trim();
-            if (kInput) runtimeApiKey = kInput.value.trim();
-            toggleApiKeyModal();
-            showToast("🛡️ 已儲存安全連線設定！");
-            generateDailyGuidance();
-        }
-
-        function clearUserApiKey() {
-            runtimeWorkerUrl = DEFAULT_WORKER_URL;
-            runtimeApiKey = "";
-            toggleApiKeyModal();
-            showToast("已重設連線");
-        }
-
-        function updateApiKeyBadge() {
-            const badge = document.getElementById('apikey-badge-text');
-            if (badge && runtimeWorkerUrl) badge.textContent = "Worker 代理已啟用";
-        }
-
-        function toggleGDocModal() {
-            const modal = document.getElementById('gdoc-modal');
-            if (modal) modal.classList.toggle('hidden');
-        }
-
-        function saveGasWebhook() {
-            const gasInput = document.getElementById('gas-webhook-input');
-            if (gasInput) runtimeGasUrl = gasInput.value.trim();
-            toggleGDocModal();
-            showToast("📄 Google Docs 寫入網址已儲存！");
-        }
-
-        async function testGasConnection() {
-            const gasInput = document.getElementById('gas-webhook-input');
-            const val = gasInput ? gasInput.value.trim() : "";
-            const resBox = document.getElementById('gas-test-result');
-            if (resBox) resBox.classList.remove('hidden');
-            try {
-                const resp = await fetch(val, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ folderId: TARGET_GDRIVE_FOLDER_ID, title: "測試文件", content: "連線測試成功" })
-                });
-                const data = await resp.json();
-                if (data.status === 'ok' && resBox) {
-                    resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-emerald-100 text-emerald-900";
-                    resBox.innerHTML = `✅ 寫入成功！<a href="${data.url}" target="_blank" class="underline font-bold">開啟文件 ↗</a>`;
-                }
-            } catch (e) {
-                if (resBox) {
-                    resBox.className = "text-xs mt-2 p-2.5 rounded-lg bg-rose-100 text-rose-800";
-                    resBox.textContent = "❌ 寫入失敗，請確認 Apps Script 部署權限為所有人";
-                }
-            }
-        }
-
-        function updateGDocBadge() {
-            const badge = document.getElementById('gdoc-badge-text');
-            if (badge && runtimeGasUrl) badge.textContent = "Google Docs 已連結";
-        }
-
-        function copyGasScript() {
-            const block = document.getElementById('gas-code-block');
-            if (block) navigator.clipboard.writeText(block.innerText);
-            showToast("📋 已複製 Apps Script！");
-        }
-
-        function buildCurrentMarkdown() {
-            const now = new Date();
-            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-            const weatherEl = document.getElementById('weather-select');
-            const tempEl = document.getElementById('temp-input');
-            const lunarDateEl = document.getElementById('lunar-date-str');
-            const ganzhiEl = document.getElementById('lunar-ganzhi');
-            const yiEl = document.getElementById('almanac-yi');
-            const jiEl = document.getElementById('almanac-ji');
-            const journalEl = document.getElementById('journal-input');
-            const guidanceEl = document.getElementById('guidance-content');
-
-            const weatherVal = (weatherEl ? weatherEl.value : "").trim() || "沒原始內容";
-            const tempVal = (tempEl ? tempEl.value : "").trim() || "沒原始內容";
-            const weather = `${weatherVal} ${tempVal}`;
-            const lunar = (lunarDateEl ? lunarDateEl.textContent : "") + ' (' + (ganzhiEl ? ganzhiEl.textContent : "") + ')';
-            const yi = (yiEl ? yiEl.value : "").trim() || "沒原始內容";
-            const ji = (jiEl ? jiEl.value : "").trim() || "沒原始內容";
-            const journal = (currentJournalCleanText || (journalEl ? journalEl.value : "")).trim() || "沒有昨天日誌";
-            const guidanceText = guidanceEl ? guidanceEl.innerText : "";
-
-            const md = `---
-created: ${dateStr}
-tags: [易經晨卜, zenlife]
-hexagram: ${currentHexagram.name}
-zhigua: ${currentZhiHexagram.name}
----
-
-# ☯ ${dateStr} 易經晨間提點：${currentHexagram.symbol} ${currentHexagram.name}（第 ${currentChangingLine} 爻動 ➔ 之卦：${currentZhiHexagram.name}）
-
-> **天時**：${weather}
-> **地利**：${lunar} ｜ 宜：${yi} ｜ 忌：${ji}
-
-## 📜 本卦與動爻
-- **卦辭**：${currentHexagram.guaci}
-- **大象傳**：${currentHexagram.xiang}
-
-## 🪞 昨天日誌原始內容 (~/Obsidian/zenlife/Daily)
-${journal}
-
-## 🍵 晨間解卦與今日應對方針
-${guidanceText}
-`;
-            return { dateStr, title: `${dateStr}_易經晨報_${currentHexagram.name}`, md };
-        }
-
-        async function saveToGoogleDocs() {
-            const { title, md } = buildCurrentMarkdown();
-            if (!runtimeGasUrl) {
-                toggleGDocModal();
-                showToast("💡 請先設定 Google Apps Script 網址！");
+        function loadObsidianFile(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                document.getElementById('journal-input').value = "沒有昨天日誌";
+                parseObsidianMarkdown("沒有昨天日誌");
+                setJournalDisplayMode(true);
                 return;
             }
-            try {
-                const resp = await fetch(runtimeGasUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ folderId: TARGET_GDRIVE_FOLDER_ID, title, content: md })
-                });
-                const data = await resp.json();
-                if (data.status === 'ok' && data.url) {
-                    showToast(`✅ 已存入 Google Docs！正在開啟...`);
-                    window.open(data.url, '_blank');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const rawMd = e.target.result || "";
+                parseObsidianMarkdown(rawMd, file.name);
+                const hasBody = currentJournalCleanText && currentJournalCleanText !== "沒有容" && currentJournalCleanText.trim().length > 0;
+                if (!hasBody) {
+                    document.getElementById('journal-input').value = "沒有容";
+                    parseObsidianMarkdown("沒有容", file.name);
+                    setJournalDisplayMode(true);
+                    document.getElementById('journal-status-hint').textContent = `⚠️ 已載入 ${file.name}，但沒有容`;
+                    showToast(`⚠️ ${file.name} 沒有容`);
+                } else {
+                    document.getElementById('journal-input').value = rawMd;
+                    setJournalDisplayMode(true);
+                    document.getElementById('journal-status-hint').textContent = `✅ 已成功匯入昨天 Markdown 日誌：${file.name}`;
+                    showToast(`已匯入昨天 Markdown 日誌：${file.name}`);
                 }
-            } catch (e) {
-                showToast("⚠️ 寫入雲端硬碟失敗");
-            }
+                castDivination('resonant');
+            };
+            reader.readAsText(file, 'UTF-8');
         }
 
+        // 計算字串數理總和 (將每個實際字元的 Unicode 點位與字數納入上卦數理)
         function calcTextNumerology(str) {
             const s = String(str || "").trim();
             if (!s) return 8;
             let sum = 0;
-            for (let i = 0; i < s.length; i++) sum += s.charCodeAt(i) * (i + 1);
+            for (let i = 0; i < s.length; i++) {
+                sum += s.charCodeAt(i) * (i + 1);
+            }
             return sum;
         }
 
@@ -1211,26 +1575,22 @@ ${guidanceText}
             }
         }
 
+        // =========================================================================
+        // 🍵 命理師解卦核心：嚴格依據「天時、地利、人和」實際內容，以卦解析且不呈現原始日誌
+        // =========================================================================
         async function generateDailyGuidance() {
-            const weatherEl = document.getElementById('weather-select');
-            const tempEl = document.getElementById('temp-input');
-            const weatherVal = (weatherEl ? weatherEl.value : "").trim();
-            const tempVal = (tempEl ? tempEl.value : "").trim();
-            const hasWeather = Boolean(weatherVal && weatherVal !== "沒原始內容");
+            const weatherVal = document.getElementById('weather-select').value.trim();
+            const tempVal = document.getElementById('temp-input').value.trim();
+            const hasWeather = Boolean(weatherVal && weatherVal !== "沒原始內容" && !weatherVal.includes("讀取"));
             const weatherFull = hasWeather ? `${weatherVal}，${tempVal}` : "沒原始內容";
 
-            const lunarDateEl = document.getElementById('lunar-date-str');
-            const ganzhiEl = document.getElementById('lunar-ganzhi');
-            const yiEl = document.getElementById('almanac-yi');
-            const jiEl = document.getElementById('almanac-ji');
-            const journalEl = document.getElementById('journal-input');
+            const lunarDate = document.getElementById('lunar-date-str').textContent.trim();
+            const ganzhi = document.getElementById('lunar-ganzhi').textContent.trim();
+            const yi = document.getElementById('almanac-yi').value.trim();
+            const ji = document.getElementById('almanac-ji').value.trim();
+            const hasAlmanac = Boolean(yi && yi !== "沒原始內容" && !yi.includes("讀取"));
 
-            const lunarDate = (lunarDateEl ? lunarDateEl.textContent : "").trim();
-            const ganzhi = (ganzhiEl ? ganzhiEl.textContent : "").trim();
-            const yi = (yiEl ? yiEl.value : "").trim();
-            const ji = (jiEl ? jiEl.value : "").trim();
-
-            const rawJournal = (currentJournalCleanText || (journalEl ? journalEl.value : "")).trim();
+            const rawJournal = (currentJournalCleanText || document.getElementById('journal-input').value).trim();
             const hasJournal = Boolean(rawJournal && rawJournal !== "沒有昨天日誌" && rawJournal !== "沒有容");
 
             const lowerTri = TRIGRAMS[currentHexagram.code.substring(0, 3)];
@@ -1239,68 +1599,144 @@ ${guidanceText}
 
             const statusEl = document.getElementById('ai-status');
             const contentEl = document.getElementById('guidance-content');
-            if (statusEl) statusEl.classList.remove('hidden');
+            statusEl.classList.remove('hidden');
 
             const envKey = (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) ? process.env.GEMINI_API_KEY : "";
             const activeApiKey = runtimeApiKey || envKey;
 
             if (runtimeWorkerUrl || activeApiKey) {
                 try {
-                    const systemInstructionText = `你是一位精熟《易經》與三才卜卦的資深命理師，擅長用最淺顯易懂、貼近日常生活的白話詞語為人解卦。只能使用使用者提供的三才資料，有資料就詳細對應（特別是昨日日誌，務必根據日誌內容深入解析），沒資料就直說沒有原始內容。`;
-                    const prompt = `現在是早晨 06:15，請根據以下三才資料為我白話解卦：
-- 天時：${hasWeather ? weatherFull : "沒有原始內容"}
-- 地利：${lunarDate} (${ganzhi}) ｜ 宜：${yi} ｜ 忌：${ji}
-- 人和：${hasJournal ? `「${rawJournal}」` : rawJournal || "沒有昨天日誌"}
-- 卦象：第 ${currentHexagram.id} 卦 ${currentHexagram.name}（第 ${currentChangingLine} 爻動 ➔ 之卦：${currentZhiHexagram.name}）`;
+                    const systemInstructionText = `你是一位精熟《易經》與梅花易數三才卜卦的資深命理師，擅長用最淺顯易懂、貼近日常生活的白話詞語為人解卦。
+【命理師鐵律（絕對遵守，違者視為嚴重失誤）】：
+1. 你只能使用使用者實際提供的三項資料：【天時（今日即時天氣與氣溫）】、【地利（今日農民曆宜忌）】、【人和（昨天日誌中由使用者輸入的實質內容）】來卜卦與解卦。
+2. 針對「3. 🪞 【人和】昨日日誌實據解讀」：
+   - 【絕對不要呈現原始日誌內容】：嚴禁在回覆中照抄、引述或貼出日誌的原始句子！
+   - 【必須以卦來解析日誌】：請消化使用者在日誌裡記錄的事情與心境，直接用「本卦（${currentHexagram.name}）、內卦（${lowerTri.name}為${lowerTri.nature}，主${lowerTri.attr}）、動爻（${movingLineText}）與變卦（${currentZhiHexagram.name}）」的卦象與爻義來解析昨日的處境、心態轉折與今日化解之道。
+3. 若【人和】昨天日誌為「沒有昨天日誌」或「沒有容」，直接坦白寫出「【人和】昨天日誌沒有原始內容，故不強加臆測昨日事件，僅依本卦內卦與動爻之易理為今日定心」，嚴禁自行編造情節。`;
 
-                    const targetUrl = runtimeWorkerUrl ? runtimeWorkerUrl : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeApiKey}`;
-                    const resp = await fetch(targetUrl, {
+                    const prompt = `現在是早晨 06:15，請根據以下【三才實際排盤資料】為我進行今日的易經白話解卦與應對方針：
+
+=== 一、三才實際原始資料（沒資料處即標示「沒有原始內容」） ===
+1. 【天時】今日即時天氣與氣溫：${hasWeather ? weatherFull : "沒有原始內容"}
+2. 【地利】今日農民曆宜忌：${hasAlmanac ? `${lunarDate}（${ganzhi}）｜宜：${yi}｜忌：${ji}` : "沒有原始內容"}
+3. 【人和】昨天日誌使用者輸入之內容（僅供你理解脈絡並以卦解析，嚴禁在回覆中把日誌原文印出來）：${hasJournal ? rawJournal : `沒有原始內容（狀態：${rawJournal || "沒有昨天日誌"}）`}
+
+=== 二、依上述三才資料排出的本卦與變卦 ===
+- 【上卦（外卦，應天時地利）】：${upperTri.name}為${upperTri.nature}（象徵：${upperTri.image}，特質：${upperTri.attr}）
+- 【下卦（內卦，應人和心境）】：${lowerTri.name}為${lowerTri.nature}（象徵：${lowerTri.image}，特質：${lowerTri.attr}）
+- 【今日所得本卦】：第 ${currentHexagram.id} 卦「${currentHexagram.name}」（卦辭：「${currentHexagram.guaci}」，大象傳：「${currentHexagram.xiang}」）
+- 【今日動爻】：第 ${currentChangingLine} 爻動，爻辭：「${movingLineText}」
+- 【動爻變出之卦（變卦趨勢）】：第 ${currentZhiHexagram.id} 卦「${currentZhiHexagram.name}」（卦辭：「${currentZhiHexagram.guaci}」，象曰：「${currentZhiHexagram.xiang}」）
+
+請嚴格遵守【命理師鐵律】（不要呈現原始日誌文字，但務必針對日誌所寫的事物用本卦、內卦、動爻與變卦深入解析；沒資料就直說「沒有原始內容」），並用淺顯易懂的白話 HTML 格式（僅使用 <div class="space-y-4">、<h4>、<p>、<ul class="list-disc pl-5 space-y-1.5">，不要輸出 \`\`\`html 標籤）回覆以下四個部分：
+
+1. <h4>1. 🧠 命理師白話拆卦：怎麼用最簡單的畫面記住「${currentHexagram.name}」與動爻？</h4>
+2. <h4>2. 🌤️ 【天時】與【地利】實據解讀（結合今日實際天氣與農民曆宜忌）</h4>
+3. <h4>3. 🪞 【人和】昨日日誌實據解讀（以「${currentHexagram.name}」、內卦「${lowerTri.name}${lowerTri.nature}」與動爻「${movingLineText}」來解析昨日日誌的事項與心境，切勿貼出原始日誌文字）</h4>
+4. <h4>4. 🌱 今日 06:15 過好日子的 3 個淺顯具體行動方針（早、中、晚）</h4>`;
+
+                    const targetUrl = runtimeWorkerUrl
+                        ? runtimeWorkerUrl
+                        : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeApiKey}`;
+
+                    const response = await fetch(targetUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemInstructionText }] }, generationConfig: { temperature: 0.2 } })
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            systemInstruction: {
+                                parts: [{ text: systemInstructionText }]
+                            },
+                            generationConfig: {
+                                temperature: 0.2
+                            }
+                        })
                     });
-                    const data = await resp.json();
+                    const data = await response.json();
                     const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (aiText && contentEl) {
+                    if (aiText) {
                         contentEl.innerHTML = aiText.replace(/```html|```/g, '').trim();
-                        if (statusEl) statusEl.classList.add('hidden');
+                        statusEl.classList.add('hidden');
                         return;
                     }
-                } catch (e) {}
+                } catch (err) {
+                    console.warn("Fallback to strict local synthesis:", err);
+                }
             }
 
-            if (statusEl) statusEl.classList.add('hidden');
-            if (contentEl) {
-                contentEl.innerHTML = `
-                    <div class="space-y-4">
-                        <div class="p-3.5 bg-[#FAF8F5] rounded-xl border-l-4 border-[#8C6D46]">
-                            <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">1. 🧠 命理師白話拆卦</h4>
-                            <p class="text-xs text-[#4A4642] leading-relaxed">${currentHexagram.name}（${currentHexagram.xiang}）。第 ${currentChangingLine} 爻動（${movingLineText}）轉為【${currentZhiHexagram.name}】。</p>
-                        </div>
-                        <div>
-                            <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">2. 🌤️ 【天時】與【地利】實據解讀</h4>
-                            <p class="text-xs text-[#4A4642] leading-relaxed">天氣：${weatherFull}；宜：${yi} / 忌：${ji}</p>
-                        </div>
-                        <div>
-                            <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">3. 🪞 【人和】昨日日誌實據解讀</h4>
-                            <p class="text-xs text-[#4A4642] leading-relaxed">${hasJournal ? `日誌對應內卦「${lowerTri.name}（${lowerTri.attr}）」與動爻「${movingLineText}」：針對昨日日誌「${rawJournal}」，提醒您放下昨日掛礙，順應本卦智慧沉著應對。` : '沒有昨天日誌或沒有容，命理師恪守實據原則，不作無根據臆測。'}</p>
-                        </div>
-                        <div class="bg-[#F4EFE6]/70 p-4 rounded-xl">
-                            <h4 class="serif font-bold text-[#2C2A29] text-sm mb-2">4. 🌱 今日行動方針</h4>
-                            <p class="text-xs text-[#3A3735]">順應自然天時地利，落實「${currentHexagram.xiang}」之心法。</p>
-                        </div>
+            // 本地命理師嚴格實據解卦（以卦解析且不呈現原始日誌內容）
+            statusEl.classList.add('hidden');
+
+            const tianShiHtml = hasWeather
+                ? `今日【天時】實際觀測為「<strong>${weatherFull}</strong>」`
+                : `今日【天時】<strong>沒有原始內容</strong>（尚未取得天氣與氣溫資料，不作假設）`;
+
+            const diLiHtml = hasAlmanac
+                ? `今日【地利】實際農民曆為「<strong>${lunarDate}（${ganzhi}）</strong>」，其中明確記載<strong>「宜：${yi}」</strong>、<strong>「忌：${ji}」</strong>。`
+                : `今日【地利】<strong>沒有原始內容</strong>（尚未取得農民曆宜忌資料，不作假設）。`;
+
+            const renHeHtml = hasJournal
+                ? `以您昨日日誌所記載的心境與事項起算，內卦落於「<strong>${lowerTri.name}為${lowerTri.nature}（象徵${lowerTri.image}，主${lowerTri.attr}）</strong>」，與外卦合成「<strong>${currentHexagram.name}</strong>」。從卦理來看，昨日的心緒與外在互動正呼應本卦大象傳「<strong>${currentHexagram.xiang}</strong>」的修練課題；而今日<strong>第 ${currentChangingLine} 爻動（「${movingLineText}」）</strong>正是化解昨日滯礙的樞紐——提醒您以內卦「${lowerTri.attr}」的定力應對，順著動爻指引調整步伐，今日局勢便能順利轉向之卦「<strong>${currentZhiHexagram.name}（${currentZhiHexagram.xiang}）</strong>」。`
+                : `<strong>⚠️【人和】昨天日誌沒有原始內容（目前狀態：${rawJournal || "沒有昨天日誌"}）。</strong><br>命理師恪守實據原則，<strong>絕不自行發想或編造任何昨日事件</strong>。單就今日內卦「<strong>${lowerTri.name}為${lowerTri.nature}</strong>」與動爻「<strong>${movingLineText}</strong>」的易理來看，今天內心只需保持「${lowerTri.attr}」的純粹狀態，不預設立場、不被外境干擾即可。`;
+
+            contentEl.innerHTML = `
+                <div class="space-y-4">
+                    <div class="p-3.5 bg-[#FAF8F5] rounded-xl border-l-4 border-[#8C6D46]">
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">1. 🧠 命理師白話拆卦：怎麼輕鬆記住「${currentHexagram.name}」與今日動爻？</h4>
+                        <p class="text-xs text-[#4A4642] leading-relaxed">
+                            我們把「<strong>${currentHexagram.name}</strong>」拆開來看：<br>
+                            • <strong>外卦（上面三爻，代表外在環境）</strong>是「<strong>${upperTri.name}卦（${upperTri.image}，性質是${upperTri.attr}）</strong>」；<br>
+                            • <strong>內卦（下面三爻，代表您的內心）</strong>是「<strong>${lowerTri.name}卦（${lowerTri.image}，性質是${lowerTri.attr}）</strong>」。<br>
+                            所以大象傳說：「<strong>${currentHexagram.xiang}</strong>」，卦辭說：「<strong>${currentHexagram.guaci}</strong>」。<br>
+                            今日落在<strong>第 ${currentChangingLine} 爻動（「${movingLineText}」）</strong>，動而化為之卦「<strong>${currentZhiHexagram.name}（${currentZhiHexagram.xiang}）</strong>」，代表只要把握動爻的提醒，今日事情就能順利轉化。
+                        </p>
                     </div>
-                `;
-            }
+
+                    <div>
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">2. 🌤️ 【天時】與【地利】實據解讀（外卦：${upperTri.name}為${upperTri.nature}）</h4>
+                        <p class="text-xs text-[#4A4642] leading-relaxed">
+                            ${tianShiHtml}；${diLiHtml}<br>
+                            以易經外卦「<strong>${upperTri.name}（${upperTri.nature}）</strong>」對應今日外在環境：${hasWeather ? `面對今日「${weatherVal}」的氣候，` : ''}行事上請確實順應農民曆${hasAlmanac ? `「<strong>宜：${yi}</strong>」的方向去安排今日重點，並主動避開「<strong>忌：${ji}</strong>」的行為` : '的客觀節奏'}。
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">3. 🪞 【人和】昨日日誌實據解讀（內卦：${lowerTri.name}為${lowerTri.nature} · 動爻：${movingLineText.split('：')[0]}）</h4>
+                        <p class="text-xs text-[#4A4642] leading-relaxed">
+                            ${renHeHtml}
+                        </p>
+                    </div>
+
+                    <div class="bg-[#F4EFE6]/70 p-4 rounded-xl">
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-2">4. 🌱 今日 06:15 過好日子的 3 個淺顯具體行動方針</h4>
+                        <ul class="text-xs text-[#3A3735] space-y-2 list-disc pl-5">
+                            <li><strong>【晨間定心】</strong>默念今日卦辭「${currentHexagram.guaci}」，以內卦「${lowerTri.name}（${lowerTri.attr}）」涵養心神。</li>
+                            <li><strong>【日間應事】</strong>緊記動爻「${movingLineText}」之提點，順應農民曆「宜：${yi}」踏實行事。</li>
+                            <li><strong>【晚間省思】</strong>對照之卦「${currentZhiHexagram.name}（${currentZhiHexagram.xiang}）」，平靜收攝一日所得。</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
         }
 
+        // 渲染六十四卦記憶卡片網格
         function renderHexagramGrid() {
+            const searchEl = document.getElementById('hex-search');
             const grid = document.getElementById('hex-grid');
             if (!grid) return;
+            const query = searchEl ? searchEl.value.trim().toLowerCase() : '';
             grid.innerHTML = '';
-            HEXAGRAMS.forEach(h => {
+
+            const filtered = HEXAGRAMS.filter(h =>
+                h.name.toLowerCase().includes(query) ||
+                h.guaci.toLowerCase().includes(query) ||
+                h.mnemonic.toLowerCase().includes(query) ||
+                h.xiang.toLowerCase().includes(query)
+            );
+
+            filtered.forEach(h => {
                 const card = document.createElement('div');
-                card.className = "bg-[#FAF8F5] hover:bg-white border border-[#E6E1D6] rounded-xl p-4 cursor-pointer transition-all";
+                card.className = "bg-[#FAF8F5] hover:bg-white border border-[#E6E1D6] hover:border-[#8C6D46] rounded-xl p-4 cursor-pointer transition-all flex flex-col justify-between";
                 card.onclick = () => {
                     currentHexagram = h;
                     currentChangingLine = 1;
@@ -1310,13 +1746,27 @@ ${guidanceText}
                     renderHexagramUI(h, 1, currentZhiHexagram);
                     generateDailyGuidance();
                     switchTab('divination');
-                    showToast(`已切換至：${h.name}`);
+                    showToast(`已切換至：第 ${h.id} 卦 · ${h.name}`);
                 };
-                card.innerHTML = `<h3 class="serif font-bold text-base">${h.name}</h3><p class="text-xs">${h.guaci}</p>`;
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-mono text-[#8C6D46] bg-[#F0ECE1] px-2 py-0.5 rounded">第 ${h.id} 卦</span>
+                            <span class="text-2xl serif text-[#2C2A29]">${h.symbol}</span>
+                        </div>
+                        <h3 class="serif font-bold text-base text-[#2C2A29] mb-1">${h.name}</h3>
+                        <p class="serif text-xs text-[#5A554E] font-medium mb-2">${h.guaci}</p>
+                    </div>
+                    <div class="bg-[#F4EFE6] p-2.5 rounded-lg mt-2">
+                        <div class="text-[11px] font-bold text-[#8C6D46] mb-0.5">🧠 上下卦秒記畫面：</div>
+                        <p class="text-[11px] text-[#4A4642] leading-relaxed">${h.mnemonic}</p>
+                    </div>
+                `;
                 grid.appendChild(card);
             });
         }
 
+        // 匯出為 Obsidian Markdown 檔案
         function exportToMarkdown() {
             const { dateStr, md } = buildCurrentMarkdown();
             const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
@@ -1326,15 +1776,18 @@ ${guidanceText}
             a.download = `${dateStr}_易經晨報.md`;
             a.click();
             URL.revokeObjectURL(url);
-            showToast("已匯出 Markdown 筆記");
+            showToast(`已匯出 ${dateStr}_易經晨報.md，可放入 ~/Obsidian/zenlife/Daily`);
         }
 
+        // 顯示提示訊息
         function showToast(msg) {
             const toast = document.getElementById('toast');
             if (!toast) return;
             toast.textContent = msg;
             toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
         }
     </script>
 </body>
