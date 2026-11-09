@@ -1379,20 +1379,13 @@ ${structuredGuidance}
                     const prompt = `現在是早晨 06:15，請根據以下三才實際資料與復盤重點為我白話解卦：
 - 【天時】即時天氣與氣溫：${hasWeather ? weatherFull : "沒有原始內容"}
 - 【地利】農民曆宜忌：${lunarDate} (${ganzhi}) ｜ 宜：${yi} ｜ 忌：${ji}
-- 【人和】昨日日誌復盤內容：${hasJournal ? rawJournal : "沒有原始內容"}依我的「日誌」內容，請嚴格根據文中的「DayInfo」數據，以及「晨間日記」各欄位（快樂的事、健康、學習、家庭、好點子、理財、工作、Plan）的實際撰寫內容為我進行解析。
+- 【人和】昨日日誌復盤內容：${hasJournal ? rawJournal : "沒有原始內容"} 依我的「日誌」內容，請嚴格根據文中的「DayInfo」數據，以及「晨間日記」各欄位（快樂的事、健康、學習、家庭、好點子、理財、工作、Plan）的實際撰寫內容為我進行解析。
 - 【今日卦象】：第 ${currentHexagram.id} 卦「${currentHexagram.name}」（上卦${upperTri.name}${upperTri.nature}、下卦${lowerTri.name}${lowerTri.nature}，第 ${currentChangingLine} 爻動，之卦「${currentZhiHexagram.name}」）
 
 請用淺顯易懂的白話 HTML 格式（僅使用 <div class="space-y-4">、<h4>、<p>、<ul class="list-disc pl-5 space-y-1.5">，不要輸出 markdown code block 標籤）回覆以下四個部分：
 1. <h4>1. 🧠 命理師白話拆卦</h4>
 2. <h4>2. 🌤️ 【天時】與【地利】實據解讀</h4>
 3. <h4>3. 🪞 【人和】昨日日誌復盤與實據解讀（結合日誌中的好點子與 Plan 進行對應解析）</h4>
-    【請產出高品質的解卦復盤文章，並包含以下結構】
-    一、今日心境與核心掃描
-    根據我的文字，精煉出今天的核心重點，並敏銳地總結我今日的整體情緒狀態與能量高低。
-    二、晨間日記易理復盤
-    綜合評估我在健康、學習、家庭、工作與理財等面向的紀錄。請為我今日的生活狀態對應一個最貼切的《易經》卦象或陰陽哲理，並用通俗易懂的白話文解釋，這個卦象為我今日的經歷帶來什麼啟發。
-    三、順勢而為的行動指引
-    針對我寫下的「好點子」與「Plan」，透過易經「趨吉避凶、順應時局」的智慧，為我的下一步計畫提出具體、可落地的實質建議。
 4. <h4>4. 🌱 今日 06:15 行動方針（早、中、晚）</h4>`;
 
                     const targetUrl = runtimeWorkerUrl ? runtimeWorkerUrl : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeApiKey}`;
