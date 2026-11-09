@@ -1320,25 +1320,22 @@ ${structuredGuidance}
             }
         }
 
+        // =========================================================================
+        // 🍵 命理師解卦核心：嚴格依據「天時、地利、人和」實際內容，針對日誌具體事件以卦解析
+        // =========================================================================
         async function generateDailyGuidance() {
-            const weatherEl = document.getElementById('weather-select');
-            const tempEl = document.getElementById('temp-input');
-            const weatherVal = (weatherEl ? weatherEl.value : "").trim();
-            const tempVal = (tempEl ? tempEl.value : "").trim();
-            const hasWeather = Boolean(weatherVal && weatherVal !== "沒原始內容");
+            const weatherVal = document.getElementById('weather-select').value.trim();
+            const tempVal = document.getElementById('temp-input').value.trim();
+            const hasWeather = Boolean(weatherVal && weatherVal !== "沒原始內容" && !weatherVal.includes("讀取"));
             const weatherFull = hasWeather ? `${weatherVal}，${tempVal}` : "沒原始內容";
 
-            const lunarDateEl = document.getElementById('lunar-date-str');
-            const ganzhiEl = document.getElementById('lunar-ganzhi');
-            const yiEl = document.getElementById('almanac-yi');
-            const jiEl = document.getElementById('almanac-ji');
+            const lunarDate = document.getElementById('lunar-date-str').textContent.trim();
+            const ganzhi = document.getElementById('lunar-ganzhi').textContent.trim();
+            const yi = document.getElementById('almanac-yi').value.trim();
+            const ji = document.getElementById('almanac-ji').value.trim();
+            const hasAlmanac = Boolean(yi && yi !== "沒原始內容" && !yi.includes("讀取"));
+
             const journalEl = document.getElementById('journal-input');
-
-            const lunarDate = (lunarDateEl ? lunarDateEl.textContent : "").trim();
-            const ganzhi = (ganzhiEl ? ganzhiEl.textContent : "").trim();
-            const yi = (yiEl ? yiEl.value : "").trim();
-            const ji = (jiEl ? jiEl.value : "").trim();
-
             if (journalEl) {
                 currentJournalCleanText = extractUserWrittenJournalContent(journalEl.value);
             }
@@ -1355,28 +1352,37 @@ ${structuredGuidance}
 
             const statusEl = document.getElementById('ai-status');
             const contentEl = document.getElementById('guidance-content');
-            if (statusEl) statusEl.classList.remove('hidden');
+            statusEl.classList.remove('hidden');
 
             const envKey = (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) ? process.env.GEMINI_API_KEY : "";
             const activeApiKey = runtimeApiKey || envKey;
 
             if (runtimeWorkerUrl || activeApiKey) {
                 try {
-                    const systemInstructionText = "請扮演一位精通《易經》哲理與三才卜卦的資深命理師，同時也是生活復盤專家。你擅長將深奧的易理轉化為最淺顯易懂、溫暖且貼近日常的白話文來指引方向。"            
-                    const prompt = `現在是早晨 06:15，請根據以下三才實際資料與復盤重點為我白話解卦：
-- 【天時】即時天氣與氣溫：${hasWeather ? weatherFull : "沒有原始內容"}
-- 【地利】農民曆宜忌：${lunarDate} (${ganzhi}) ｜ 宜：${yi} ｜ 忌：${ji}
-- 【人和】昨日日誌復盤內容：${hasJournal ? rawJournal : "沒有原始內容"} 依我的「日誌」內容，請嚴格根據文中的「DayInfo」數據，以及「晨間日記」各欄位（快樂的事、健康、學習、家庭、好點子、理財、工作、Plan）的實際撰寫內容為我進行解析。
-- 【今日卦象】：第 ${currentHexagram.id} 卦「${currentHexagram.name}」（上卦${upperTri.name}${upperTri.nature}、下卦${lowerTri.name}${lowerTri.nature}，第 ${currentChangingLine} 爻動，之卦「${currentZhiHexagram.name}」）
+                    const systemInstructionText = `你是一位精熟《易經》與三才卜卦的資深命理師，擅長用最淺顯易懂、貼近日常生活的白話詞語為人解卦。
+【命理師鐵律（絕對遵守）】：
+1. 只能使用使用者實際提供的三項資料：【天時（即時天氣與氣溫）】、【地利（農民曆宜忌）】、【人和（昨天日誌）】來卜卦與解卦。
+2. 針對「3. 🪞 【人和】昨日日誌實據解讀」：如果【人和】有實際日誌內容，你必須務必將日誌裡的具體事件、情緒、心境或細節拿出來逐一對應解讀，將日誌原文與本卦內卦（下卦）及動爻做深度且具體的白話串聯。
+3. 嚴格禁止自行發想、腦補或編造任何未出現在原始資料中的情節。`;
 
-請用淺顯易懂的白話 HTML 格式（僅使用 <div class="space-y-4">、<h4>、<p>、<ul class="list-disc pl-5 space-y-1.5">，不要輸出 markdown code block 標籤）回覆以下四個部分：
-1. <h4>1. 🧠 命理師白話拆卦</h4>
-2. <h4>2. 🌤️ 【天時】與【地利】實據解讀</h4>
-3. <h4>3. 🪞 【人和】昨日日誌復盤與實據解讀（結合日誌中的好點子與 Plan 進行對應解析）</h4>
-4. <h4>4. 🌱 今日 06:15 行動方針（早、中、晚）</h4>`;
+                    const prompt = `現在是早晨 06:15，請根據以下三才實際資料為我卜卦與白話解卦：
+
+- 【天時】今日即時天氣與氣溫：${hasWeather ? weatherFull : "沒原始內容"}
+- 【地利】今日農民曆宜忌：${lunarDate} (${ganzhi}) ｜ 宜：${yi} ｜ 忌：${ji}
+- 【人和】昨天日誌 (~/Obsidian/zenlife/Daily)：${hasJournal ? `「${rawJournal}」` : `沒原始內容（狀態：${rawJournal}）`}
+- 【今日所卜之卦】第 ${currentHexagram.id} 卦：${currentHexagram.name}（第 ${currentChangingLine} 爻動）
+- 【卦辭】${currentHexagram.guaci}
+- 【大象傳】${currentHexagram.xiang}
+
+請以淺顯易懂的白話輸出四個段落：
+1. **🧠 命理師白話拆卦**
+2. **🌤️ 【天時】與【地利】實據解讀**
+3. **🪞 【人和】昨日日誌實據解讀**
+4. **🌱 今日 06:15 過好日子的 3 個淺顯具體行動方針**
+`;
 
                     const targetUrl = runtimeWorkerUrl ? runtimeWorkerUrl : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeApiKey}`;
-                    const resp = await fetch(targetUrl, {
+                    const response = await fetch(targetUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -1385,45 +1391,44 @@ ${structuredGuidance}
                             generationConfig: { temperature: 0.2 }
                         })
                     });
-                    const data = await resp.json();
+                    const data = await response.json();
                     const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (aiText && contentEl) {
-                        contentEl.innerHTML = aiText.replace(/\x60\x60\x60html|\x60\x60\x60/g, '').trim();
-                        if (statusEl) statusEl.classList.add('hidden');
+                    if (aiText) {
+                        contentEl.innerHTML = aiText.replace(/```html|```/g, '').trim();
+                        statusEl.classList.add('hidden');
                         return;
                     }
-                } catch (e) {}
+                } catch (err) {
+                    console.warn("Fallback synthesis:", err);
+                }
             }
 
-            if (statusEl) statusEl.classList.add('hidden');
-            if (contentEl) {
-                contentEl.innerHTML = `
-                    <div class="space-y-4">
-                        <div class="p-3.5 bg-[#FAF8F5] rounded-xl border-l-4 border-[#8C6D46]">
-                            <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">1. 🧠 命理師白話拆卦</h4>
-                            <p class="text-xs text-[#4A4642] leading-relaxed">本卦為「<strong>${currentHexagram.name}</strong>」（上卦${upperTri.name}、下卦${lowerTri.name}），第 ${currentChangingLine} 爻動，變為「${currentZhiHexagram.name}」。</p>
-                        </div>
-                        <div>
-                            <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">2. 🌤️ 【天時】與【地利】實據解讀</h4>
-                            <p class="text-xs text-[#4A4642] leading-relaxed">天氣：${weatherFull} ｜ 宜：${yi} ｜ 忌：${ji}</p>
-                        </div>
-                        <div>
-                            <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">3. 🪞 【人和】昨日日誌實據解讀</h4>
-                            <p class="text-xs text-[#4A4642] leading-relaxed">${hasJournal ? rawJournal : "沒有原始內容"}</p>
-                        </div>
-                        <div class="bg-[#F4EFE6]/70 p-4 rounded-xl">
-                            <h4 class="serif font-bold text-[#2C2A29] text-sm mb-2">4. 🌱 今日行動方針</h4>
-                            <ul class="text-xs text-[#3A3735] space-y-1.5 list-disc pl-5">
-                                <li><strong>晨間：</strong>靜心安頓。</li>
-                                <li><strong>日間：</strong>穩健實踐。</li>
-                                <li><strong>晚間：</strong>收攝心神。</li>
-                            </ul>
-                        </div>
+            statusEl.classList.add('hidden');
+            contentEl.innerHTML = `
+                <div class="space-y-4">
+                    <div class="p-3.5 bg-[#FAF8F5] rounded-xl border-l-4 border-[#8C6D46]">
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">1. 🧠 命理師白話拆卦</h4>
+                        <p class="text-xs text-[#4A4642] leading-relaxed">${currentHexagram.name}：外卦「${upperTri.name}」、內卦「${lowerTri.name}」。大象傳：「${currentHexagram.xiang}」。第 ${currentChangingLine} 爻動。</p>
                     </div>
-                `;
-            }
+                    <div>
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">2. 🌤️ 【天時】與【地利】實據解讀</h4>
+                        <p class="text-xs text-[#4A4642] leading-relaxed">天氣：${weatherFull}；農民曆宜：${yi}、忌：${ji}</p>
+                    </div>
+                    <div>
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-1">3. 🪞 【人和】昨日日誌實據解讀</h4>
+                        <p class="text-xs text-[#4A4642] leading-relaxed">${hasJournal ? `日誌紀錄：${rawJournal}` : '無原始日誌內容。'}</p>
+                    </div>
+                    <div class="bg-[#F4EFE6]/70 p-4 rounded-xl">
+                        <h4 class="serif font-bold text-[#2C2A29] text-sm mb-2">4. 🌱 今日 06:15 行動方針</h4>
+                        <ul class="text-xs text-[#3A3735] space-y-2">
+                            <li>晨間靜心，日間順應農民曆宜忌。</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
         }
 
+        // 渲染六十四卦記憶卡片網格
         function renderHexagramGrid() {
             const grid = document.getElementById('hex-grid');
             if (!grid) return;
@@ -1464,7 +1469,9 @@ ${structuredGuidance}
             if (!toast) return;
             toast.textContent = msg;
             toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
         }
     </script>
 </body>
