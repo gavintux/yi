@@ -1,0 +1,12 @@
+const WORKER_API_URL = "https://yi.gavintux.workers.dev";
+
+async function callAI(promptText) {
+    const response = await fetch(WORKER_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: promptText })
+    });
+    
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "無回應";
+}
